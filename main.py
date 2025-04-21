@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Coda Lite - Core Operations & Digital Assistant (v0.0.2)
+Coda Lite - Core Operations & Digital Assistant (v0.0.3)
 Main entry point for the Coda Lite voice assistant.
 
 This module initializes and coordinates the core components:
@@ -9,7 +9,7 @@ This module initializes and coordinates the core components:
 - Text-to-Speech (TTS)
 - Tool execution
 
-Current version (v0.0.2) implements the optimized voice loop with concurrent processing.
+Current version (v0.0.3) implements the optimized voice loop with personality.
 """
 
 import os
@@ -18,9 +18,12 @@ import time
 import logging
 import signal
 import threading
+import random
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Callable
 from queue import Queue
+
+from personality import PersonalityLoader
 
 # Set up logging
 logging.basicConfig(
@@ -96,9 +99,13 @@ class CodaAssistant:
             device=config.get("tts.device", "cuda")
         )
 
-        # Load system prompt
-        system_prompt_file = config.get("llm.system_prompt_file", "config/prompts/system.txt")
-        self.system_prompt = load_system_prompt(system_prompt_file)
+        # Initialize personality
+        logger.info("Initializing personality...")
+        self.personality = PersonalityLoader()
+
+        # Generate system prompt from personality
+        self.system_prompt = self.personality.generate_system_prompt()
+        logger.info("Generated system prompt from personality")
 
         # Add system message to conversation history
         self.conversation_history.append({"role": "system", "content": self.system_prompt})
@@ -198,8 +205,15 @@ class CodaAssistant:
         logger.info("Starting conversation loop")
 
         # Welcome message
-        welcome_message = "Hello! I'm Coda, your voice assistant. How can I help you today?"
-        print(f"\nCoda: {welcome_message}")
+        name = self.personality.get_name()
+        welcome_options = [
+            f"Hello! I'm {name}, your voice assistant. How can I help you today?",
+            f"Hi there! {name} here. What can I do for you?",
+            f"Hey! I'm {name}. Ready when you are.",
+            f"Greetings! {name} at your service. What do you need?"
+        ]
+        welcome_message = random.choice(welcome_options)
+        print(f"\n{name}: {welcome_message}")
         self.response_queue.put(welcome_message)
 
         try:
@@ -254,7 +268,7 @@ def main():
     """Main entry point for Coda Lite."""
     global assistant
 
-    logger.info("Starting Coda Lite v0.0.2")
+    logger.info("Starting Coda Lite v0.0.3")
     ensure_directories()
 
     # Set up signal handlers for graceful shutdown

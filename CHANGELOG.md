@@ -12,6 +12,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
+## [0.0.3] - 2025-04-21
+
+### Added
+- Personality module for more engaging interactions
+- JSON-based personality definition
+- Dynamic system prompt generation based on personality
+- Randomized welcome messages
+
+### Changed
+- Updated main application to use the personality module
+- Improved system prompt with personality traits
+
 ## [0.0.2] - 2025-04-21
 
 ### Added

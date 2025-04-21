@@ -33,21 +33,22 @@ This project is the **first step** in building an open, modular, transparent AI 
 
 ---
 
-## 🚀 Current Version: `v0.0.2`
+## 🚀 Current Version: `v0.0.3`
 
-> 💡 **Performance optimized!**
+> 💤 **Personality added!**
 
 - STT module fully implemented with Whisper (GPU-accelerated)
 - LLM integration with Ollama complete
 - TTS module implemented with MeloTTS (CSM-1B) with GPU acceleration
 - Multiple English voices available (US, British, Australian, Indian)
 - Concurrent processing with threading for reduced latency
-- System prompt optimized for concise responses
-- Performance improved by ~30% with pipeline optimization
+- Personality module for more engaging interactions
+- Dynamic system prompt generation based on personality
+- Performance improved by ~23% with pipeline optimization
 
 ---
 
-## 🔜 Upcoming: `v0.0.3`
+## 🔜 Upcoming: `v0.0.4`
 
 > Enhancing the voice loop and adding refinements:
 
@@ -56,6 +57,7 @@ This project is the **first step** in building an open, modular, transparent AI 
 - Voice quality improvements and tuning
 - Additional languages support
 - Improved error handling and recovery
+- Expanded personality with context-aware responses
 
 Followed by tool calling in v0.0.2.
 

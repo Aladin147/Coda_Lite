@@ -252,25 +252,34 @@ class OllamaLLM:
             )
             response.raise_for_status()
 
-            if stream:
-                # Handle streaming response
-                full_response = ""
-                for line in response.iter_lines():
-                    if line:
-                        chunk = json.loads(line)
-                        content = chunk.get("message", {}).get("content", "")
-                        full_response += content
-                        yield content  # Yield each chunk for streaming
-                return full_response
-            else:
-                # Handle non-streaming response
-                result = response.json()
-                content = result.get("message", {}).get("content", "")
+            try:
+                if stream:
+                    # Handle streaming response
+                    full_response = ""
+                    for line in response.iter_lines():
+                        if line:
+                            try:
+                                chunk = json.loads(line.decode('utf-8'))
+                                content = chunk.get("message", {}).get("content", "")
+                                if content:
+                                    full_response += content
+                                    yield content  # Yield each chunk for streaming
+                            except json.JSONDecodeError as e:
+                                logger.error(f"Error decoding JSON: {e}, line: {line}")
+                    return full_response
+                else:
+                    # Handle non-streaming response
+                    result = response.json()
+                    content = result.get("message", {}).get("content", "")
 
-                end_time = time.time()
-                logger.info(f"Chat response generated in {end_time - start_time:.2f} seconds")
+                    end_time = time.time()
+                    logger.info(f"Chat response generated in {end_time - start_time:.2f} seconds")
 
-                return content
+                    return content
+            except Exception as e:
+                logger.error(f"Error processing response: {e}")
+                # Return a simple error message as a fallback
+                return f"Error: {str(e)}"
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Error calling Ollama API: {e}")

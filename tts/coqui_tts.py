@@ -107,13 +107,28 @@ class CoquiTTS(BaseTTS):
                 temp_file.close()
 
             # Synthesize speech
-            self.tts.tts_to_file(
-                text=text,
-                file_path=output_path,
-                speaker=speaker,
-                language=language,
-                speed=speed,
-            )
+            try:
+                # Try with the standard API
+                self.tts.tts_to_file(
+                    text=text,
+                    file_path=output_path,
+                    speaker=speaker,
+                    language=language,
+                    speed=speed,
+                )
+            except AttributeError as e:
+                # Handle the 'is_multi_speaker' attribute error
+                if "is_multi_speaker" in str(e):
+                    logger.warning("Using alternative TTS method due to is_multi_speaker error")
+                    # Use a more direct approach
+                    wav = self.tts.synthesizer.tts(text)
+
+                    # Save the audio to file
+                    import scipy.io.wavfile as wav_file
+                    wav_file.write(output_path, self.tts.synthesizer.output_sample_rate, wav)
+                else:
+                    # Re-raise if it's a different attribute error
+                    raise
 
             logger.info(f"Speech synthesized successfully")
 

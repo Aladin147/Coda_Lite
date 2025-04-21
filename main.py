@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Coda Lite - Core Operations & Digital Assistant (v0.0.1)
+Coda Lite - Core Operations & Digital Assistant (v0.0.2)
 Main entry point for the Coda Lite voice assistant.
 
 This module initializes and coordinates the core components:
@@ -9,7 +9,7 @@ This module initializes and coordinates the core components:
 - Text-to-Speech (TTS)
 - Tool execution
 
-Current version (v0.0.1) implements the basic voice loop.
+Current version (v0.0.2) implements the optimized voice loop with concurrent processing.
 """
 
 import os
@@ -17,8 +17,10 @@ import sys
 import time
 import logging
 import signal
+import threading
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Callable
+from queue import Queue
 
 # Set up logging
 logging.basicConfig(
@@ -64,13 +66,15 @@ class CodaAssistant:
         self.config = config
         self.conversation_history: MessageList = []
         self.running = True
+        self.processing = False  # Flag to track if we're currently processing a request
+        self.response_queue = Queue()  # Queue for responses to be spoken
 
         # Initialize STT module
         logger.info("Initializing Speech-to-Text module...")
         self.stt = WhisperSTT(
             model_size=config.get("stt.model_size", "base"),
-            device=config.get("stt.device", "cpu"),
-            compute_type=config.get("stt.compute_type", "float32"),
+            device=config.get("stt.device", "cuda"),
+            compute_type=config.get("stt.compute_type", "float16"),
             language=config.get("stt.language", "en"),
             vad_filter=True
         )
@@ -99,22 +103,34 @@ class CodaAssistant:
         # Add system message to conversation history
         self.conversation_history.append({"role": "system", "content": self.system_prompt})
 
+        # Start the TTS worker thread
+        self.tts_thread = threading.Thread(target=self._tts_worker, daemon=True)
+        self.tts_thread.start()
+
         logger.info("Coda assistant initialized successfully")
 
-    def handle_transcription(self, text: str) -> None:
-        """Handle transcribed text from STT."""
-        if not text.strip():
-            logger.info("Empty transcription, ignoring")
-            return
+    def _tts_worker(self):
+        """Worker thread for TTS processing."""
+        while self.running:
+            try:
+                # Get the next response from the queue (blocking with timeout)
+                try:
+                    response = self.response_queue.get(timeout=0.5)
+                except Exception:  # Queue.Empty
+                    continue
 
-        logger.info(f"User said: {text}")
-        print(f"\nYou: {text}")
+                # Speak the response
+                self.tts.speak(response)
 
-        # Add user message to conversation history
-        self.conversation_history.append({"role": "user", "content": text})
+                # Mark the task as done
+                self.response_queue.task_done()
+            except Exception as e:
+                logger.error(f"Error in TTS worker: {e}", exc_info=True)
 
-        # Generate response from LLM
+    def _process_user_input(self, text: str):
+        """Process user input in a separate thread."""
         try:
+            # Generate response from LLM
             start_time = time.time()
             response = self.llm.chat(
                 messages=self.conversation_history,
@@ -129,19 +145,49 @@ class CodaAssistant:
             # Add assistant message to conversation history
             self.conversation_history.append({"role": "assistant", "content": response})
 
-            # Speak the response
+            # Print the response
             print(f"Coda: {response}")
-            self.tts.speak(response)
+
+            # Add the response to the TTS queue
+            self.response_queue.put(response)
 
             # Limit conversation history to last 10 messages (plus system prompt)
             if len(self.conversation_history) > 11:  # 1 system + 10 messages
                 self.conversation_history = [self.conversation_history[0]] + self.conversation_history[-10:]
-
         except Exception as e:
             logger.error(f"Error generating response: {e}", exc_info=True)
             error_message = "I'm sorry, I encountered an error while processing your request."
             print(f"Coda: {error_message}")
-            self.tts.speak(error_message)
+            self.response_queue.put(error_message)
+        finally:
+            self.processing = False
+
+    def handle_transcription(self, text: str) -> None:
+        """Handle transcribed text from STT."""
+        if not text.strip():
+            logger.info("Empty transcription, ignoring")
+            return
+
+        # If we're already processing a request, ignore this one
+        if self.processing:
+            logger.info("Already processing a request, ignoring")
+            return
+
+        logger.info(f"User said: {text}")
+        print(f"\nYou: {text}")
+
+        # Add user message to conversation history
+        self.conversation_history.append({"role": "user", "content": text})
+
+        # Set the processing flag
+        self.processing = True
+
+        # Process the user input in a separate thread
+        threading.Thread(
+            target=self._process_user_input,
+            args=(text,),
+            daemon=True
+        ).start()
 
     def should_stop(self) -> bool:
         """Check if the assistant should stop listening."""
@@ -154,7 +200,7 @@ class CodaAssistant:
         # Welcome message
         welcome_message = "Hello! I'm Coda, your voice assistant. How can I help you today?"
         print(f"\nCoda: {welcome_message}")
-        self.tts.speak(welcome_message)
+        self.response_queue.put(welcome_message)
 
         try:
             # Start continuous listening
@@ -179,6 +225,20 @@ class CodaAssistant:
     def cleanup(self) -> None:
         """Clean up resources."""
         logger.info("Cleaning up resources")
+
+        # Stop the TTS worker thread
+        logger.info("Stopping TTS worker thread")
+        self.running = False
+        if hasattr(self, 'tts_thread') and self.tts_thread.is_alive():
+            try:
+                self.tts_thread.join(timeout=2.0)  # Wait for up to 2 seconds
+                if self.tts_thread.is_alive():
+                    logger.warning("TTS worker thread did not terminate gracefully")
+            except Exception as e:
+                logger.error(f"Error stopping TTS worker thread: {e}")
+
+        # Close the STT module
+        logger.info("Closing STT module")
         try:
             self.stt.close()
         except Exception as e:
@@ -194,7 +254,7 @@ def main():
     """Main entry point for Coda Lite."""
     global assistant
 
-    logger.info("Starting Coda Lite v0.0.1")
+    logger.info("Starting Coda Lite v0.0.2")
     ensure_directories()
 
     # Set up signal handlers for graceful shutdown

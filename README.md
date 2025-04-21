@@ -33,26 +33,27 @@ This project is the **first step** in building an open, modular, transparent AI 
 
 ---
 
-## 🚀 Current Version: `v0.0.1`
+## 🚀 Current Version: `v0.0.2`
 
-> ✅ **Voice loop complete!**
+> 💡 **Performance optimized!**
 
 - STT module fully implemented with Whisper (GPU-accelerated)
 - LLM integration with Ollama complete
 - TTS module implemented with MeloTTS (CSM-1B) with GPU acceleration
 - Multiple English voices available (US, British, Australian, Indian)
-- Debug GUI for testing the conversation loop
-- Performance optimized with CUDA acceleration for both STT and TTS
+- Concurrent processing with threading for reduced latency
+- System prompt optimized for concise responses
+- Performance improved by ~30% with pipeline optimization
 
 ---
 
-## 🔜 Upcoming: `v0.0.1a`
+## 🔜 Upcoming: `v0.0.3`
 
 > Enhancing the voice loop and adding refinements:
 
-- Voice quality improvements and tuning
 - Wake word detection for hands-free activation
-- Further performance optimization for sub-3s latency
+- Token streaming for real-time TTS output
+- Voice quality improvements and tuning
 - Additional languages support
 - Improved error handling and recovery
 

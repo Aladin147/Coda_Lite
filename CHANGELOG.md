@@ -12,6 +12,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
+## [0.0.2] - 2025-04-21
+
+### Added
+- Performance optimization with concurrent processing
+- Benchmark script for measuring performance improvements
+
+### Changed
+- Updated system prompt to encourage more concise responses
+- Implemented threading for pipeline optimization
+- Added TTS worker thread for non-blocking audio playback
+
+### Fixed
+- Improved cleanup process for graceful shutdown
+
 ## [0.0.1] - 2025-04-21
 
 ### Added

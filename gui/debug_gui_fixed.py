@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Coda Lite - GUI Test Harness
+Coda Lite - Debug GUI (Fixed Version)
 A lightweight debug GUI for testing the Coda Lite voice assistant components.
 """
 
@@ -27,6 +27,79 @@ logging.basicConfig(
 )
 logger = logging.getLogger("coda.gui")
 
+# Import PySimpleGUI
+try:
+    import PySimpleGUI as sg
+    logger.info("PySimpleGUI imported successfully")
+except ImportError as e:
+    logger.error(f"Error importing PySimpleGUI: {e}")
+    print(f"Error importing PySimpleGUI: {e}")
+    print("Please install PySimpleGUI: pip install PySimpleGUI")
+    sys.exit(1)
+
+# Import Coda modules
+try:
+    from config.config_loader import ConfigLoader
+    logger.info("ConfigLoader imported successfully")
+except ImportError as e:
+    logger.error(f"Error importing ConfigLoader: {e}")
+    print(f"Error importing ConfigLoader: {e}")
+    sys.exit(1)
+
+try:
+    from llm import OllamaLLM
+    logger.info("OllamaLLM imported successfully")
+except ImportError as e:
+    logger.error(f"Error importing OllamaLLM: {e}")
+    print(f"Error importing OllamaLLM: {e}")
+    sys.exit(1)
+
+try:
+    from tts import create_tts
+    logger.info("TTS module imported successfully")
+except ImportError as e:
+    logger.error(f"Error importing TTS module: {e}")
+    print(f"Error importing TTS module: {e}")
+    sys.exit(1)
+
+# Import audio modules for device verification
+try:
+    import sounddevice as sd
+    import numpy as np
+    AUDIO_AVAILABLE = True
+    logger.info("Audio modules imported successfully")
+
+    # Print audio device information
+    devices = sd.query_devices()
+    logger.info(f"Audio devices: {devices}")
+    logger.info(f"Default input device: {sd.default.device[0]}")
+    logger.info(f"Default output device: {sd.default.device[1]}")
+
+    # Test audio output with a short beep
+    def test_audio():
+        try:
+            # Generate a short beep (440Hz for 0.5 seconds)
+            sample_rate = 44100
+            t = np.linspace(0, 0.5, int(sample_rate * 0.5), False)
+            beep = 0.5 * np.sin(2 * np.pi * 440 * t)
+
+            # Play the beep
+            sd.play(beep, sample_rate)
+            sd.wait()
+            logger.info("Audio test completed successfully")
+            return True
+        except Exception as e:
+            logger.error(f"Audio test failed: {e}")
+            return False
+
+    # Run the audio test
+    AUDIO_TEST_PASSED = test_audio()
+
+except ImportError:
+    AUDIO_AVAILABLE = False
+    AUDIO_TEST_PASSED = False
+    logger.warning("Could not import audio modules. Audio device verification will be skipped.")
+
 # Type definitions for conversation history
 Message = Dict[str, str]
 MessageList = List[Message]
@@ -38,6 +111,7 @@ class CodaDebugWrapper:
         """Initialize the Coda debug wrapper."""
         # Load configuration
         self.config = ConfigLoader()
+        logger.info("Configuration loaded")
 
         # Initialize conversation history
         self.conversation_history: MessageList = []
@@ -45,25 +119,48 @@ class CodaDebugWrapper:
         # Load system prompt
         system_prompt_file = self.config.get("llm.system_prompt_file", "config/prompts/system.txt")
         self.system_prompt = self._load_system_prompt(system_prompt_file)
+        logger.info(f"System prompt loaded from {system_prompt_file}")
 
         # Add system message to conversation history
         self.conversation_history.append({"role": "system", "content": self.system_prompt})
 
         # Initialize LLM module
         logger.info("Initializing Language Model module...")
-        self.llm = OllamaLLM(
-            model_name=self.config.get("llm.model_name", "llama3"),
-            host="http://localhost:11434",
-            timeout=120
-        )
+        try:
+            self.llm = OllamaLLM(
+                model_name=self.config.get("llm.model_name", "llama3"),
+                host="http://localhost:11434",
+                timeout=120
+            )
+            logger.info(f"LLM initialized with model: {self.llm.model_name}")
+        except Exception as e:
+            logger.error(f"Error initializing LLM: {e}")
+            raise
 
         # Initialize TTS module
         logger.info("Initializing Text-to-Speech module...")
-        self.tts = create_tts(
-            engine="coqui",  # Use Coqui TTS for now
-            model_name=self.config.get("tts.model_name", None),
-            device=self.config.get("tts.device", "cpu")
-        )
+        try:
+            # Try to create TTS with specific model
+            try:
+                self.tts = create_tts(
+                    engine="coqui",  # Use Coqui TTS for now
+                    model_name=self.config.get("tts.model_name", None),
+                    device=self.config.get("tts.device", "cpu")
+                )
+            except Exception as model_error:
+                # If that fails, try with default model
+                logger.warning(f"Failed to initialize TTS with specific model: {model_error}")
+                logger.info("Trying with default model...")
+                self.tts = create_tts(engine="coqui")
+
+            logger.info("TTS initialized successfully")
+        except Exception as e:
+            logger.error(f"Error initializing TTS: {e}")
+            # Create a mock TTS for testing
+            from tts.mock_tts import MockTTS
+            logger.warning("Using MockTTS as fallback")
+            self.tts = MockTTS()
+            print("\n[WARNING] Using MockTTS - no audio output will be produced")
 
         logger.info("Coda debug wrapper initialized successfully")
 
@@ -100,6 +197,9 @@ class CodaDebugWrapper:
             timings = {}
 
             # Start LLM generation
+            logger.info(f"Sending to LLM: {text[:50]}{'...' if len(text) > 50 else ''}")
+            print(f"\n[LLM] Processing: {text[:50]}{'...' if len(text) > 50 else ''}")
+
             llm_start = time.time()
             response = self.llm.chat(
                 messages=self.conversation_history,
@@ -111,6 +211,9 @@ class CodaDebugWrapper:
             # Record timing
             timings["llm_time"] = llm_end - llm_start
             timings["total_time"] = llm_end - llm_start
+
+            logger.info(f"LLM response received in {timings['llm_time']:.2f} seconds")
+            print(f"[LLM] Response received in {timings['llm_time']:.2f} seconds")
 
             # Add assistant message to conversation history
             self.conversation_history.append({"role": "assistant", "content": response})
@@ -127,6 +230,7 @@ class CodaDebugWrapper:
 
         except Exception as e:
             logger.error(f"Error generating response: {e}", exc_info=True)
+            print(f"\n[LLM] ERROR: {e}")
             return {
                 "response": "",
                 "error": str(e),
@@ -322,35 +426,19 @@ def main():
     # Create the GUI
     window = create_gui()
 
+    # Log audio device information
+    if AUDIO_AVAILABLE:
+        log_message(window, f"Audio modules loaded successfully")
+        if AUDIO_TEST_PASSED:
+            log_message(window, f"Audio test passed - sound output is working")
+        else:
+            log_message(window, f"Audio test failed - check sound output", "WARNING")
+    else:
+        log_message(window, f"Audio modules not available - sound output may not work", "WARNING")
+
     # Initialize the Coda wrapper
     try:
-        log_message(window, "Attempting to initialize Coda debug wrapper...")
-
-        # Try to import modules first to identify any import issues
-        log_message(window, "Checking imports...")
-        try:
-            from config.config_loader import ConfigLoader
-            log_message(window, "ConfigLoader imported successfully")
-        except Exception as e:
-            log_message(window, f"Error importing ConfigLoader: {e}", "ERROR")
-            raise
-
-        try:
-            from llm import OllamaLLM
-            log_message(window, "OllamaLLM imported successfully")
-        except Exception as e:
-            log_message(window, f"Error importing OllamaLLM: {e}", "ERROR")
-            raise
-
-        try:
-            from tts import create_tts
-            log_message(window, "create_tts imported successfully")
-        except Exception as e:
-            log_message(window, f"Error importing create_tts: {e}", "ERROR")
-            raise
-
-        # Now try to initialize the wrapper
-        log_message(window, "Imports successful, initializing wrapper...")
+        log_message(window, "Initializing Coda debug wrapper...")
         coda = CodaDebugWrapper()
         log_message(window, "Coda debug wrapper initialized successfully")
     except Exception as e:

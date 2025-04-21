@@ -10,11 +10,11 @@ This roadmap outlines the planned development path for Coda Lite, from initial p
 - ✅ Documentation framework
 
 ### v0.0.1a - Basic Voice Loop
-- ⏳ Speech-to-text with faster-whisper
-- ⏳ LLM integration with Ollama
-- ⏳ Text-to-speech with CSM-1B
-- ⏳ Simple conversation loop
-- ⏳ Latency optimization (target: sub-3s)
+- ✅ Speech-to-text with faster-whisper
+- ✅ LLM integration with Ollama
+- 🔄 Text-to-speech with CSM-1B (currently using Coqui TTS)
+- 🔄 Simple conversation loop
+- ⏳ Latency optimization (target: sub-5s)
 
 ### v0.0.2 - Tool Integration
 - ⏳ Structured output from LLM

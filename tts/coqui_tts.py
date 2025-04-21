@@ -54,15 +54,77 @@ class CoquiTTS(BaseTTS):
         logger.info(f"Initializing CoquiTTS with model: {model_name} on {device}")
 
         # Initialize TTS model
-        self.tts = TTS(model_name=model_name, progress_bar=False)
+        try:
+            # Check if CUDA is available when requested
+            if self.use_cuda:
+                try:
+                    if not torch.cuda.is_available():
+                        logger.warning("CUDA requested but not available. Falling back to CPU.")
+                        self.use_cuda = False
+                        device = "cpu"
+                    else:
+                        # Try to get GPU info to confirm CUDA is working
+                        gpu_name = torch.cuda.get_device_name(0)
+                        logger.info(f"Using GPU: {gpu_name}")
+                        logger.info(f"CUDA version: {torch.version.cuda}")
+                except Exception as e:
+                    logger.warning(f"Error checking CUDA availability: {e}")
+                    logger.warning("Falling back to CPU.")
+                    self.use_cuda = False
+                    device = "cpu"
 
-        # Set device
-        if self.use_cuda:
-            self.tts.to(device)
+            # Log device information
+            if not self.use_cuda:
+                logger.info("Using CPU for TTS processing")
 
-        # Get available speakers and languages
-        self.speakers = self.tts.speakers if hasattr(self.tts, "speakers") else None
-        self.languages = self.tts.languages if hasattr(self.tts, "languages") else None
+            # Initialize the TTS model
+            logger.info(f"Loading TTS model: {model_name} on {device}")
+            self.tts = TTS(model_name=model_name, progress_bar=True)
+
+            # Set device
+            if self.use_cuda:
+                self.tts.to(device)
+                logger.info("Model successfully moved to GPU")
+
+            # Get model information
+            model_type = getattr(self.tts, 'model_name', 'Unknown')
+            logger.info(f"Model type: {model_type}")
+
+            # Get available speakers and languages
+            self.speakers = self.tts.speakers if hasattr(self.tts, "speakers") else None
+            self.languages = self.tts.languages if hasattr(self.tts, "languages") else None
+
+            # Check if the model is multi-speaker
+            self.is_multi_speaker = hasattr(self.tts, "is_multi_speaker") and self.tts.is_multi_speaker
+
+            # Check if the model is multi-lingual
+            self.is_multi_lingual = hasattr(self.tts, "is_multi_lingual") and self.tts.is_multi_lingual
+
+            # Log model properties
+            logger.info(f"Model properties: multi_speaker={self.is_multi_speaker}, multi_lingual={self.is_multi_lingual}")
+
+            if self.speakers:
+                logger.info(f"Available speakers: {len(self.speakers)}")
+                if len(self.speakers) > 0 and len(self.speakers) <= 10:
+                    logger.info(f"Speaker list: {', '.join(self.speakers[:10])}")
+                elif len(self.speakers) > 10:
+                    logger.info(f"First 10 speakers: {', '.join(self.speakers[:10])}...")
+
+            if self.languages:
+                logger.info(f"Available languages: {len(self.languages)}")
+                if len(self.languages) > 0 and len(self.languages) <= 10:
+                    logger.info(f"Language list: {', '.join(self.languages[:10])}")
+                elif len(self.languages) > 10:
+                    logger.info(f"First 10 languages: {', '.join(self.languages[:10])}...")
+
+        except Exception as e:
+            logger.error(f"Error initializing TTS model: {e}")
+            # Create a fallback model
+            self.tts = None
+            self.speakers = None
+            self.languages = None
+            self.is_multi_speaker = False
+            self.is_multi_lingual = False
 
         if self.speakers:
             logger.info(f"Available speakers: {self.speakers}")
@@ -107,32 +169,138 @@ class CoquiTTS(BaseTTS):
                 temp_file.close()
 
             # Synthesize speech
-            try:
-                # Try with the standard API
-                self.tts.tts_to_file(
-                    text=text,
-                    file_path=output_path,
-                    speaker=speaker,
-                    language=language,
-                    speed=speed,
-                )
-            except Exception as e:
-                logger.warning(f"Standard TTS method failed: {e}")
-                logger.warning("Using direct TTS method as fallback")
+            if self.tts is None:
+                # If TTS model failed to initialize, generate a fallback tone
+                logger.warning("TTS model not initialized, using fallback tone")
+                self._generate_fallback_tone(output_path)
+            else:
+                try:
+                    # Try with the standard API
+                    # Prepare arguments based on model capabilities
+                    tts_args = {"text": text, "file_path": output_path, "speed": speed}
 
-                # Generate a simple sine wave as a fallback
-                import numpy as np
-                import scipy.io.wavfile as wav_file
+                    # Log the text we're trying to synthesize
+                    logger.info(f"Attempting to synthesize text: '{text[:50]}{'...' if len(text) > 50 else ''}'")
+                    logger.info(f"Output path: {output_path}")
 
-                # Generate a 1-second sine wave at 440 Hz
-                sample_rate = 22050
-                t = np.linspace(0, 1, sample_rate, False)
-                audio = 0.5 * np.sin(2 * np.pi * 440 * t)
+                    # Add speaker only if the model supports it
+                    if self.is_multi_speaker:
+                        # If speaker is provided, use it
+                        if speaker is not None:
+                            tts_args["speaker"] = speaker
+                            logger.info(f"Using provided speaker: {speaker}")
+                        # Otherwise, use the first speaker for VITS model (which requires a speaker)
+                        elif "vits" in self.tts.model_name.lower() and self.speakers and len(self.speakers) > 0:
+                            selected_speaker = self.speakers[0]
+                            logger.info(f"Using default speaker: {selected_speaker}")
+                            tts_args["speaker"] = selected_speaker
 
-                # Save the audio to file
-                wav_file.write(output_path, sample_rate, audio.astype(np.float32))
+                    # Add language only if the model supports it and a language is provided
+                    if self.is_multi_lingual:
+                        # If language is provided, use it
+                        if language is not None:
+                            tts_args["language"] = language
+                            logger.info(f"Using provided language: {language}")
+                        # Otherwise, use English for multi-lingual models
+                        elif self.languages and "en" in self.languages:
+                            logger.info("Using default language: English")
+                            tts_args["language"] = "en"
 
-                logger.warning(f"Generated fallback audio tone at {output_path}")
+                    # Log all arguments being passed to the TTS function
+                    logger.info(f"TTS arguments: {tts_args}")
+
+                    # Split text into smaller chunks if it's too long
+                    if len(text) > 100:
+                        logger.info("Text is long, splitting into sentences")
+                        # Simple sentence splitting
+                        sentences = [s.strip() + "." for s in text.replace(".", ".<split>").split("<split>") if s.strip()]
+
+                        # Create a temporary file for each sentence
+                        temp_files = []
+                        audio_arrays = []
+
+                        for i, sentence in enumerate(sentences):
+                            if not sentence.strip():
+                                continue
+
+                            # Create a temporary file for this sentence
+                            sent_temp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+                            temp_files.append(sent_temp.name)
+                            sent_temp.close()
+
+                            # Update the text in the arguments
+                            sent_args = tts_args.copy()
+                            sent_args["text"] = sentence
+                            sent_args["file_path"] = sent_temp.name
+
+                            try:
+                                # Call the TTS API for this sentence
+                                self.tts.tts_to_file(**sent_args)
+                                logger.info(f"Synthesized sentence {i+1}/{len(sentences)}: {sentence[:30]}{'...' if len(sentence) > 30 else ''}")
+                            except Exception as e:
+                                logger.warning(f"Failed to synthesize sentence {i+1}: {e}")
+
+                        # Combine all the audio files
+                        if temp_files:
+                            try:
+                                import numpy as np
+                                import soundfile as sf
+
+                                # Read all audio files
+                                for temp_file in temp_files:
+                                    data, samplerate = sf.read(temp_file)
+                                    audio_arrays.append(data)
+
+                                # Concatenate audio arrays
+                                if audio_arrays:
+                                    try:
+                                        # Check if we have valid audio arrays
+                                        if len(audio_arrays) == 1:
+                                            # Just use the single array
+                                            combined_audio = audio_arrays[0]
+                                        else:
+                                            # Try to concatenate arrays
+                                            combined_audio = np.concatenate(audio_arrays)
+
+                                        # Write combined audio to output file
+                                        sf.write(output_path, combined_audio, samplerate)
+                                        logger.info(f"Combined {len(audio_arrays)} audio segments")
+                                    except Exception as e:
+                                        logger.error(f"Error concatenating audio arrays: {e}")
+
+                                        # If we have at least one valid audio segment, use the first one
+                                        if audio_arrays:
+                                            try:
+                                                sf.write(output_path, audio_arrays[0], samplerate)
+                                                logger.info(f"Used first audio segment as fallback")
+                                            except Exception as e2:
+                                                logger.error(f"Error writing first audio segment: {e2}")
+                                                self._generate_fallback_tone(output_path)
+                                        else:
+                                            self._generate_fallback_tone(output_path)
+                                else:
+                                    logger.warning("No audio segments were successfully synthesized")
+                                    self._generate_fallback_tone(output_path)
+
+                            except Exception as e:
+                                logger.error(f"Error combining audio files: {e}")
+                                raise
+                            finally:
+                                # Clean up temporary files
+                                for temp_file in temp_files:
+                                    try:
+                                        if os.path.exists(temp_file):
+                                            os.unlink(temp_file)
+                                    except Exception as e:
+                                        logger.warning(f"Error removing temp file {temp_file}: {e}")
+                    else:
+                        # For short text, just call the TTS API directly
+                        self.tts.tts_to_file(**tts_args)
+
+                except Exception as e:
+                    logger.warning(f"Standard TTS method failed: {e}")
+                    logger.warning("Using fallback tone")
+                    self._generate_fallback_tone(output_path)
 
             logger.info(f"Speech synthesized successfully")
 
@@ -221,3 +389,27 @@ class CoquiTTS(BaseTTS):
             List[str] or None: List of available languages or None if not applicable
         """
         return self.languages
+
+    def _generate_fallback_tone(self, output_path: str) -> None:
+        """
+        Generate a simple sine wave as a fallback when TTS fails.
+
+        Args:
+            output_path: Path to save the audio file
+        """
+        try:
+            import numpy as np
+            import scipy.io.wavfile as wav_file
+
+            # Generate a 1-second sine wave at 440 Hz
+            sample_rate = 22050
+            t = np.linspace(0, 1, sample_rate, False)
+            audio = 0.5 * np.sin(2 * np.pi * 440 * t)
+
+            # Save the audio to file
+            wav_file.write(output_path, sample_rate, audio.astype(np.float32))
+
+            logger.warning(f"Generated fallback audio tone at {output_path}")
+        except Exception as e:
+            logger.error(f"Error generating fallback tone: {e}")
+            # If we can't even generate a fallback tone, we're in trouble

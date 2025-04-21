@@ -2,6 +2,35 @@
 
 This journal tracks the development progress, decisions, challenges, and insights gained during the development of Coda Lite.
 
+## May 15, 2024 - LLM Integration and Debug GUI
+
+**Activities:**
+- Implemented LLM integration with Ollama
+- Created debug GUI for testing the conversation loop
+- Fixed issues with TTS module
+- Added error handling and fallback mechanisms
+
+**Decisions:**
+- Implemented both streaming and non-streaming LLM response modes
+- Created a fallback mechanism for TTS when synthesis fails
+- Decided to pursue CSM-1B integration for better TTS quality
+- Developed a minimal GUI for testing core functionality
+
+**Challenges:**
+- Coqui TTS using high CPU resources and sometimes failing to generate speech
+- Handling LLM streaming responses correctly
+- Managing the conversation flow between components
+
+**Next Steps:**
+- Integrate CSM-1B for TTS
+- Create the full conversation loop with voice input
+- Optimize performance for real-time interactions
+
+**Notes:**
+- Coqui TTS works but has limitations in performance and reliability
+- CSM-1B should provide better quality and performance for TTS
+- The debug GUI provides a good foundation for testing the system
+
 ## April 23, 2023 - TTS Module Implementation
 
 **Activities:**

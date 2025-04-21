@@ -2,7 +2,7 @@
 
 ## Current Version: v0.0.1 (In Development)
 
-**Last Updated:** April 23, 2023
+**Last Updated:** May 15, 2024
 
 ## Overview
 
@@ -20,42 +20,63 @@ Coda Lite is currently in the development phase. The basic project structure has
   - ✅ Real-time audio capture and transcription
   - ✅ Continuous listening mode with silence detection
   - ✅ Voice Activity Detection (VAD) integration
-- ✅ Implement text-to-speech functionality (CSMTTS)
+- ✅ Implement text-to-speech functionality (CoquiTTS)
   - ✅ File-based synthesis
   - ✅ Direct audio playback
   - ✅ Multiple speaker and language support
   - ✅ Speech speed control
+- ✅ Implement LLM integration with Ollama
+  - ✅ Text generation with streaming support
+  - ✅ Error handling and fallback mechanisms
+- ✅ Create debug GUI for testing
+  - ✅ Text input and response display
+  - ✅ TTS playback controls
+  - ✅ Performance monitoring
 
 ## In Progress
 
-- 🔄 Implementing LLM integration with Ollama
-- 🔄 Defining core interfaces between modules
-- 🔄 Researching optimal model configurations
+- 🔄 Creating main conversation loop
+- 🔄 Researching CSM-1B integration for TTS
+- 🔄 Optimizing performance for real-time interactions
 
 ## Pending Tasks
 
-- ⏳ Create main conversation loop
 - ⏳ Implement basic tool calling
+- ⏳ Replace Coqui TTS with CSM-1B
+- ⏳ Create voice-activated wake word detection
+- ⏳ Implement full conversation memory
 
 ## Known Issues
 
-- None at this stage
+- Coqui TTS is using high CPU resources and sometimes fails to generate speech
+- Need to implement CSM-1B for better TTS quality and performance
+- GUI needs refinement for better user experience
 
 ## Next Milestone
 
 **Target:** v0.0.1a - Basic Voice Loop
 
-**Estimated Completion:** May 5, 2023
+**Estimated Completion:** May 30, 2024
 
 **Goals:**
+
 - ✅ Functional STT module with Whisper
-- ✅ Functional TTS module with Coqui TTS
-- ⏳ Basic LLM integration with Ollama
-- ⏳ Simple conversation loop with minimal latency
+- ✅ Functional TTS module (currently Coqui TTS)
+- ✅ Basic LLM integration with Ollama
+- 🔄 Simple conversation loop with minimal latency
+- ⏳ CSM-1B integration for improved TTS
 
 ## Performance Metrics
 
-Preliminary testing with the STT module using the "tiny" model shows transcription times of approximately 1-2 seconds for short audio clips. The TTS module with the default model shows synthesis times of approximately 1-2 seconds for short phrases. Further optimization will be needed to meet the sub-3s latency target for the complete interaction cycle.
+Current performance metrics:
+
+- STT (Whisper): 1-2 seconds for short audio clips
+- LLM (Ollama): 2-4 seconds for generating responses
+- TTS (Coqui): 3-5 seconds for synthesizing speech with high CPU usage
+
+Target performance for v0.0.1a:
+- Complete interaction cycle under 5 seconds
+- TTS synthesis under 2 seconds with CSM-1B
 
 ---
 

@@ -17,10 +17,11 @@ llm:
 
 # Text-to-Speech settings
 tts:
-  model_name: "csm-1b"
+  engine: "coqui"  # Options: coqui, csm (future)
+  model_name: "tts_models/en/ljspeech/tacotron2-DDC"  # Using the original model that we know works
   voice: "default"
   speed: 1.0
-  device: "cpu"  # Options: cpu, cuda
+  device: "cpu"  # Using CPU for better compatibility
 
 # Audio settings
 audio:

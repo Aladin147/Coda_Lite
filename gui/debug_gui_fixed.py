@@ -143,7 +143,7 @@ class CodaDebugWrapper:
             # Try to create TTS with specific model
             try:
                 self.tts = create_tts(
-                    engine="coqui",  # Use Coqui TTS for now
+                    engine=self.config.get("tts.engine", "coqui"),
                     model_name=self.config.get("tts.model_name", None),
                     device=self.config.get("tts.device", "cpu")
                 )
@@ -229,6 +229,32 @@ class CodaDebugWrapper:
                 # It's a regular string response
                 response = response_obj
                 print(f"[LLM] Regular response: {response[:100]}{'...' if len(response) > 100 else ''}")
+
+            # If response is empty, try again with stream=True
+            if not response:
+                logger.warning("Empty response received, trying again with stream=True")
+                print("[LLM] Empty response received, trying again with stream=True")
+
+                try:
+                    # Try again with streaming mode
+                    response_obj = self.llm.chat(
+                        messages=self.conversation_history,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                        stream=True  # Use streaming mode
+                    )
+
+                    # Collect chunks
+                    response = ""
+                    for chunk in response_obj:
+                        if chunk:
+                            response += chunk
+                            print(f"[LLM] Received chunk: {chunk[:20]}{'...' if len(chunk) > 20 else ''}")
+
+                    print(f"[LLM] Complete response (retry): {response[:100]}{'...' if len(response) > 100 else ''}")
+                except Exception as e:
+                    logger.error(f"Error in retry with streaming: {e}")
+                    print(f"[LLM] Error in retry with streaming: {e}")
 
             llm_end = time.time()
 

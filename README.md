@@ -1,9 +1,9 @@
 # Coda Lite – Core Operations & Digital Assistant (v0.0.1)
 
-**Coda Lite** is a lightweight, local-first voice assistant prototype focused on one thing:  
+**Coda Lite** is a lightweight, local-first voice assistant prototype focused on one thing:
 ⚡ **Real-time, low-latency, human-feeling conversation.**
 
-No cloud. No bloat. No gimmicks.  
+No cloud. No bloat. No gimmicks.
 Just a responsive, modular base for something much bigger.
 
 ---
@@ -27,33 +27,40 @@ This project is the **first step** in building an open, modular, transparent AI 
 |---------------|----------------------------------|--------------------------------|
 | 🎙️ STT        | [faster-whisper](https://github.com/guillaumekln/faster-whisper)  | Local speech-to-text          |
 | 🧠 LLM        | [Ollama](https://ollama.com/) + LLaMA 3 / DeepSeek   | Local reasoning engine        |
-| 🗣️ TTS        | [CSM-1B](https://huggingface.co/myshell-ai/CSM)       | Local speech generation       |
+| 🗣️ TTS        | [Coqui TTS](https://github.com/coqui-ai/TTS) (CSM-1B planned)       | Local speech generation       |
 | 🔧 Tools      | Python function routing          | Responding to structured LLM output |
 
 ---
 
 ## 🚀 Current Version: `v0.0.1`
 
-> 🔁 **Voice loop only**
-- Talk to Coda, get a vocal reply
-- Tuned for minimal latency and natural tone
-- Ideal for stress-testing the loop and UX
+> 🔄 **Voice loop in development**
+- STT module fully implemented with Whisper
+- LLM integration with Ollama complete
+- TTS module implemented with Coqui (CSM-1B planned)
+- Debug GUI for testing the conversation loop
+- Working on optimizing performance and reliability
 
 ---
 
 ## 🔜 Upcoming: `v0.0.1a`
-> Adds basic **tool calling**, such as:
-- `get_time()`
-- `tell_joke()`
-- `get_gear("Canon R6")`
+> Completing the voice loop and adding enhancements:
+- CSM-1B integration for improved TTS quality
+- Full conversation loop with voice input
+- Performance optimization for sub-5s latency
+- Basic error handling and recovery
 
-Coda will begin executing structured tasks and narrating results.
+Followed by tool calling in v0.0.2.
 
 ---
 
 ## 🛤️ Planned for `v0.0.2`
-> 🎙️ **Fine-tuned voice model** for unique personality  
-> 🧠 **System prompt refinements** for tone, behavior, and emotional tone
+> Adding tool capabilities and refinements:
+- Basic **tool calling** implementation
+- Structured output from LLM
+- Tool router implementation
+- Simple tools like `get_time()`, `tell_joke()`, etc.
+- System prompt refinements for better interactions
 
 ---
 
@@ -61,12 +68,12 @@ Coda will begin executing structured tasks and narrating results.
 
 Coda is meant to evolve from a voice loop into a full digital operator:
 
-- 🗃️ Modular “brains” (multi-model support)
+- 🗃️ Modular "brains" (multi-model support)
 - 🔌 Plugin-based tool system (code, media, sensors)
 - 🧠 Memory + local knowledge (RAG)
 - 📺 Visual UI (optional dashboard)
 - 💬 Real personality (fine-tuned voice + prompt tuning)
-- 🔐 Fully local fallback runtime, with optional cloud “showoff” mode
+- 🔐 Fully local fallback runtime, with optional cloud "showoff" mode
 
 Coda is not a chatbot.
 
@@ -80,30 +87,34 @@ Coda is **a system** — and this is just its first breath.
 coda-lite/
 ├── main.py               # Entry point
 ├── stt/                  # Speech-to-text (Whisper)
-├── tts/                  # Text-to-speech (CSM-1B)
+├── tts/                  # Text-to-speech (currently Coqui, CSM-1B planned)
 ├── llm/                  # LLM handling and prompt logic
 ├── tools/                # Tool calling + router
 ├── config/               # Prompt and settings files
 ├── data/                 # Cached audio, logs, temp files
+├── gui/                  # Debug GUI for testing
+├── docs/                 # Project documentation
+├── examples/             # Example scripts
+├── tests/                # Unit tests
 ```
 
 ---
 
 ## 🙏 Credits
 
-Built with open-source LLMs, models, and libraries — powered by the work of countless developers and researchers.  
+Built with open-source LLMs, models, and libraries — powered by the work of countless developers and researchers.
 This project stands on the shoulders of open communities.
 
 ---
 
-## 💡 Why “Coda”?
+## 💡 Why "Coda"?
 
-> C.O.D.A. = **Core Operations & Digital Assistant**  
+> C.O.D.A. = **Core Operations & Digital Assistant**
 It's a system, not a gimmick — and it plays the final note of how voice assistants *should* work.
 
 ---
 
 ## 🛠️ License
 
-MIT – free to use, fork, remix, and build on.  
-We don’t gatekeep useful tech.
+MIT – free to use, fork, remix, and build on.
+We don't gatekeep useful tech.

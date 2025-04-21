@@ -2,6 +2,34 @@
 
 This journal tracks the development progress, decisions, challenges, and insights gained during the development of Coda Lite.
 
+## April 23, 2023 - TTS Module Implementation
+
+**Activities:**
+- Implemented the Text-to-Speech (TTS) module using Coqui TTS
+- Added audio playback functionality
+- Created comprehensive unit tests for the TTS module
+- Added example script to demonstrate TTS usage
+
+**Decisions:**
+- Switched from CSM-1B to Coqui TTS for easier integration and broader model support
+- Implemented both file-based and direct audio playback
+- Added support for multiple speakers and languages
+- Used sounddevice for audio playback due to its simplicity and reliability
+
+**Challenges:**
+- Finding the right TTS library that balances quality and ease of integration
+- Managing model downloads and caching
+- Handling different output formats (file vs. direct playback)
+
+**Next Steps:**
+- Establish LLM connection with Ollama
+- Create the main conversation loop
+- Integrate STT and TTS modules in the main loop
+
+**Notes:**
+- Coqui TTS provides a wide range of models with different quality/speed tradeoffs
+- The default model works well for testing, but we may want to explore other models for production
+
 ## April 22, 2023 - STT Module Implementation
 
 **Activities:**

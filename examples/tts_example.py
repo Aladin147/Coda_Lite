@@ -21,61 +21,63 @@ logging.basicConfig(
     ]
 )
 
-from tts import CSMTTS
+from tts import create_tts, CoquiTTS
 
 def list_models_example():
     """Example of listing available TTS models."""
     print("\n=== Available TTS Models ===")
-    
-    # Initialize the CSMTTS module
-    tts = CSMTTS()
-    
-    # List available models
-    models = tts.list_available_models()
-    
-    print(f"Found {len(models)} available models:")
-    for i, model in enumerate(models[:10], 1):  # Show first 10 models
-        print(f"{i}. {model}")
-    
-    if len(models) > 10:
-        print(f"... and {len(models) - 10} more")
 
-def synthesize_example(text, output_path=None):
+    # Initialize the TTS module using the factory function
+    tts = create_tts(engine="coqui")
+
+    # List available models (this is specific to Coqui TTS)
+    if isinstance(tts, CoquiTTS):
+        models = tts.list_available_models()
+
+        print(f"Found {len(models)} available models:")
+        for i, model in enumerate(models[:10], 1):  # Show first 10 models
+            print(f"{i}. {model}")
+
+        if len(models) > 10:
+            print(f"... and {len(models) - 10} more")
+
+def synthesize_example(text, output_path=None, engine="coqui"):
     """Example of synthesizing speech."""
-    print(f"\n=== Synthesizing: '{text}' ===")
-    
-    # Initialize the CSMTTS module with a specific model
-    # You can choose a different model from the list_models_example output
-    tts = CSMTTS(
-        model_name="tts_models/en/ljspeech/tacotron2-DDC",
+    print(f"\n=== Synthesizing: '{text}' with {engine} engine ===")
+
+    # Initialize the TTS module using the factory function
+    # You can choose a different engine or model
+    tts = create_tts(
+        engine=engine,
+        model_name="tts_models/en/ljspeech/tacotron2-DDC" if engine == "coqui" else None,
         device="cpu"
     )
-    
-    # Check if the model has multiple speakers
-    speakers = tts.list_speakers()
-    if speakers:
-        print(f"Available speakers: {speakers}")
-        speaker = speakers[0]
+
+    # Get available voices
+    voices = tts.get_available_voices()
+    if voices:
+        print(f"Available voices: {voices}")
+        voice = voices[0]
     else:
-        speaker = None
-    
-    # Check if the model supports multiple languages
-    languages = tts.list_languages()
+        voice = None
+
+    # Get available languages
+    languages = tts.get_available_languages()
     if languages:
         print(f"Available languages: {languages}")
         language = languages[0] if "en" not in languages else "en"
     else:
         language = None
-    
+
     start_time = time.time()
-    
+
     # Synthesize speech
     if output_path:
         # Save to file
         result = tts.synthesize(
             text=text,
             output_path=output_path,
-            speaker=speaker,
+            speaker=voice,  # For Coqui TTS compatibility
             language=language,
             speed=1.0
         )
@@ -87,7 +89,7 @@ def synthesize_example(text, output_path=None):
         print("Playing audio directly...")
         result = tts.synthesize(
             text=text,
-            speaker=speaker,
+            speaker=voice,  # For Coqui TTS compatibility
             language=language,
             speed=1.0
         )
@@ -97,15 +99,19 @@ def synthesize_example(text, output_path=None):
 if __name__ == "__main__":
     # List available models
     list_models_example()
-    
-    # Synthesize speech with direct playback
+
+    # Synthesize speech with direct playback using Coqui TTS
     text_to_speak = "Hello, I am Coda Lite, your local voice assistant. How can I help you today?"
-    synthesize_example(text_to_speak)
-    
+    synthesize_example(text_to_speak, engine="coqui")
+
+    # Try the CSM placeholder (which will fall back to Coqui for now)
+    print("\n=== Testing CSM placeholder (falls back to Coqui) ===")
+    synthesize_example("This is a test of the CSM placeholder.", engine="csm")
+
     # Synthesize speech and save to file
     if len(sys.argv) > 1:
         output_file = sys.argv[1]
-        synthesize_example(text_to_speak, output_file)
+        synthesize_example(text_to_speak, output_file, engine="coqui")
     else:
         print("\nTip: Run with a filename argument to save the audio to a file.")
         print("Example: python examples/tts_example.py output.wav")

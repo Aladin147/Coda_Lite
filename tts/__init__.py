@@ -1,8 +1,12 @@
 """
 Text-to-Speech (TTS) module for Coda Lite.
-Uses TTS for high-quality local speech synthesis.
+Provides a common interface for different TTS implementations.
 """
 
-from tts.csm_tts import CSMTTS
+from tts.speak import BaseTTS, create_tts
+from tts.coqui_tts import CoquiTTS
 
-__all__ = ["CSMTTS"]
+# For backward compatibility
+from tts.coqui_tts import CoquiTTS as CSMTTS
+
+__all__ = ["BaseTTS", "CoquiTTS", "CSMTTS", "create_tts"]

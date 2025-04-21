@@ -1,0 +1,27 @@
+# Core dependencies
+numpy>=1.20.0
+requests>=2.25.0
+pydantic>=1.8.0
+
+# Audio processing
+pyaudio>=0.2.11
+sounddevice>=0.4.4
+soundfile>=0.10.3
+
+# STT - faster-whisper
+faster-whisper>=0.5.0
+ffmpeg-python>=0.2.0
+
+# TTS - CSM
+torch>=2.0.0
+torchaudio>=2.0.0
+transformers>=4.25.0
+accelerate>=0.20.0
+
+# LLM - Ollama
+ollama>=0.1.0
+
+# Utilities
+python-dotenv>=0.19.0
+tqdm>=4.62.0
+colorlog>=6.7.0

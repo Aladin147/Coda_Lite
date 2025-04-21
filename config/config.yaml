@@ -1,0 +1,45 @@
+# Coda Lite Configuration
+
+# Speech-to-Text settings
+stt:
+  model_size: "base"  # Options: tiny, base, small, medium, large
+  language: "en"
+  device: "cpu"  # Options: cpu, cuda
+  compute_type: "float32"  # Options: float32, float16, int8
+
+# Language Model settings
+llm:
+  model_name: "llama3"
+  temperature: 0.7
+  max_tokens: 256
+  system_prompt_file: "config/prompts/system.txt"
+  tool_prompt_file: "config/prompts/tools.txt"
+
+# Text-to-Speech settings
+tts:
+  model_name: "csm-1b"
+  voice: "default"
+  speed: 1.0
+  device: "cpu"  # Options: cpu, cuda
+
+# Audio settings
+audio:
+  input_device: null  # null = default device
+  output_device: null  # null = default device
+  sample_rate: 16000
+  channels: 1
+
+# Tool settings
+tools:
+  enabled: true
+  available:
+    - get_time
+    - tell_joke
+    - get_weather
+
+# Logging settings
+logging:
+  level: "INFO"  # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  file: "data/logs/coda.log"
+  max_size: 10485760  # 10 MB
+  backup_count: 5

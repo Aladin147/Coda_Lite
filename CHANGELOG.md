@@ -12,6 +12,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
+## [0.0.4] - 2025-04-22
+
+### Added
+- Short-term memory module for conversation context
+- Token-aware context management for LLM
+- Memory export/import functionality
+- Automatic session memory saving
+
+### Changed
+- Updated main application to use the memory manager
+- Improved conversation context handling
+- Enhanced cleanup process with memory export
+
 ## [0.0.3] - 2025-04-21
 
 ### Added

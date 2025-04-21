@@ -30,6 +30,12 @@ audio:
   sample_rate: 16000
   channels: 1
 
+# Memory settings
+memory:
+  max_turns: 20  # Maximum number of conversation turns to store
+  max_tokens: 800  # Maximum number of tokens to include in context
+  export_dir: "data/memory"  # Directory for memory exports
+
 # Tool settings
 tools:
   enabled: true

@@ -33,9 +33,9 @@ This project is the **first step** in building an open, modular, transparent AI 
 
 ---
 
-## 🚀 Current Version: `v0.0.3`
+## 🚀 Current Version: `v0.0.4`
 
-> 💤 **Personality added!**
+> 🧠 **Memory added!**
 
 - STT module fully implemented with Whisper (GPU-accelerated)
 - LLM integration with Ollama complete
@@ -43,12 +43,13 @@ This project is the **first step** in building an open, modular, transparent AI 
 - Multiple English voices available (US, British, Australian, Indian)
 - Concurrent processing with threading for reduced latency
 - Personality module for more engaging interactions
-- Dynamic system prompt generation based on personality
+- Short-term memory for conversation context
+- Token-aware context management for LLM
 - Performance improved by ~23% with pipeline optimization
 
 ---
 
-## 🔜 Upcoming: `v0.0.4`
+## 🔜 Upcoming: `v0.0.5`
 
 > Enhancing the voice loop and adding refinements:
 
@@ -58,6 +59,7 @@ This project is the **first step** in building an open, modular, transparent AI 
 - Additional languages support
 - Improved error handling and recovery
 - Expanded personality with context-aware responses
+- Memory summarization for longer conversations
 
 Followed by tool calling in v0.0.2.
 
@@ -100,6 +102,8 @@ coda-lite/
 ├── stt/                  # Speech-to-text (Whisper)
 ├── tts/                  # Text-to-speech (MeloTTS/CSM-1B)
 ├── llm/                  # LLM handling and prompt logic
+├── memory/               # Memory management
+├── personality/          # Personality management
 ├── tools/                # Tool calling + router
 ├── config/               # Prompt and settings files
 ├── data/                 # Cached audio, logs, temp files

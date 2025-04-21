@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Coda Lite - Core Operations & Digital Assistant (v0.0.3)
+Coda Lite - Core Operations & Digital Assistant (v0.0.4)
 Main entry point for the Coda Lite voice assistant.
 
 This module initializes and coordinates the core components:
@@ -9,7 +9,7 @@ This module initializes and coordinates the core components:
 - Text-to-Speech (TTS)
 - Tool execution
 
-Current version (v0.0.3) implements the optimized voice loop with personality.
+Current version (v0.0.4) implements the optimized voice loop with memory and personality.
 """
 
 import os
@@ -24,6 +24,7 @@ from typing import List, Dict, Any, Optional, Callable
 from queue import Queue
 
 from personality import PersonalityLoader
+from memory import MemoryManager
 
 # Set up logging
 logging.basicConfig(
@@ -51,6 +52,7 @@ def ensure_directories():
     os.makedirs("data/logs", exist_ok=True)
     os.makedirs("data/audio", exist_ok=True)
     os.makedirs("data/temp", exist_ok=True)
+    os.makedirs("data/memory", exist_ok=True)
 
 def load_system_prompt(file_path: str) -> str:
     """Load system prompt from file."""
@@ -107,7 +109,16 @@ class CodaAssistant:
         self.system_prompt = self.personality.generate_system_prompt()
         logger.info("Generated system prompt from personality")
 
-        # Add system message to conversation history
+        # Initialize memory manager
+        logger.info("Initializing memory manager...")
+        max_turns = config.get("memory.max_turns", 20)
+        self.memory = MemoryManager(max_turns=max_turns)
+
+        # Add system message to memory
+        self.memory.add_turn("system", self.system_prompt)
+        logger.info("Added system prompt to memory")
+
+        # Add system message to conversation history (legacy)
         self.conversation_history.append({"role": "system", "content": self.system_prompt})
 
         # Start the TTS worker thread
@@ -137,34 +148,49 @@ class CodaAssistant:
     def _process_user_input(self, text: str):
         """Process user input in a separate thread."""
         try:
+            # Add user input to memory
+            self.memory.add_turn("user", text)
+            logger.info("Added user input to memory")
+
+            # Get conversation context from memory
+            max_tokens = self.config.get("memory.max_tokens", 800)
+            context = self.memory.get_context(max_tokens=max_tokens)
+            logger.info(f"Retrieved context with {len(context)} turns")
+
             # Generate response from LLM
             start_time = time.time()
             response = self.llm.chat(
-                messages=self.conversation_history,
+                messages=context,
                 temperature=self.config.get("llm.temperature", 0.7),
-                max_tokens=self.config.get("llm.max_tokens", 256)
+                max_tokens=self.config.get("llm.max_tokens", 256),
+                stream=False
             )
             end_time = time.time()
 
             logger.info(f"LLM response generated in {end_time - start_time:.2f} seconds")
             logger.info(f"Assistant response: {response}")
 
-            # Add assistant message to conversation history
+            # Add assistant response to memory
+            self.memory.add_turn("assistant", response)
+            logger.info("Added assistant response to memory")
+
+            # Add assistant message to conversation history (legacy)
             self.conversation_history.append({"role": "assistant", "content": response})
 
             # Print the response
-            print(f"Coda: {response}")
+            name = self.personality.get_name()
+            print(f"\n{name}: {response}")
 
             # Add the response to the TTS queue
             self.response_queue.put(response)
 
-            # Limit conversation history to last 10 messages (plus system prompt)
+            # Legacy: Limit conversation history to last 10 messages (plus system prompt)
             if len(self.conversation_history) > 11:  # 1 system + 10 messages
                 self.conversation_history = [self.conversation_history[0]] + self.conversation_history[-10:]
         except Exception as e:
             logger.error(f"Error generating response: {e}", exc_info=True)
             error_message = "I'm sorry, I encountered an error while processing your request."
-            print(f"Coda: {error_message}")
+            print(f"\nCoda: {error_message}")
             self.response_queue.put(error_message)
         finally:
             self.processing = False
@@ -183,7 +209,7 @@ class CodaAssistant:
         logger.info(f"User said: {text}")
         print(f"\nYou: {text}")
 
-        # Add user message to conversation history
+        # Add user message to conversation history (legacy)
         self.conversation_history.append({"role": "user", "content": text})
 
         # Set the processing flag
@@ -240,6 +266,17 @@ class CodaAssistant:
         """Clean up resources."""
         logger.info("Cleaning up resources")
 
+        # Export memory to file
+        try:
+            if hasattr(self, 'memory') and self.memory.get_turn_count() > 1:  # Only export if we have conversation turns
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                export_dir = self.config.get("memory.export_dir", "data/memory")
+                export_path = f"{export_dir}/session_{timestamp}.json"
+                self.memory.export(export_path)
+                logger.info(f"Exported memory to {export_path}")
+        except Exception as e:
+            logger.error(f"Error exporting memory: {e}")
+
         # Stop the TTS worker thread
         logger.info("Stopping TTS worker thread")
         self.running = False
@@ -258,7 +295,7 @@ class CodaAssistant:
         except Exception as e:
             logger.error(f"Error closing STT: {e}")
 
-def signal_handler(sig, frame):
+def signal_handler(sig, _):
     """Handle signals for graceful shutdown."""
     logger.info(f"Signal {sig} received, shutting down")
     if 'assistant' in globals():
@@ -268,7 +305,7 @@ def main():
     """Main entry point for Coda Lite."""
     global assistant
 
-    logger.info("Starting Coda Lite v0.0.3")
+    logger.info("Starting Coda Lite v0.0.4")
     ensure_directories()
 
     # Set up signal handlers for graceful shutdown

@@ -1,0 +1,37 @@
+{
+  "session_start": "2025-04-22T00:38:56.236382",
+  "turn_count": 6,
+  "export_time": "2025-04-22T00:38:56.238386",
+  "turns": [
+    {
+      "role": "user",
+      "content": "Hello, who are you?",
+      "timestamp": "2025-04-22T00:38:56.237384",
+      "turn_id": 1
+    },
+    {
+      "role": "assistant",
+      "content": "I'm Coda, your voice assistant. How can I help you today?",
+      "timestamp": "2025-04-22T00:38:56.237384",
+      "turn_id": 2
+    },
+    {
+      "role": "user",
+      "content": "What can you do?",
+      "timestamp": "2025-04-22T00:38:56.237384",
+      "turn_id": 3
+    },
+    {
+      "role": "assistant",
+      "content": "I can answer questions, provide information, and assist with various tasks.",
+      "timestamp": "2025-04-22T00:38:56.237384",
+      "turn_id": 4
+    },
+    {
+      "role": "user",
+      "content": "Tell me a joke.",
+      "timestamp": "2025-04-22T00:38:56.237384",
+      "turn_id": 5
+    }
+  ]
+}

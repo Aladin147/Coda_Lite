@@ -11,6 +11,7 @@ Just a responsive, modular base for something much bigger.
 ## 🎯 Goals
 
 Coda Lite aims to:
+
 - Run **fully locally** on consumer hardware
 - Provide **natural back-and-forth voice interaction**
 - Operate with **sub-3s latency per interaction**
@@ -27,35 +28,42 @@ This project is the **first step** in building an open, modular, transparent AI 
 |---------------|----------------------------------|--------------------------------|
 | 🎙️ STT        | [faster-whisper](https://github.com/guillaumekln/faster-whisper)  | Local speech-to-text          |
 | 🧠 LLM        | [Ollama](https://ollama.com/) + LLaMA 3 / DeepSeek   | Local reasoning engine        |
-| 🗣️ TTS        | [Coqui TTS](https://github.com/coqui-ai/TTS) (CSM-1B planned)       | Local speech generation       |
+| 🗣️ TTS        | [MeloTTS (CSM-1B)](https://github.com/myshell-ai/MeloTTS)       | High-quality speech generation       |
 | 🔧 Tools      | Python function routing          | Responding to structured LLM output |
 
 ---
 
 ## 🚀 Current Version: `v0.0.1`
 
-> 🔄 **Voice loop in development**
-- STT module fully implemented with Whisper
+> ✅ **Voice loop complete!**
+
+- STT module fully implemented with Whisper (GPU-accelerated)
 - LLM integration with Ollama complete
-- TTS module implemented with Coqui (CSM-1B planned)
+- TTS module implemented with MeloTTS (CSM-1B) with GPU acceleration
+- Multiple English voices available (US, British, Australian, Indian)
 - Debug GUI for testing the conversation loop
-- Working on optimizing performance and reliability
+- Performance optimized with CUDA acceleration for both STT and TTS
 
 ---
 
 ## 🔜 Upcoming: `v0.0.1a`
-> Completing the voice loop and adding enhancements:
-- CSM-1B integration for improved TTS quality
-- Full conversation loop with voice input
-- Performance optimization for sub-5s latency
-- Basic error handling and recovery
+
+> Enhancing the voice loop and adding refinements:
+
+- Voice quality improvements and tuning
+- Wake word detection for hands-free activation
+- Further performance optimization for sub-3s latency
+- Additional languages support
+- Improved error handling and recovery
 
 Followed by tool calling in v0.0.2.
 
 ---
 
 ## 🛤️ Planned for `v0.0.2`
+
 > Adding tool capabilities and refinements:
+
 - Basic **tool calling** implementation
 - Structured output from LLM
 - Tool router implementation
@@ -87,7 +95,7 @@ Coda is **a system** — and this is just its first breath.
 coda-lite/
 ├── main.py               # Entry point
 ├── stt/                  # Speech-to-text (Whisper)
-├── tts/                  # Text-to-speech (currently Coqui, CSM-1B planned)
+├── tts/                  # Text-to-speech (MeloTTS/CSM-1B)
 ├── llm/                  # LLM handling and prompt logic
 ├── tools/                # Tool calling + router
 ├── config/               # Prompt and settings files

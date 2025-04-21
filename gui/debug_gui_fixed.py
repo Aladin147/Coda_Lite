@@ -55,6 +55,7 @@ except ImportError as e:
     sys.exit(1)
 
 try:
+    import torch
     from tts import create_tts
     logger.info("TTS module imported successfully")
 except ImportError as e:
@@ -142,16 +143,21 @@ class CodaDebugWrapper:
         try:
             # Try to create TTS with specific model
             try:
+                device = self.config.get("tts.device", "cuda" if torch.cuda.is_available() else "cpu")
+
+                logger.info(f"Creating CSM-1B TTS with device={device}")
+
+                # CSM-specific parameters
                 self.tts = create_tts(
-                    engine=self.config.get("tts.engine", "coqui"),
-                    model_name=self.config.get("tts.model_name", None),
-                    device=self.config.get("tts.device", "cpu")
+                    engine="csm",
+                    device=device,
+                    language=self.config.get("tts.language", "en")
                 )
             except Exception as model_error:
-                # If that fails, try with default model
-                logger.warning(f"Failed to initialize TTS with specific model: {model_error}")
-                logger.info("Trying with default model...")
-                self.tts = create_tts(engine="coqui")
+                # If that fails, log the error
+                logger.error(f"Failed to initialize CSM-1B TTS: {model_error}")
+                logger.warning("No TTS engine available. Speech synthesis will not work.")
+                self.tts = None
 
             logger.info("TTS initialized successfully")
         except Exception as e:
@@ -478,13 +484,13 @@ def process_in_thread(window, coda, text, temperature, max_tokens):
                     window['-STATUS-'].update('Speaking...')
                     window.refresh()
 
-                    speak_result = coda.speak_response(response)
+                    # Use the speak method directly
+                    success = coda.tts.speak(response)
 
-                    if speak_result.get("error"):
-                        log_message(window, f"Error speaking response: {speak_result['error']}", "ERROR")
-                    elif window['-SHOW_TIMING-'].get():
-                        tts_time = speak_result["timings"].get("tts_time", 0)
-                        log_message(window, f"Speech synthesized in {tts_time:.2f} seconds")
+                    if success:
+                        log_message(window, "Speech played successfully")
+                    else:
+                        log_message(window, "Error playing speech", "ERROR")
             else:
                 window['-RESPONSE-'].update("No response received from LLM")
                 log_message(window, "No response received from LLM", "ERROR")
@@ -569,16 +575,13 @@ def main():
                 def speak_thread():
                     try:
                         log_message(window, f"Attempting to speak: {text[:30]}{'...' if len(text) > 30 else ''}")
-                        result = coda.speak_response(text)
+                        # Use the speak method directly instead of synthesize
+                        success = coda.tts.speak(text)
 
-                        if result.get("error"):
-                            log_message(window, f"Error speaking response: {result['error']}", "ERROR")
-                        elif result.get("success", False):
-                            if values['-SHOW_TIMING-']:
-                                tts_time = result["timings"].get("tts_time", 0)
-                                log_message(window, f"Speech synthesized in {tts_time:.2f} seconds")
+                        if success:
+                            log_message(window, "Speech played successfully")
                         else:
-                            log_message(window, "Speech synthesis failed", "WARNING")
+                            log_message(window, "Error playing speech", "ERROR")
                     except Exception as e:
                         import traceback
                         error_traceback = traceback.format_exc()

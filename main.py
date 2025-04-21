@@ -86,9 +86,10 @@ class CodaAssistant:
         # Initialize TTS module
         logger.info("Initializing Text-to-Speech module...")
         self.tts = create_tts(
-            engine="coqui",  # Use Coqui TTS for now, will switch to CSM-1B later
-            model_name=config.get("tts.model_name", None),
-            device=config.get("tts.device", "cpu")
+            engine="csm",  # Use CSM-1B TTS
+            language=config.get("tts.language", "EN"),
+            voice=config.get("tts.voice", "EN-US"),
+            device=config.get("tts.device", "cuda")
         )
 
         # Load system prompt
@@ -130,7 +131,7 @@ class CodaAssistant:
 
             # Speak the response
             print(f"Coda: {response}")
-            self.tts.synthesize(response)
+            self.tts.speak(response)
 
             # Limit conversation history to last 10 messages (plus system prompt)
             if len(self.conversation_history) > 11:  # 1 system + 10 messages
@@ -140,7 +141,7 @@ class CodaAssistant:
             logger.error(f"Error generating response: {e}", exc_info=True)
             error_message = "I'm sorry, I encountered an error while processing your request."
             print(f"Coda: {error_message}")
-            self.tts.synthesize(error_message)
+            self.tts.speak(error_message)
 
     def should_stop(self) -> bool:
         """Check if the assistant should stop listening."""
@@ -153,7 +154,7 @@ class CodaAssistant:
         # Welcome message
         welcome_message = "Hello! I'm Coda, your voice assistant. How can I help you today?"
         print(f"\nCoda: {welcome_message}")
-        self.tts.synthesize(welcome_message)
+        self.tts.speak(welcome_message)
 
         try:
             # Start continuous listening

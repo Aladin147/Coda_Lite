@@ -83,17 +83,21 @@ class MinimalGUI:
         # Initialize TTS
         try:
             self.log("Initializing TTS...")
-            # Try to create TTS with a default model
+            # Try to create TTS with CSM-1B (MeloTTS)
             try:
+                import torch
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+                self.log(f"Creating CSM-1B TTS on {device}")
+
                 self.tts = create_tts(
-                    engine="coqui",
-                    model_name="tts_models/en/ljspeech/tacotron2-DDC",
-                    device="cpu"
+                    engine="csm",
+                    device=device,
+                    language="en"
                 )
             except Exception as e:
-                self.log(f"Error initializing TTS with specific model: {e}", level="ERROR")
-                self.log("Trying with default model...")
-                self.tts = create_tts(engine="coqui")
+                self.log(f"Error initializing CSM-1B TTS: {e}", level="ERROR")
+                self.log("No TTS available")
+                self.tts = None
             self.log("TTS initialized successfully")
         except Exception as e:
             self.log(f"Error initializing TTS: {e}", level="ERROR")

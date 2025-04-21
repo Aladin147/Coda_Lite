@@ -201,11 +201,29 @@ class CodaDebugWrapper:
             print(f"\n[LLM] Processing: {text[:50]}{'...' if len(text) > 50 else ''}")
 
             llm_start = time.time()
-            response = self.llm.chat(
+            response_obj = self.llm.chat(
                 messages=self.conversation_history,
                 temperature=temperature,
-                max_tokens=max_tokens
+                max_tokens=max_tokens,
+                stream=False  # Ensure we're not using streaming mode
             )
+
+            # Check if response is a generator (streaming response)
+            if hasattr(response_obj, '__iter__') and hasattr(response_obj, '__next__'):
+                # It's a generator, collect all chunks
+                logger.info("Received streaming response, collecting chunks...")
+                print("[LLM] Received streaming response, collecting chunks...")
+                response = ""
+                try:
+                    for chunk in response_obj:
+                        response += chunk
+                except Exception as e:
+                    logger.error(f"Error collecting response chunks: {e}")
+                    print(f"[LLM] Error collecting response chunks: {e}")
+            else:
+                # It's a regular string response
+                response = response_obj
+
             llm_end = time.time()
 
             # Record timing

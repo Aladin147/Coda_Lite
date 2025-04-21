@@ -216,13 +216,19 @@ class CodaDebugWrapper:
                 response = ""
                 try:
                     for chunk in response_obj:
-                        response += chunk
+                        if chunk:
+                            response += chunk
+                            print(f"[LLM] Received chunk: {chunk[:20]}{'...' if len(chunk) > 20 else ''}")
                 except Exception as e:
                     logger.error(f"Error collecting response chunks: {e}")
                     print(f"[LLM] Error collecting response chunks: {e}")
+
+                # Log the collected response
+                print(f"[LLM] Complete response: {response[:100]}{'...' if len(response) > 100 else ''}")
             else:
                 # It's a regular string response
                 response = response_obj
+                print(f"[LLM] Regular response: {response[:100]}{'...' if len(response) > 100 else ''}")
 
             llm_end = time.time()
 
@@ -265,7 +271,9 @@ class CodaDebugWrapper:
         Returns:
             Dict with timing information
         """
-        if not text.strip():
+        if not text or not text.strip():
+            print("\n[TTS] ERROR: Empty text provided to speak_response")
+            logger.error("Empty text provided to speak_response")
             return {"error": "Empty text", "timings": {}}
 
         try:
@@ -278,20 +286,34 @@ class CodaDebugWrapper:
 
             # Start TTS generation
             tts_start = time.time()
-            result = self.tts.synthesize(text)
+
+            # Check if text is valid
+            if isinstance(text, str) and text.strip():
+                result = self.tts.synthesize(text)
+                success = True
+            else:
+                print(f"\n[TTS] WARNING: Invalid text format: {type(text)}")
+                result = None
+                success = False
+
             tts_end = time.time()
 
             # Record timing
             timings["tts_time"] = tts_end - tts_start
 
             # Log after TTS generation
-            logger.info(f"[TTS] Speech synthesis completed. Result: {result}")
-            print(f"[TTS] Speech synthesis completed. Time: {timings['tts_time']:.2f}s")
+            if success:
+                logger.info(f"[TTS] Speech synthesis completed. Result: {result}")
+                print(f"[TTS] Speech synthesis completed. Time: {timings['tts_time']:.2f}s")
+            else:
+                logger.warning("[TTS] Speech synthesis failed due to invalid text")
+                print("[TTS] Speech synthesis failed due to invalid text")
 
             return {
-                "error": None,
+                "error": None if success else "Invalid text format",
                 "timings": timings,
-                "result": result
+                "result": result,
+                "success": success
             }
 
         except Exception as e:
@@ -299,7 +321,8 @@ class CodaDebugWrapper:
             print(f"\n[TTS] ERROR: {e}")
             return {
                 "error": str(e),
-                "timings": {}
+                "timings": {},
+                "success": False
             }
 
     def save_conversation(self, file_path: str) -> bool:
@@ -412,31 +435,42 @@ def process_in_thread(window, coda, text, temperature, max_tokens):
             window['-RESPONSE-'].update(f"Error: {result['error']}")
             log_message(window, f"Error generating response: {result['error']}", "ERROR")
         else:
-            window['-RESPONSE-'].update(result["response"])
+            # Check if response is valid
+            response = result.get("response", "")
+            if response:
+                # Update the response box
+                window['-RESPONSE-'].update(response)
+                log_message(window, f"Response received: {response[:50]}{'...' if len(response) > 50 else ''}")
 
-            # Log timing information
-            if window['-SHOW_TIMING-'].get():
-                llm_time = result["timings"].get("llm_time", 0)
-                log_message(window, f"Response generated in {llm_time:.2f} seconds")
+                # Log timing information
+                if window['-SHOW_TIMING-'].get():
+                    llm_time = result["timings"].get("llm_time", 0)
+                    log_message(window, f"Response generated in {llm_time:.2f} seconds")
 
-            # Auto-speak if enabled
-            if window['-AUTO_SPEAK-'].get():
-                window['-STATUS-'].update('Speaking...')
-                window.refresh()
+                # Auto-speak if enabled
+                if window['-AUTO_SPEAK-'].get():
+                    window['-STATUS-'].update('Speaking...')
+                    window.refresh()
 
-                speak_result = coda.speak_response(result["response"])
+                    speak_result = coda.speak_response(response)
 
-                if speak_result["error"]:
-                    log_message(window, f"Error speaking response: {speak_result['error']}", "ERROR")
-                elif window['-SHOW_TIMING-'].get():
-                    tts_time = speak_result["timings"].get("tts_time", 0)
-                    log_message(window, f"Speech synthesized in {tts_time:.2f} seconds")
+                    if speak_result.get("error"):
+                        log_message(window, f"Error speaking response: {speak_result['error']}", "ERROR")
+                    elif window['-SHOW_TIMING-'].get():
+                        tts_time = speak_result["timings"].get("tts_time", 0)
+                        log_message(window, f"Speech synthesized in {tts_time:.2f} seconds")
+            else:
+                window['-RESPONSE-'].update("No response received from LLM")
+                log_message(window, "No response received from LLM", "ERROR")
 
         # Update status
         window['-STATUS-'].update('Ready')
 
     except Exception as e:
+        import traceback
+        error_traceback = traceback.format_exc()
         log_message(window, f"Error in processing thread: {e}", "ERROR")
+        log_message(window, f"Traceback: {error_traceback}", "ERROR")
         window['-STATUS-'].update('Error')
 
 def main():
@@ -507,13 +541,25 @@ def main():
 
                 # Speak in a separate thread
                 def speak_thread():
-                    result = coda.speak_response(text)
-                    if result["error"]:
-                        log_message(window, f"Error speaking response: {result['error']}", "ERROR")
-                    elif values['-SHOW_TIMING-']:
-                        tts_time = result["timings"].get("tts_time", 0)
-                        log_message(window, f"Speech synthesized in {tts_time:.2f} seconds")
-                    window['-STATUS-'].update('Ready')
+                    try:
+                        log_message(window, f"Attempting to speak: {text[:30]}{'...' if len(text) > 30 else ''}")
+                        result = coda.speak_response(text)
+
+                        if result.get("error"):
+                            log_message(window, f"Error speaking response: {result['error']}", "ERROR")
+                        elif result.get("success", False):
+                            if values['-SHOW_TIMING-']:
+                                tts_time = result["timings"].get("tts_time", 0)
+                                log_message(window, f"Speech synthesized in {tts_time:.2f} seconds")
+                        else:
+                            log_message(window, "Speech synthesis failed", "WARNING")
+                    except Exception as e:
+                        import traceback
+                        error_traceback = traceback.format_exc()
+                        log_message(window, f"Error in speak thread: {e}", "ERROR")
+                        log_message(window, f"Traceback: {error_traceback}", "ERROR")
+                    finally:
+                        window['-STATUS-'].update('Ready')
 
                 threading.Thread(target=speak_thread, daemon=True).start()
             else:

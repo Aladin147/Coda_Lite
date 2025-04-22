@@ -242,24 +242,27 @@ class OllamaLLM:
                     formatted_msg["content"] = f"I'll use a tool to answer this question. I need to call {func_call['name']}."
 
                 if msg["role"] == "function":
-                    # Convert function messages to system messages since Ollama doesn't support function role
-                    formatted_msg["role"] = "system"
-                    formatted_msg["content"] = f"[TOOL RESULT] {msg['content']}"
+                    # For function messages, we'll create a completely new context
+                    # This helps the model understand it's a second pass
+                    formatted_messages = []
 
-                    # Add the tool result message
-                    formatted_messages.append(formatted_msg)
+                    # Add a very explicit system prompt first
+                    formatted_messages.append({
+                        "role": "system",
+                        "content": "You have received the result of a tool call. Do NOT output JSON. Do NOT re-call the tool. Rephrase the result for the user in clear, friendly language. Use full sentences. Do not say 'checking' or 'let me see'. Just deliver the answer naturally."
+                    })
+
+                    # Add the tool result as a separate system message
+                    formatted_messages.append({
+                        "role": "system",
+                        "content": f"[TOOL RESULT] {msg['content']}"
+                    })
 
                     # Find the original user query that triggered this tool call
                     original_query = ""
                     for prev_msg in messages:
                         if prev_msg["role"] == "user":
                             original_query = prev_msg["content"]
-
-                    # Add an additional system message with clear instructions
-                    formatted_messages.append({
-                        "role": "system",
-                        "content": "You just received a tool result. Summarize it as if you're answering the user's question naturally. Keep it brief and conversational."
-                    })
 
                     # Add the original user query again to reinforce context
                     if original_query:
@@ -268,8 +271,13 @@ class OllamaLLM:
                             "content": original_query
                         })
 
-                    # Skip adding the original message since we've already added it with the additional instruction
-                    continue
+                    # Log the messages for debugging
+                    logger.info("Second pass messages:")
+                    for i, formatted_msg in enumerate(formatted_messages):
+                        logger.info(f"  Message {i}: role={formatted_msg['role']}, content={formatted_msg['content']}")
+
+                    # Return early with the completely new context
+                    return formatted_messages
 
                 formatted_messages.append(formatted_msg)
 

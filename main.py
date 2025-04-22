@@ -250,10 +250,15 @@ class CodaAssistant:
                     msg = augmented_context[i]
                     logger.info(f"Context message {i}: role={msg.get('role')}, content={msg.get('content', '')[:50]}{'...' if len(msg.get('content', '')) > 50 else ''}")
 
+                # Use a higher max_tokens for the second pass to ensure we get a complete response
+                second_pass_max_tokens = 512  # Higher than the default to ensure we get a complete response
+
+                logger.info(f"Making second LLM call with max_tokens={second_pass_max_tokens}")
+
                 final_response = self.llm.chat(
                     messages=augmented_context,
                     temperature=self.config.get("llm.temperature", 0.7),
-                    max_tokens=self.config.get("llm.max_tokens", 256),
+                    max_tokens=second_pass_max_tokens,
                     stream=False
                 )
                 end_time = time.time()
@@ -261,17 +266,49 @@ class CodaAssistant:
                 logger.info(f"Final LLM response generated in {end_time - start_time:.2f} seconds")
                 logger.info(f"Final response: {final_response}")
 
-                # Check if the final response is empty, too short, or just a JSON object
+                # Check if the final response is empty, too short, or contains JSON
                 is_json = False
+                contains_tool_call = False
+
+                logger.info("Analyzing final response for JSON or tool call patterns")
+
+                # Check for JSON format
                 try:
+                    # Try to parse the entire response as JSON
                     json_obj = json.loads(final_response)
                     is_json = isinstance(json_obj, dict)
-                    logger.info(f"Final response is JSON: {is_json}")
-                except json.JSONDecodeError:
-                    pass
+                    contains_tool_call = is_json and "tool_call" in json_obj
+                    logger.info(f"Final response is valid JSON: {is_json}, contains tool_call: {contains_tool_call}")
 
-                if not final_response or len(final_response.strip()) < 5 or is_json:
-                    logger.warning("Final response is empty, too short, or just JSON. Using fallback response.")
+                    # If it's valid JSON, we need to use a fallback
+                    logger.warning("Final response is valid JSON, using fallback response")
+                    final_response = f"The current {tool_name.replace('get_', '')} is {tool_result}."
+                except json.JSONDecodeError:
+                    # Not valid JSON, but might contain JSON patterns
+                    logger.info("Final response is not valid JSON, checking for JSON patterns")
+
+                    # Check if the response contains a tool_call pattern
+                    contains_tool_call = "tool_call" in final_response or ("{" in final_response and "}" in final_response)
+
+                    if contains_tool_call:
+                        logger.warning(f"Final response contains JSON-like patterns: {final_response}")
+
+                        # Try to extract just the text part before any JSON
+                        if "{" in final_response:
+                            text_part = final_response.split("{")[0].strip()
+                            logger.info(f"Extracted text part before JSON: '{text_part}'")
+
+                            if text_part and len(text_part) > 5:
+                                logger.info(f"Using extracted text part as final response")
+                                final_response = text_part
+                            else:
+                                # If we couldn't extract a meaningful text part, use a fallback
+                                logger.warning("Could not extract meaningful text from response with JSON patterns. Using fallback.")
+                                final_response = f"The current {tool_name.replace('get_', '')} is {tool_result}."
+
+                # Final check for empty or too short responses
+                if not final_response or len(final_response.strip()) < 5:
+                    logger.warning("Final response is empty or too short. Using fallback response.")
                     final_response = f"Based on the information I found, {formatted_result}."
 
                 # Add original response and tool call to memory for debugging

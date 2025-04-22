@@ -1,4 +1,4 @@
-# Coda Lite – Core Operations & Digital Assistant (v0.0.1)
+# Coda Lite – Core Operations & Digital Assistant (v0.0.2)
 
 **Coda Lite** is a lightweight, local-first voice assistant prototype focused on one thing:
 ⚡ **Real-time, low-latency, human-feeling conversation.**
@@ -33,9 +33,9 @@ This project is the **first step** in building an open, modular, transparent AI 
 
 ---
 
-## 🚀 Current Version: `v0.0.4`
+## 🚀 Current Version: `v0.0.2`
 
-> 🧠 **Memory added!**
+> 🔧 **Tool calling added!**
 
 - STT module fully implemented with Whisper (GPU-accelerated)
 - LLM integration with Ollama complete
@@ -44,12 +44,13 @@ This project is the **first step** in building an open, modular, transparent AI 
 - Concurrent processing with threading for reduced latency
 - Personality module for more engaging interactions
 - Short-term memory for conversation context
-- Token-aware context management for LLM
+- Basic tool calling implementation
+- Simple tools like `get_time()`, `tell_joke()`, etc.
 - Performance improved by ~23% with pipeline optimization
 
 ---
 
-## 🔜 Upcoming: `v0.0.5`
+## 🔜 Upcoming: `v0.0.3`
 
 > Enhancing the voice loop and adding refinements:
 
@@ -61,19 +62,17 @@ This project is the **first step** in building an open, modular, transparent AI 
 - Expanded personality with context-aware responses
 - Memory summarization for longer conversations
 
-Followed by tool calling in v0.0.2.
-
 ---
 
-## 🛤️ Planned for `v0.0.2`
+## 🛤️ Completed in `v0.0.2`
 
-> Adding tool capabilities and refinements:
+> Tool capabilities added:
 
-- Basic **tool calling** implementation
-- Structured output from LLM
-- Tool router implementation
-- Simple tools like `get_time()`, `tell_joke()`, etc.
-- System prompt refinements for better interactions
+- Basic **tool calling** implementation ✅
+- Structured output from LLM ✅
+- Tool router implementation ✅
+- Simple tools like `get_time()`, `tell_joke()` ✅
+- System prompt refinements for better interactions ✅
 
 ---
 

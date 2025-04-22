@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Coda Lite - Core Operations & Digital Assistant (v0.0.4)
+Coda Lite - Core Operations & Digital Assistant (v0.0.2)
 Main entry point for the Coda Lite voice assistant.
 
 This module initializes and coordinates the core components:
@@ -9,7 +9,7 @@ This module initializes and coordinates the core components:
 - Text-to-Speech (TTS)
 - Tool execution
 
-Current version (v0.0.4) implements the optimized voice loop with memory and personality.
+Current version (v0.0.2) implements the optimized voice loop with memory, personality, and tool calling.
 """
 
 import os
@@ -305,7 +305,7 @@ def main():
     """Main entry point for Coda Lite."""
     global assistant
 
-    logger.info("Starting Coda Lite v0.0.4")
+    logger.info("Starting Coda Lite v0.0.2")
     ensure_directories()
 
     # Set up signal handlers for graceful shutdown

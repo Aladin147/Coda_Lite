@@ -243,36 +243,27 @@ class OllamaLLM:
 
                 if msg["role"] == "function":
                     # For function messages, we'll create a completely new context
-                    # This helps the model understand it's a second pass
+                    # This is a brand new prompt, not a continuation
                     formatted_messages = []
-
-                    # Add a very explicit system prompt first
-                    formatted_messages.append({
-                        "role": "system",
-                        "content": "You have received the result of a tool call. Do NOT output JSON. Do NOT re-call the tool. Rephrase the result for the user in clear, friendly language. Use full sentences. Do not say 'checking' or 'let me see'. Just deliver the answer naturally."
-                    })
-
-                    # Add the tool result as a separate system message
-                    formatted_messages.append({
-                        "role": "system",
-                        "content": f"[TOOL RESULT] {msg['content']}"
-                    })
 
                     # Find the original user query that triggered this tool call
                     original_query = ""
                     for prev_msg in messages:
                         if prev_msg["role"] == "user":
                             original_query = prev_msg["content"]
+                            break  # Use the most recent user query
 
-                    # Add the original user query again to reinforce context
-                    if original_query:
-                        formatted_messages.append({
-                            "role": "user",
-                            "content": original_query
-                        })
+                    # Create a completely new context with very explicit instructions
+                    formatted_messages = [
+                        {"role": "system", "content": "You are Coda, a helpful voice assistant. Do NOT output JSON or tool instructions."},
+                        {"role": "system", "content": f"The user asked: '{original_query}'"},
+                        {"role": "system", "content": f"The tool result is: {msg['content']}"},
+                        {"role": "system", "content": "Now rephrase the result naturally in a friendly tone. Keep it brief and conversational. Do not mention that you used a tool or function."},
+                        {"role": "user", "content": "Please respond to my question using this information."}
+                    ]
 
                     # Log the messages for debugging
-                    logger.info("Second pass messages:")
+                    logger.info("Second pass messages (BRAND NEW CONTEXT):")
                     for i, formatted_msg in enumerate(formatted_messages):
                         logger.info(f"  Message {i}: role={formatted_msg['role']}, content={formatted_msg['content']}")
 

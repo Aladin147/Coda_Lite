@@ -77,6 +77,43 @@ class CodaAssistant:
         self.processing = False  # Flag to track if we're currently processing a request
         self.response_queue = Queue()  # Queue for responses to be spoken
 
+    def summarize_tool_result(self, original_query: str, tool_result: str) -> str:
+        """Helper function to summarize a tool result in a natural way.
+
+        Args:
+            original_query: The original user query that triggered the tool call
+            tool_result: The result from the tool execution
+
+        Returns:
+            A natural language summary of the tool result
+        """
+        logger.info(f"Summarizing tool result: {tool_result} for query: {original_query}")
+
+        # Create a brand new context for the second pass
+        messages = [
+            {"role": "system", "content": "You are Coda, a helpful voice assistant. Do NOT output JSON or tool instructions."},
+            {"role": "system", "content": f"The user asked: '{original_query}'"},
+            {"role": "system", "content": f"The tool result is: {tool_result}"},
+            {"role": "system", "content": "Now rephrase the result naturally in a friendly tone. Keep it brief and conversational. Do not mention that you used a tool or function."},
+            {"role": "user", "content": "Please respond to my question using this information."}
+        ]
+
+        # Log the messages for debugging
+        logger.info("Summarization messages:")
+        for i, msg in enumerate(messages):
+            logger.info(f"  Message {i}: role={msg['role']}, content={msg['content']}")
+
+        # Generate a natural language summary
+        summary = self.llm.chat(
+            messages=messages,
+            temperature=0.7,
+            max_tokens=256,
+            stream=False
+        )
+
+        logger.info(f"Generated summary: {summary}")
+        return summary
+
         # Initialize STT module
         logger.info("Initializing Speech-to-Text module...")
         self.stt = WhisperSTT(
@@ -240,27 +277,18 @@ class CodaAssistant:
                     else:
                         logger.info(f"Context [{i}] - {role}: {content[:50]}{'...' if len(content) > 50 else ''}")
 
-                # Re-run the LLM with the augmented context
+                # Use the summarize_tool_result helper function to generate a natural language response
                 start_time = time.time()
-                logger.info("Making second LLM call with tool result in context")
-                logger.info(f"Augmented context for second call has {len(augmented_context)} messages")
+                logger.info("Using summarize_tool_result helper function for second pass")
 
-                # Log the last few messages for debugging
-                for i in range(max(0, len(augmented_context) - 3), len(augmented_context)):
-                    msg = augmented_context[i]
-                    logger.info(f"Context message {i}: role={msg.get('role')}, content={msg.get('content', '')[:50]}{'...' if len(msg.get('content', '')) > 50 else ''}")
+                # Get the original user query
+                original_query = text  # This is the original user input
 
-                # Use a higher max_tokens for the second pass to ensure we get a complete response
-                second_pass_max_tokens = 512  # Higher than the default to ensure we get a complete response
+                # Generate a natural language summary using a brand new context
+                final_response = self.summarize_tool_result(original_query, formatted_result)
 
-                logger.info(f"Making second LLM call with max_tokens={second_pass_max_tokens}")
-
-                final_response = self.llm.chat(
-                    messages=augmented_context,
-                    temperature=self.config.get("llm.temperature", 0.7),
-                    max_tokens=second_pass_max_tokens,
-                    stream=False
-                )
+                # Log the result
+                logger.info(f"Generated natural language summary: {final_response}")
                 end_time = time.time()
 
                 logger.info(f"Final LLM response generated in {end_time - start_time:.2f} seconds")
@@ -317,7 +345,10 @@ class CodaAssistant:
                 self.memory.add_turn("system", f"Tool result: {tool_result}")
                 self.memory.add_turn("system", f"Final response: {final_response}")
 
-                # Update the response with the final response
+                # Log which response is being returned
+                logger.info(f"[DEBUG] Using SECOND PASS output: {final_response}")
+
+                # Update the response with the final response from the second pass
                 response = final_response
             else:
                 # No tool call detected, use the original response

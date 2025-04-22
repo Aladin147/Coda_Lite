@@ -460,6 +460,7 @@ def process_in_thread(window, coda, text, temperature, max_tokens):
         window.refresh()
 
         # Process input
+        log_message(window, f"Sending to LLM with temperature={temperature}, max_tokens={max_tokens}")
         result = coda.process_input(text, temperature, max_tokens)
 
         # Update response
@@ -470,7 +471,7 @@ def process_in_thread(window, coda, text, temperature, max_tokens):
             # Check if response is valid
             response = result.get("response", "")
             if response:
-                # Check if the response is a tool call JSON
+                # Check if the response is a tool call JSON or a natural language response
                 try:
                     json_response = json.loads(response)
                     if isinstance(json_response, dict) and "tool_call" in json_response:
@@ -481,12 +482,39 @@ def process_in_thread(window, coda, text, temperature, max_tokens):
                         # Log the tool call
                         log_message(window, f"Tool call detected: {tool_name} with args {tool_args}")
 
-                        # Update the response box with just the tool call for now
-                        # The final natural language response will come in the next turn
-                        window['-RESPONSE-'].update(response)
+                        # Update the response box with the tool call and a note
+                        window['-RESPONSE-'].update(f"{response}\n\nExecuting {tool_name}...")
 
                         # Add a note about the tool call
                         log_message(window, f"Tool {tool_name} will be executed and result will be used in next response")
+
+                        # Process the tool call in a separate thread
+                        def process_tool_call():
+                            try:
+                                # Simulate tool execution
+                                log_message(window, f"Executing tool {tool_name}...")
+                                time.sleep(1)  # Simulate tool execution time
+
+                                # Get the current time or date based on the tool name
+                                if tool_name == "get_time":
+                                    tool_result = datetime.now().strftime("%H:%M:%S")
+                                    formatted_result = f"The current time is {tool_result}"
+                                elif tool_name == "get_date":
+                                    tool_result = datetime.now().strftime("%Y-%m-%d")
+                                    formatted_result = f"Today is {tool_result}"
+                                else:
+                                    tool_result = f"Result from {tool_name}"
+                                    formatted_result = f"Result from {tool_name}: {tool_result}"
+
+                                log_message(window, f"Tool result: {formatted_result}")
+
+                                # Update the response with the tool result
+                                window['-RESPONSE-'].update(f"{response}\n\n{formatted_result}")
+                            except Exception as e:
+                                log_message(window, f"Error executing tool: {e}", "ERROR")
+
+                        # Start the tool execution thread
+                        threading.Thread(target=process_tool_call, daemon=True).start()
                     else:
                         # Regular response
                         window['-RESPONSE-'].update(response)

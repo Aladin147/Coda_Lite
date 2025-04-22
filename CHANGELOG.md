@@ -12,7 +12,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
-## [0.0.2] - 2025-04-22
+## [0.1.0] - 2025-04-22
+
+### Added
+- Enhanced tool calling system with two-pass approach
+- Aggressive JSON cleaning to reduce JSON leakage
+- Enhanced error handling and logging for tool execution
+- Direct fallbacks for common tools when execution fails
+- Test script for verifying tool calling functionality
+
+### Fixed
+- Fixed duplicate __init__ method in CodaAssistant class
+- Fixed OllamaLLM.chat method to properly handle function messages
+- Fixed streaming issues with OllamaLLM
+- Improved context handling for the second pass
+
+### Known Issues
+- JSON from tool calls sometimes leaks into the final response
+- Second pass occasionally fails to completely remove JSON formatting
+
+## [0.0.2] - 2025-04-21
 
 ### Added
 - Short-term memory module for conversation context

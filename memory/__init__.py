@@ -1,9 +1,13 @@
 """
 Memory module for Coda Lite.
 
-This module provides memory management functionality for the Coda Lite voice assistant.
+This module provides memory management functionality for the Coda Lite voice assistant,
+including both short-term and long-term memory capabilities.
 """
 
 from .short_term import MemoryManager
+from .long_term import LongTermMemory
+from .encoder import MemoryEncoder
+from .enhanced_memory_manager import EnhancedMemoryManager
 
-__all__ = ["MemoryManager"]
+__all__ = ["MemoryManager", "LongTermMemory", "MemoryEncoder", "EnhancedMemoryManager"]

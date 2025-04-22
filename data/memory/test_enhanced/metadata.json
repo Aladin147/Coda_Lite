@@ -1,0 +1,410 @@
+{
+  "created_at": "2025-04-22T12:43:48.946426",
+  "last_updated": "2025-04-22T12:43:49.239400",
+  "memory_count": 23,
+  "memories": {
+    "dcc4277b-7c7d-4393-96ac-c6180373d10f": {
+      "content": "I'm planning a trip to Japan next month. What are some must-visit places in Tokyo?",
+      "timestamp": "2025-04-22T12:43:48.949018",
+      "importance": 1.0,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 1.0,
+        "speakers": [
+          "user"
+        ],
+        "turn_ids": [
+          1
+        ],
+        "topics": []
+      }
+    },
+    "0821933a-c791-4810-9294-0103134bce37": {
+      "content": "Tokyo has many great attractions. Some must-visit places include the Tokyo Skytree, Senso-ji Temple ...",
+      "timestamp": "2025-04-22T12:43:48.964962",
+      "importance": 0.9,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 0.9,
+        "speakers": [
+          "assistant"
+        ],
+        "turn_ids": [
+          2
+        ],
+        "topics": [
+          "tokyo"
+        ]
+      }
+    },
+    "f6b481a4-be4b-4682-a064-8427625bb5b0": {
+      "content": "Skytree, Senso-ji Temple in Asakusa, the Meiji Shrine, and the Shibuya Crossing. When are you planni...",
+      "timestamp": "2025-04-22T12:43:48.975312",
+      "importance": 1.0,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 1.0,
+        "speakers": [
+          "assistant"
+        ],
+        "turn_ids": [
+          2
+        ],
+        "topics": []
+      }
+    },
+    "7fa77439-b83f-4a9c-9fc5-d27905cb3aa1": {
+      "content": "I'll be there for a week in cherry blossom season. I'm particularly interested in technology and foo...",
+      "timestamp": "2025-04-22T12:43:48.986826",
+      "importance": 0.8,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 0.8,
+        "speakers": [
+          "user"
+        ],
+        "turn_ids": [
+          3
+        ],
+        "topics": []
+      }
+    },
+    "32ecd38b-6b55-44e6-87b6-82de353fad1b": {
+      "content": "Visiting during cherry blossom season is perfect! For technology, check out Akihabara Electric Town ...",
+      "timestamp": "2025-04-22T12:43:48.996843",
+      "importance": 0.9,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 0.9,
+        "speakers": [
+          "assistant"
+        ],
+        "turn_ids": [
+          4
+        ],
+        "topics": []
+      }
+    },
+    "f4098436-be6f-4791-9854-e0828b9744f7": {
+      "content": "check out Akihabara Electric Town and the teamLab Borderless digital art museum. For food, visit Tsu...",
+      "timestamp": "2025-04-22T12:43:49.007270",
+      "importance": 0.9,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 0.9,
+        "speakers": [
+          "assistant"
+        ],
+        "turn_ids": [
+          4
+        ],
+        "topics": [
+          "food"
+        ]
+      }
+    },
+    "e9409dc3-cda0-42ea-9999-cce8fe06a0a9": {
+      "content": "in Shinjuku, and don't miss the department store food halls called 'depachika'. The cherry blossoms ...",
+      "timestamp": "2025-04-22T12:43:49.020317",
+      "importance": 0.9,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 0.9,
+        "speakers": [
+          "assistant"
+        ],
+        "turn_ids": [
+          4
+        ],
+        "topics": []
+      }
+    },
+    "27285141-5a8b-471d-98ca-5016c090a549": {
+      "content": "I'm planning a trip to Japan next month. What are some must-visit places in Tokyo?",
+      "timestamp": "2025-04-22T12:43:49.041018",
+      "importance": 1.0,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 1.0,
+        "speakers": [
+          "user"
+        ],
+        "turn_ids": [
+          1
+        ],
+        "topics": []
+      }
+    },
+    "bfeb9bcb-1b9c-4045-87b4-8e366a31deb0": {
+      "content": "Tokyo has many great attractions. Some must-visit places include the Tokyo Skytree, Senso-ji Temple ...",
+      "timestamp": "2025-04-22T12:43:49.053601",
+      "importance": 0.9,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 0.9,
+        "speakers": [
+          "assistant"
+        ],
+        "turn_ids": [
+          2
+        ],
+        "topics": [
+          "tokyo"
+        ]
+      }
+    },
+    "aaf2e6be-1c26-4d29-9e0a-74f4b58c7c42": {
+      "content": "Skytree, Senso-ji Temple in Asakusa, the Meiji Shrine, and the Shibuya Crossing. When are you planni...",
+      "timestamp": "2025-04-22T12:43:49.064530",
+      "importance": 1.0,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 1.0,
+        "speakers": [
+          "assistant"
+        ],
+        "turn_ids": [
+          2
+        ],
+        "topics": []
+      }
+    },
+    "9b0e2b27-2baf-4b49-a3ef-2321bef4eb9c": {
+      "content": "I'll be there for a week in cherry blossom season. I'm particularly interested in technology and foo...",
+      "timestamp": "2025-04-22T12:43:49.076053",
+      "importance": 0.8,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 0.8,
+        "speakers": [
+          "user"
+        ],
+        "turn_ids": [
+          3
+        ],
+        "topics": []
+      }
+    },
+    "48f7581b-7285-4c7d-9577-57bcf960e054": {
+      "content": "Visiting during cherry blossom season is perfect! For technology, check out Akihabara Electric Town ...",
+      "timestamp": "2025-04-22T12:43:49.084785",
+      "importance": 0.9,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 0.9,
+        "speakers": [
+          "assistant"
+        ],
+        "turn_ids": [
+          4
+        ],
+        "topics": []
+      }
+    },
+    "7718ac25-5b1b-463a-87ac-832f82c04db0": {
+      "content": "check out Akihabara Electric Town and the teamLab Borderless digital art museum. For food, visit Tsu...",
+      "timestamp": "2025-04-22T12:43:49.095477",
+      "importance": 0.9,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 0.9,
+        "speakers": [
+          "assistant"
+        ],
+        "turn_ids": [
+          4
+        ],
+        "topics": [
+          "food"
+        ]
+      }
+    },
+    "d45c28a2-cbae-4896-9ad6-4839a643f1c5": {
+      "content": "in Shinjuku, and don't miss the department store food halls called 'depachika'. The cherry blossoms ...",
+      "timestamp": "2025-04-22T12:43:49.106927",
+      "importance": 0.9,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 0.9,
+        "speakers": [
+          "assistant"
+        ],
+        "turn_ids": [
+          4
+        ],
+        "topics": []
+      }
+    },
+    "6995f8b0-448d-4f58-a3b5-c5a2c78a9559": {
+      "content": "The user is planning a trip to Japan during cherry blossom season and is interested in technology an...",
+      "timestamp": "2025-04-22T12:43:49.117999",
+      "importance": 1.0,
+      "metadata": {
+        "source_type": "fact",
+        "timestamp": "2025-04-22T12:43:49.117999",
+        "importance": 1.0,
+        "source": "user",
+        "topics": []
+      }
+    },
+    "b4929440-c648-487c-b426-5f99d9cf2991": {
+      "content": "The user enjoys traveling and experiencing different cultures, especially food and technology.",
+      "timestamp": "2025-04-22T12:43:49.128536",
+      "importance": 0.8,
+      "metadata": {
+        "source_type": "preference",
+        "timestamp": "2025-04-22T12:43:49.128536",
+        "importance": 0.8,
+        "topics": []
+      }
+    },
+    "89619437-56e1-4142-8688-6c11838737a7": {
+      "content": "I'm planning a trip to Japan next month. What are some must-visit places in Tokyo?",
+      "timestamp": "2025-04-22T12:43:49.159231",
+      "importance": 1.0,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 1.0,
+        "speakers": [
+          "user"
+        ],
+        "turn_ids": [
+          1
+        ],
+        "topics": []
+      }
+    },
+    "96fea649-17d9-4271-babc-2e845f6eb2eb": {
+      "content": "Tokyo has many great attractions. Some must-visit places include the Tokyo Skytree, Senso-ji Temple ...",
+      "timestamp": "2025-04-22T12:43:49.169737",
+      "importance": 0.9,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 0.9,
+        "speakers": [
+          "assistant"
+        ],
+        "turn_ids": [
+          2
+        ],
+        "topics": [
+          "tokyo"
+        ]
+      }
+    },
+    "e45f71da-c135-49b8-a88a-e4bc62e97a72": {
+      "content": "Skytree, Senso-ji Temple in Asakusa, the Meiji Shrine, and the Shibuya Crossing. When are you planni...",
+      "timestamp": "2025-04-22T12:43:49.180548",
+      "importance": 1.0,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 1.0,
+        "speakers": [
+          "assistant"
+        ],
+        "turn_ids": [
+          2
+        ],
+        "topics": []
+      }
+    },
+    "6084625c-89e3-4b7b-a9ec-7d32e141358a": {
+      "content": "I'll be there for a week in cherry blossom season. I'm particularly interested in technology and foo...",
+      "timestamp": "2025-04-22T12:43:49.192696",
+      "importance": 0.8,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 0.8,
+        "speakers": [
+          "user"
+        ],
+        "turn_ids": [
+          3
+        ],
+        "topics": []
+      }
+    },
+    "cfd63e74-7c68-43ba-8d76-b1571ad766fa": {
+      "content": "Visiting during cherry blossom season is perfect! For technology, check out Akihabara Electric Town ...",
+      "timestamp": "2025-04-22T12:43:49.204280",
+      "importance": 0.9,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 0.9,
+        "speakers": [
+          "assistant"
+        ],
+        "turn_ids": [
+          4
+        ],
+        "topics": []
+      }
+    },
+    "d3971b83-de9f-45c1-8069-ac419eae4eaa": {
+      "content": "check out Akihabara Electric Town and the teamLab Borderless digital art museum. For food, visit Tsu...",
+      "timestamp": "2025-04-22T12:43:49.214255",
+      "importance": 0.9,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 0.9,
+        "speakers": [
+          "assistant"
+        ],
+        "turn_ids": [
+          4
+        ],
+        "topics": [
+          "food"
+        ]
+      }
+    },
+    "37b1fdf7-6dc3-47be-adc9-0b9ef59b2caf": {
+      "content": "in Shinjuku, and don't miss the department store food halls called 'depachika'. The cherry blossoms ...",
+      "timestamp": "2025-04-22T12:43:49.227381",
+      "importance": 0.9,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T12:43:48.947930",
+        "importance": 0.9,
+        "speakers": [
+          "assistant"
+        ],
+        "turn_ids": [
+          4
+        ],
+        "topics": []
+      }
+    }
+  },
+  "user_summary": {
+    "interests": [
+      "travel",
+      "technology",
+      "food"
+    ],
+    "upcoming_trips": [
+      "Japan"
+    ]
+  },
+  "topics": []
+}

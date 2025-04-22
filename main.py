@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Coda Lite - Core Operations & Digital Assistant (v0.0.2)
+Coda Lite - Core Operations & Digital Assistant
 Main entry point for the Coda Lite voice assistant.
 
 This module initializes and coordinates the core components:
@@ -8,8 +8,12 @@ This module initializes and coordinates the core components:
 - Language Model (LLM)
 - Text-to-Speech (TTS)
 - Tool execution
+- Memory management
+- Personality engine
+- Intent routing
+- Feedback system
 
-Current version (v0.0.2) implements the optimized voice loop with memory, personality, and tool calling.
+See version.py for current version information.
 """
 
 import os
@@ -25,10 +29,15 @@ from datetime import datetime
 from typing import List, Dict
 from queue import Queue
 
-from personality import PersonalityLoader
-from memory import MemoryManager
+from version import __version__, __version_name__, get_full_version_string
+
+from personality import PersonalityLoader, AdvancedPersonalityManager
+from memory import MemoryManager, EnhancedMemoryManager
 from tools import get_tool_router
 from tools.basic_tools import set_memory_manager
+from tools.memory_tools import set_memory_manager as set_memory_tools_manager
+from intent import IntentManager
+from feedback import FeedbackManager
 
 # Set up logging
 logging.basicConfig(
@@ -40,6 +49,9 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger("coda")
+
+# Log version information
+logger.info(get_full_version_string())
 
 # Import modules
 from config.config_loader import ConfigLoader
@@ -109,6 +121,7 @@ def ensure_directories():
     os.makedirs("data/audio", exist_ok=True)
     os.makedirs("data/temp", exist_ok=True)
     os.makedirs("data/memory", exist_ok=True)
+    os.makedirs("data/memory/long_term", exist_ok=True)
 
 def load_system_prompt(file_path: str) -> str:
     """Load system prompt from file."""
@@ -169,6 +182,17 @@ class CodaAssistant:
         logger.info("Initializing personality...")
         self.personality = PersonalityLoader()
 
+        # Initialize advanced personality manager if enabled
+        use_advanced_personality = config.get("personality.use_advanced", False)
+        if use_advanced_personality:
+            logger.info("Initializing advanced personality manager...")
+            self.advanced_personality = AdvancedPersonalityManager(
+                memory_manager=None,  # Will be set after memory manager is initialized
+                config=config.get_all()
+            )
+        else:
+            self.advanced_personality = None
+
         # Generate system prompts from personality
         self.system_prompt = self.personality.generate_system_prompt("tool_detection")
         self.summarization_prompt = self.personality.generate_system_prompt("summarization")
@@ -176,8 +200,15 @@ class CodaAssistant:
 
         # Initialize memory manager
         logger.info("Initializing memory manager...")
-        max_turns = config.get("memory.max_turns", 20)
-        self.memory = MemoryManager(max_turns=max_turns)
+        long_term_enabled = config.get("memory.long_term_enabled", False)
+
+        if long_term_enabled:
+            logger.info("Using enhanced memory manager with long-term memory")
+            self.memory = EnhancedMemoryManager(config.get_all())
+        else:
+            logger.info("Using standard short-term memory manager")
+            max_turns = config.get("memory.max_turns", 20)
+            self.memory = MemoryManager(max_turns=max_turns)
 
         # Initialize tool router
         logger.info("Initializing tool router...")
@@ -185,7 +216,13 @@ class CodaAssistant:
 
         # Set memory manager reference for tools
         set_memory_manager(self.memory)
+        set_memory_tools_manager(self.memory)
         logger.info("Set memory manager reference for tools")
+
+        # Set memory manager for advanced personality manager if enabled
+        if self.advanced_personality:
+            self.advanced_personality.memory_manager = self.memory
+            logger.info("Set memory manager for advanced personality manager")
 
         # Add tool descriptions to the system prompt (only for tool detection)
         tool_descriptions = self.tool_router.format_tool_descriptions(include_json_format=True)
@@ -197,6 +234,47 @@ class CodaAssistant:
 
         # Add system message to conversation history (legacy)
         self.conversation_history.append({"role": "system", "content": self.system_prompt})
+
+        # Initialize intent manager if enabled
+        intent_enabled = config.get("intent.enabled", False)
+        if intent_enabled:
+            logger.info("Initializing intent manager...")
+            self.intent_manager = IntentManager(
+                memory_manager=self.memory,
+                tool_router=self.tool_router,
+                personality_manager=self.advanced_personality
+            )
+
+            # Set debug mode if configured
+            debug_mode = config.get("intent.debug_mode", False)
+            if debug_mode:
+                self.intent_manager.set_debug_mode(True)
+                logger.info("Intent manager debug mode enabled")
+
+            logger.info("Intent manager initialized")
+        else:
+            self.intent_manager = None
+            logger.info("Intent routing disabled")
+
+        # Initialize feedback manager if enabled
+        feedback_enabled = config.get("feedback.enabled", False)
+        if feedback_enabled:
+            logger.info("Initializing feedback manager...")
+            self.feedback_manager = FeedbackManager(
+                memory_manager=self.memory,
+                personality_manager=self.advanced_personality,
+                config=config.get_all()
+            )
+
+            # Connect feedback manager to personality manager
+            if self.advanced_personality:
+                self.advanced_personality.feedback_manager = self.feedback_manager
+                logger.info("Connected feedback manager to personality manager")
+
+            logger.info("Feedback manager initialized")
+        else:
+            self.feedback_manager = None
+            logger.info("Feedback hooks disabled")
 
         # Start the TTS worker thread
         self.tts_thread = threading.Thread(target=self._tts_worker, daemon=True)
@@ -267,10 +345,110 @@ class CodaAssistant:
             self.memory.add_turn("user", text)
             logger.info("Added user input to memory")
 
+            # Check if this is a response to a feedback prompt
+            if self.feedback_manager and self.feedback_manager.active_feedback_request:
+                if self.feedback_manager.is_feedback_response(text):
+                    logger.info("Processing feedback response")
+                    feedback_result = self.feedback_manager.process_feedback_response(text)
+
+                    if feedback_result.get("processed", False):
+                        # Add a simple acknowledgment to the conversation
+                        acknowledgment = "Thanks for your feedback!"
+                        self.memory.add_turn("assistant", acknowledgment)
+
+                        # Queue the response for TTS
+                        self.response_queue.put(acknowledgment)
+
+                        # We're done processing this input
+                        self.processing = False
+                        return
+
+            # Process through intent manager if available
+            intent_result = None
+            if self.intent_manager:
+                logger.info("Processing through intent manager")
+                intent_result = self.intent_manager.process_input(text)
+                logger.info(f"Intent detected: {intent_result.get('intent_type').name if intent_result else 'None'}")
+
+                # Check if the intent was handled and requires special processing
+                if intent_result and intent_result.get('handled', False):
+                    action = intent_result.get('action')
+                    logger.info(f"Intent handled with action: {action}")
+
+                    # For system commands, we might want to return immediately
+                    if action == 'system_command':
+                        command = intent_result.get('command')
+                        message = intent_result.get('message')
+                        logger.info(f"Executed system command: {command} - {message}")
+
+                        # Add the result to memory
+                        self.memory.add_turn("assistant", message)
+
+                        # Queue the response for TTS
+                        self.response_queue.put(message)
+
+                        # For some commands, we might want to return immediately
+                        if command in ['debug_on', 'debug_off', 'help']:
+                            self.processing = False
+                            return
+
+                    # For memory store, we might want to acknowledge
+                    elif action == 'memory_store':
+                        message = intent_result.get('message')
+                        logger.info(f"Stored memory: {message}")
+
+                        # Add the result to memory
+                        self.memory.add_turn("assistant", message)
+
+                        # Queue the response for TTS
+                        self.response_queue.put(message)
+                        self.processing = False
+                        return
+
+                    # For memory recall, we might want to present the results
+                    elif action == 'memory_recall':
+                        message = intent_result.get('message')
+                        memories = intent_result.get('memories', [])
+                        logger.info(f"Recalled memories: {len(memories)}")
+
+                        # If we have memories, format them nicely
+                        if memories and len(memories) > 0:
+                            memory_text = "\n".join([f"- {memory.get('content', '')}" for memory in memories])
+                            message = f"Here's what I remember about that:\n{memory_text}"
+
+                        # Add the result to memory
+                        self.memory.add_turn("assistant", message)
+
+                        # Queue the response for TTS
+                        self.response_queue.put(message)
+                        self.processing = False
+                        return
+
+                    # For personality adjustment, acknowledge the change
+                    elif action == 'personality_adjustment':
+                        message = intent_result.get('message')
+                        parameter = intent_result.get('parameter')
+                        new_value = intent_result.get('new_value')
+                        logger.info(f"Adjusted personality parameter {parameter} to {new_value}")
+
+                        # Add the result to memory
+                        self.memory.add_turn("assistant", message)
+
+                        # Queue the response for TTS
+                        self.response_queue.put(message)
+                        self.processing = False
+                        return
+
             # Get conversation context from memory
             max_tokens = self.config.get("memory.max_tokens", 800)
-            context = self.memory.get_context(max_tokens=max_tokens)
-            logger.info(f"Retrieved context with {len(context)} turns")
+
+            # Use enhanced context if we have an EnhancedMemoryManager
+            if isinstance(self.memory, EnhancedMemoryManager):
+                context = self.memory.get_enhanced_context(text, max_tokens=max_tokens)
+                logger.info(f"Retrieved enhanced context with {len(context)} turns (including long-term memories)")
+            else:
+                context = self.memory.get_context(max_tokens=max_tokens)
+                logger.info(f"Retrieved context with {len(context)} turns")
 
             # Generate initial response from LLM
             start_time = time.time()
@@ -302,6 +480,12 @@ class CodaAssistant:
 
                 # Execute the tool
                 logger.info(f"Executing tool: {tool_name} with args: {tool_args}")
+
+                # Track the tool usage in memory manager if it's an EnhancedMemoryManager
+                if isinstance(self.memory, EnhancedMemoryManager):
+                    self.memory.set_last_tool_used(tool_name)
+                    logger.info(f"Tracked tool usage in memory: {tool_name}")
+
                 try:
                     # Force real-time values for time and date tools
                     if tool_name == "get_time":
@@ -520,6 +704,23 @@ class CodaAssistant:
             # Add the response to the TTS queue
             self.response_queue.put(response)
 
+            # Check if we should request feedback
+            if self.feedback_manager and intent_result:
+                if self.feedback_manager.should_request_feedback(intent_result):
+                    feedback_request = self.feedback_manager.generate_feedback_prompt(intent_result)
+
+                    if feedback_request:
+                        # Add a short delay before asking for feedback
+                        time.sleep(1.0)
+
+                        # Add the feedback prompt to memory
+                        self.memory.add_turn("assistant", feedback_request["prompt"])
+
+                        # Queue the feedback prompt for TTS
+                        self.response_queue.put(feedback_request["prompt"])
+
+                        logger.info(f"Requested feedback: {feedback_request['prompt']}")
+
             # Legacy: Limit conversation history to last 10 messages (plus system prompt)
             if len(self.conversation_history) > 11:  # 1 system + 10 messages
                 self.conversation_history = [self.conversation_history[0]] + self.conversation_history[-10:]
@@ -602,16 +803,23 @@ class CodaAssistant:
         """Clean up resources."""
         logger.info("Cleaning up resources")
 
-        # Export memory to file
+        # Handle memory cleanup
         try:
-            if hasattr(self, 'memory') and self.memory.get_turn_count() > 1:  # Only export if we have conversation turns
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                export_dir = self.config.get("memory.export_dir", "data/memory")
-                export_path = f"{export_dir}/session_{timestamp}.json"
-                self.memory.export(export_path)
-                logger.info(f"Exported memory to {export_path}")
+            if hasattr(self, 'memory'):
+                if isinstance(self.memory, EnhancedMemoryManager):
+                    # For enhanced memory manager, close it (which will persist short-term memory)
+                    logger.info("Closing enhanced memory manager")
+                    self.memory.close()
+                    logger.info("Enhanced memory manager closed")
+                elif self.memory.get_turn_count() > 1:  # Only export if we have conversation turns
+                    # For standard memory manager, export to file
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    export_dir = self.config.get("memory.export_dir", "data/memory")
+                    export_path = f"{export_dir}/session_{timestamp}.json"
+                    self.memory.export(export_path)
+                    logger.info(f"Exported memory to {export_path}")
         except Exception as e:
-            logger.error(f"Error exporting memory: {e}")
+            logger.error(f"Error handling memory cleanup: {e}")
 
         # Stop the TTS worker thread
         logger.info("Stopping TTS worker thread")

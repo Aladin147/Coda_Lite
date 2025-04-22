@@ -12,6 +12,182 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
+## [0.0.9] - 2025-05-03
+
+### Added
+- Centralized version management system
+- Version information in logs and startup
+- Version history tracking
+
+### Changed
+- Updated documentation to reflect current version
+- Reorganized version naming to follow semantic versioning
+- Improved version display with descriptive names
+
+## [0.2.0] - 2025-05-02
+
+### Added
+- Memory-based personality conditioning system
+- Feedback pattern analysis and application
+- User preference insights based on feedback history
+- #apply_feedback command for manually applying feedback patterns
+- #view_feedback_memories command for viewing feedback memories
+- Enhanced personality insights with learned preferences
+- Automatic feedback pattern application every 10 turns
+- Feedback storage in long-term memory
+
+### Changed
+- Updated advanced personality manager to use memory conditioner
+- Enhanced memory manager to store and retrieve feedback
+- Improved intent handlers to support new commands
+- Extended personality insight command to show learned preferences
+
+## [0.1.9] - 2025-05-01
+
+### Added
+- Expanded mini-command language with new commands
+- #feedback command for requesting specific feedback types
+- #mood_reset command for resetting personality to default state
+- #personality_insight command for showing current personality settings
+- #summarize_day command for generating a summary of the day's interactions
+- #view_feedback command for viewing feedback history or specific types
+- Day summary generation in memory manager
+- Integration between feedback manager and personality manager
+
+### Changed
+- Updated intent router to support new commands
+- Enhanced system command handling with specialized responses
+- Improved help command with categorized command listing
+- Updated advanced personality manager to support feedback manager
+
+## [0.1.8] - 2025-04-30
+
+### Added
+- User feedback hooks for collecting and processing user feedback
+- Feedback-based personality adjustments
+- Sentiment analysis for feedback responses
+- Feedback storage in long-term memory
+- Feedback statistics tracking
+- Configurable feedback frequency and cooldown
+- Integration with intent and personality systems
+
+### Changed
+- Updated main application to request feedback after responses
+- Extended memory system to store and retrieve feedback
+- Enhanced configuration with feedback settings
+- Improved personality adjustments based on user feedback
+
+## [0.1.7] - 2025-04-29
+
+### Added
+- Lightweight intent routing system with pattern-based detection
+- Intent-specific handlers for different types of requests
+- Entity extraction from user input
+- System command processing with #command syntax
+- Memory-specific intent handling for recall and storage
+- Personality adjustment through intent detection
+- Debug mode for intent routing diagnostics
+- Intent history tracking and distribution analysis
+
+### Changed
+- Updated main application to use intent routing
+- Extended configuration with intent routing settings
+- Improved memory recall with intent-based formatting
+- Enhanced system command handling with specialized responses
+
+## [0.1.6] - 2025-04-28
+
+### Added
+- Personal lore system with backstory, preferences, and traits
+- Context-aware personality anchors for consistent voice
+- Personality quirks with trigger-based expressions
+- Formative memories for character depth
+- Lore-based response formatting
+- Usage tracking for balanced lore references
+
+### Changed
+- Enhanced advanced personality manager with personal lore integration
+- Improved prompt generation with lore injection
+- Extended context tracking with trigger words
+- Updated personality module documentation
+
+## [0.1.5] - 2025-04-27
+
+### Added
+- Advanced personality features with behavioral conditioning
+- Configurable personality parameters system
+- Topic awareness with category-based personality adjustments
+- Session management with closure detection and summaries
+- Integrated advanced personality manager
+- Behavioral pattern detection and adaptation
+- User preference tracking and application
+
+### Changed
+- Enhanced personality module with layered architecture
+- Improved context detection with topic categorization
+- Extended personality system with parameter-based adjustments
+- Added comprehensive test suite for advanced personality features
+
+## [0.1.4] - 2025-04-26
+
+### Added
+- Long-term memory system with vector embeddings
+- Semantic search for retrieving relevant memories
+- Memory importance scoring and time decay
+- Memory encoder for chunking conversations
+- User preference and fact storage
+- Memory-related tools for adding facts and preferences
+- Enhanced context generation with relevant memories
+- Memory statistics and search capabilities
+
+### Changed
+- Updated main application to use enhanced memory manager
+- Extended configuration with long-term memory settings
+- Improved tool system with memory-specific tools
+- Enhanced cleanup process for proper memory persistence
+
+## [0.1.2] - 2025-04-24
+
+### Added
+- Enhanced Personality Engine with weighted traits and context awareness
+- Adaptive tone switching based on conversation context
+- Separation of personality and functional prompts
+- Personality quirks and signature behaviors
+- Session metadata injection into prompts
+- Live reloading capability for personality configuration
+- Comprehensive test suite for personality features
+
+## [0.1.3] - 2025-04-25
+
+### Added
+- Refined output styling for consistent voice across responses
+- Dynamic memory hint injection based on conversation history
+- Emotional responsiveness with configurable intensity levels
+- Session-level personality drift based on conversation context
+- Response templates for greetings, confirmations, refusals, etc.
+- Emotion detection from user input
+- Enhanced prompt templates with styling guidelines
+
+### Changed
+- Refactored personality loader to support enhanced features
+- Reorganized prompt templates into separate files
+- Improved system prompt generation with context-specific traits
+
+## [0.1.1] - 2025-04-23
+
+### Added
+- Tools Manifest and Help Command feature
+- `list_tools` tool for displaying available tools
+- `show_capabilities` tool for explaining what Coda can do
+- Enhanced tool metadata with categories, examples, and parameter descriptions
+- Auto-discovery of tool parameters from function signatures
+- Updated system prompt to inform users about the help command
+
+### Changed
+- Reorganized tools into categories (Time & Date, Entertainment, Memory, Help)
+- Improved tool registration with more detailed metadata
+- Enhanced tool router to store and retrieve tool metadata
+
 ## [0.1.0] - 2025-04-22
 
 ### Added

@@ -12,19 +12,26 @@ This module provides a set of simple tools for Coda Lite v0.0.2:
 import os
 import random
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict, List, Any
 
 import logging
 logger = logging.getLogger("coda.tools")
 
-# Global variable to store memory manager reference
+# Global variables to store references
 _memory_manager = None
+_tool_router = None
 
 def set_memory_manager(memory_manager):
     """Set the memory manager reference for tools that need it."""
     global _memory_manager
     _memory_manager = memory_manager
     logger.info("Memory manager reference set for tools")
+
+def set_tool_router(tool_router):
+    """Set the tool router reference for tools that need it."""
+    global _tool_router
+    _tool_router = tool_router
+    logger.info("Tool router reference set for tools")
 
 # Time and Date Tools
 
@@ -98,15 +105,144 @@ def count_conversation_turns() -> str:
         logger.error(f"Error counting conversation turns: {e}")
         return "I couldn't count our conversation turns due to an error."
 
+# Help and Information Tools
+
+def list_tools(category: Optional[str] = None, format: str = "text") -> str:
+    """List all available tools and their descriptions.
+
+    Args:
+        category (str, optional): Filter tools by category (e.g., "Basic", "Advanced")
+        format (str, optional): Output format ("text", "markdown", or "json")
+
+    Returns:
+        str: Formatted list of available tools
+    """
+    global _tool_router
+
+    if not _tool_router:
+        return "Tool router not available."
+
+    try:
+        return _tool_router.describe_tools(category, format)
+    except Exception as e:
+        logger.error(f"Error listing tools: {e}")
+        return "I couldn't list the available tools due to an error."
+
+def show_capabilities(detail_level: str = "basic") -> str:
+    """Show what Coda can do and how to interact with it.
+
+    Args:
+        detail_level (str, optional): Level of detail to show ("basic", "detailed", or "examples")
+
+    Returns:
+        str: Description of Coda's capabilities
+    """
+    global _tool_router
+
+    # Basic capabilities description
+    basic_capabilities = (
+        "I can help you with various tasks including:\n\n"
+        "- Answering questions and providing information\n"
+        "- Getting the current time and date\n"
+        "- Telling jokes\n"
+        "- Remembering our conversation\n"
+        "- Executing various tools and functions\n\n"
+        "You can ask me to list all available tools by saying 'What can you do?' or 'List your tools.'"
+    )
+
+    # If detail_level is basic, just return the basic description
+    if detail_level.lower() == "basic":
+        return basic_capabilities
+
+    # For detailed view, include the tool list
+    if _tool_router:
+        try:
+            tool_list = _tool_router.describe_tools(format="text")
+
+            if detail_level.lower() == "detailed":
+                return f"{basic_capabilities}\n\n{tool_list}"
+
+            elif detail_level.lower() == "examples":
+                # Get examples for each tool if available
+                examples = "\nHere are some example commands you can try:\n\n"
+
+                for name, metadata in _tool_router.tool_metadata.items():
+                    example = metadata.get("example")
+                    if example:
+                        examples += f"- {example}\n"
+
+                return f"{basic_capabilities}\n\n{tool_list}\n{examples}"
+        except Exception as e:
+            logger.error(f"Error showing capabilities: {e}")
+
+    # Fallback if tool_router is not available or an error occurred
+    return basic_capabilities
+
 # Register all tools with the tool router
 def register_tools(tool_router):
     """Register all tools with the given tool router."""
-    # Register tools with aliases
-    tool_router.register_tool("get_time", get_time, aliases=["get_system_time", "time", "current_time"])
-    tool_router.register_tool("get_date", get_date, aliases=["get_system_date", "date", "current_date"])
-    tool_router.register_tool("tell_joke", tell_joke, aliases=["joke", "tell_a_joke"])
-    tool_router.register_tool("list_memory_files", list_memory_files, aliases=["memory_files", "list_files"])
-    tool_router.register_tool("count_conversation_turns", count_conversation_turns, aliases=["count_turns", "conversation_turns"])
+    # Set the tool router reference for tools that need it
+    set_tool_router(tool_router)
+
+    # Register time and date tools
+    tool_router.register_tool(
+        "get_time",
+        get_time,
+        aliases=["get_system_time", "time", "current_time"],
+        category="Time & Date",
+        example="What time is it?"
+    )
+
+    tool_router.register_tool(
+        "get_date",
+        get_date,
+        aliases=["get_system_date", "date", "current_date"],
+        category="Time & Date",
+        example="What's today's date?"
+    )
+
+    # Register entertainment tools
+    tool_router.register_tool(
+        "tell_joke",
+        tell_joke,
+        aliases=["joke", "tell_a_joke"],
+        category="Entertainment",
+        example="Tell me a joke"
+    )
+
+    # Register memory tools
+    tool_router.register_tool(
+        "list_memory_files",
+        list_memory_files,
+        aliases=["memory_files", "list_files"],
+        category="Memory",
+        example="Show me my memory files"
+    )
+
+    tool_router.register_tool(
+        "count_conversation_turns",
+        count_conversation_turns,
+        aliases=["count_turns", "conversation_turns"],
+        category="Memory",
+        example="How many turns have we had in this conversation?"
+    )
+
+    # Register help and information tools
+    tool_router.register_tool(
+        "list_tools",
+        list_tools,
+        aliases=["show_tools", "what_can_you_do", "available_tools"],
+        category="Help",
+        example="What tools do you have?"
+    )
+
+    tool_router.register_tool(
+        "show_capabilities",
+        show_capabilities,
+        aliases=["capabilities", "what_can_you_do", "help"],
+        category="Help",
+        example="What can you do?"
+    )
 
     logger.info(f"Registered {len(tool_router.tools)} tools")
     return tool_router

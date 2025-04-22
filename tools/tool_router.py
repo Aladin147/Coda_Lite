@@ -18,6 +18,7 @@ class ToolRouter:
         logger.info("Initializing ToolRouter")
         self.tools = {}
         self.tool_aliases = {}
+        self.tool_metadata = {}
         self._register_default_tools()
 
     def _register_default_tools(self):
@@ -25,7 +26,7 @@ class ToolRouter:
         # TODO: Register default tools
         self.register_tool("get_time", self._get_time)
 
-    def register_tool(self, tool_name, tool_function, aliases=None):
+    def register_tool(self, tool_name, tool_function, aliases=None, description=None, parameters=None, example=None, category="Basic"):
         """
         Register a new tool.
 
@@ -33,9 +34,49 @@ class ToolRouter:
             tool_name (str): Name of the tool
             tool_function (callable): Function to execute
             aliases (list, optional): List of alternative names for the tool
+            description (str, optional): Description of the tool (defaults to function docstring)
+            parameters (dict, optional): Dictionary of parameter descriptions
+            example (str, optional): Example usage of the tool
+            category (str, optional): Category of the tool (e.g., "Basic", "Advanced")
         """
         logger.info(f"Registering tool: {tool_name}")
         self.tools[tool_name] = tool_function
+
+        # Extract description from docstring if not provided
+        if description is None and tool_function.__doc__:
+            # Extract the first line of the docstring
+            description = tool_function.__doc__.strip().split('\n')[0]
+        elif description is None:
+            description = "No description available"
+
+        # Extract parameters from function signature if not provided
+        if parameters is None:
+            import inspect
+            sig = inspect.signature(tool_function)
+            parameters = {}
+            for param_name, param in sig.parameters.items():
+                param_desc = ""
+                if tool_function.__doc__:
+                    # Try to extract parameter description from docstring
+                    param_pattern = rf"\s+{param_name}\s*\(.*?\):\s*(.*?)(?:\n\s+\w+|$)"
+                    param_match = re.search(param_pattern, tool_function.__doc__, re.DOTALL)
+                    if param_match:
+                        param_desc = param_match.group(1).strip()
+                parameters[param_name] = {
+                    "type": str(param.annotation) if param.annotation != inspect.Parameter.empty else "Any",
+                    "description": param_desc,
+                    "default": str(param.default) if param.default != inspect.Parameter.empty else None
+                }
+
+        # Store metadata
+        self.tool_metadata[tool_name] = {
+            "name": tool_name,
+            "description": description,
+            "parameters": parameters,
+            "example": example,
+            "category": category,
+            "aliases": aliases or []
+        }
 
         # Register aliases if provided
         if aliases:
@@ -269,3 +310,127 @@ class ToolRouter:
             result += "\nTo use a tool, respond with JSON in this format: { \"tool_call\": { \"name\": \"tool_name\", \"args\": {\"arg1\": \"value1\"} } }"
 
         return result
+
+    def describe_tools(self, category=None, format="text"):
+        """
+        Return a formatted description of all registered tools.
+
+        Args:
+            category (str, optional): Filter tools by category
+            format (str): Output format ("text", "markdown", or "json")
+
+        Returns:
+            str: Formatted tool descriptions
+        """
+        # Filter tools by category if specified
+        tools_to_describe = {}
+        for name, metadata in self.tool_metadata.items():
+            if category is None or metadata.get("category") == category:
+                tools_to_describe[name] = metadata
+
+        if not tools_to_describe:
+            return "No tools found."
+
+        # Sort tools by category and name
+        sorted_tools = sorted(
+            tools_to_describe.values(),
+            key=lambda x: (x.get("category", ""), x.get("name", ""))
+        )
+
+        # Format the output based on the requested format
+        if format.lower() == "json":
+            return json.dumps(sorted_tools, indent=2)
+
+        elif format.lower() == "markdown":
+            output = "# Available Tools\n\n"
+
+            # Group tools by category
+            current_category = None
+            for tool in sorted_tools:
+                category = tool.get("category", "Uncategorized")
+
+                # Add category header if it's a new category
+                if category != current_category:
+                    output += f"## {category}\n\n"
+                    current_category = category
+
+                # Add tool details
+                name = tool.get("name", "")
+                description = tool.get("description", "No description available")
+                output += f"### {name}\n\n{description}\n\n"
+
+                # Add parameters if any
+                params = tool.get("parameters", {})
+                if params:
+                    output += "**Parameters:**\n\n"
+                    for param_name, param_info in params.items():
+                        param_desc = param_info.get("description", "")
+                        param_type = param_info.get("type", "Any")
+                        param_default = param_info.get("default")
+
+                        output += f"- `{param_name}` ({param_type})"
+                        if param_default is not None and param_default != "None":
+                            output += f" (default: {param_default})"
+                        output += f": {param_desc}\n"
+                    output += "\n"
+
+                # Add example if available
+                example = tool.get("example")
+                if example:
+                    output += f"**Example:** {example}\n\n"
+
+                # Add aliases if any
+                aliases = tool.get("aliases", [])
+                if aliases:
+                    output += f"**Aliases:** {', '.join(aliases)}\n\n"
+
+                output += "---\n\n"
+
+            return output
+
+        else:  # Default to text format
+            output = "Available Tools:\n\n"
+
+            # Group tools by category
+            current_category = None
+            for tool in sorted_tools:
+                category = tool.get("category", "Uncategorized")
+
+                # Add category header if it's a new category
+                if category != current_category:
+                    output += f"{category}:\n"
+                    current_category = category
+
+                # Add tool details
+                name = tool.get("name", "")
+                description = tool.get("description", "No description available")
+                output += f"  {name}: {description}\n"
+
+                # Add parameters if any
+                params = tool.get("parameters", {})
+                if params:
+                    for param_name, param_info in params.items():
+                        param_desc = param_info.get("description", "")
+                        param_type = param_info.get("type", "Any")
+                        param_default = param_info.get("default")
+
+                        output += f"    - {param_name}"
+                        if param_default is not None and param_default != "None":
+                            output += f" (default: {param_default})"
+                        if param_desc:
+                            output += f": {param_desc}"
+                        output += "\n"
+
+                # Add example if available
+                example = tool.get("example")
+                if example:
+                    output += f"    Example: {example}\n"
+
+                # Add aliases if any
+                aliases = tool.get("aliases", [])
+                if aliases:
+                    output += f"    Aliases: {', '.join(aliases)}\n"
+
+                output += "\n"
+
+            return output

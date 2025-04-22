@@ -1,0 +1,32 @@
+{
+  "created_at": "2025-04-22T13:46:17.437175",
+  "last_updated": "2025-04-22T13:46:17.475791",
+  "memory_count": 1,
+  "memories": {
+    "1e5f321b-ff11-40c3-94a4-fe7e01828ec5": {
+      "content": "Feedback: Yes, that was helpful.",
+      "timestamp": "2025-04-22T13:46:17.452645",
+      "importance": 0.7999999999999999,
+      "metadata": {
+        "source_type": "feedback",
+        "timestamp": "2025-04-22T13:46:17.452645",
+        "importance": 0.7999999999999999,
+        "feedback_type": "FeedbackType.HELPFULNESS",
+        "prompt": "Did that answer your question?",
+        "sentiment": "positive",
+        "intent_type": "INFORMATION_REQUEST",
+        "turn": 11,
+        "topics": []
+      }
+    }
+  },
+  "user_summary": {
+    "feedback_stats": {
+      "total": 1,
+      "positive": 1,
+      "negative": 0,
+      "neutral": 0
+    }
+  },
+  "topics": []
+}

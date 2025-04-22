@@ -32,9 +32,44 @@ audio:
 
 # Memory settings
 memory:
+  # Short-term memory settings
   max_turns: 20  # Maximum number of conversation turns to store
   max_tokens: 800  # Maximum number of tokens to include in context
   export_dir: "data/memory"  # Directory for memory exports
+
+  # Long-term memory settings
+  long_term_enabled: true  # Enable long-term memory
+  long_term_path: "data/memory/long_term"  # Path to store long-term memory
+  embedding_model: "all-MiniLM-L6-v2"  # Sentence transformer model for embeddings
+  vector_db: "chroma"  # Vector database type (chroma, sqlite, in_memory)
+  max_memories: 1000  # Maximum number of memories to store
+  device: "cpu"  # Device to run embedding model on (cpu or cuda)
+
+  # Memory encoding settings
+  chunk_size: 200  # Target size of memory chunks in characters
+  chunk_overlap: 50  # Overlap between chunks in characters
+  min_chunk_length: 50  # Minimum length of a chunk to be stored
+
+  # Memory persistence settings
+  auto_persist: true  # Automatically persist short-term memory to long-term
+  persist_interval: 5  # Number of turns between persistence operations
+
+# Personality settings
+personality:
+  use_advanced: true  # Enable advanced personality features
+  lore_file: "config/personality/personal_lore.json"  # Path to personal lore file
+
+# Intent settings
+intent:
+  enabled: true  # Enable intent routing
+  debug_mode: false  # Enable debug mode for intent routing
+
+# Feedback settings
+feedback:
+  enabled: true  # Enable user feedback hooks
+  frequency: 0.3  # Frequency of feedback requests (0.0 to 1.0)
+  cooldown: 5  # Minimum number of turns between feedback requests
+  apply_adjustments: true  # Apply automatic adjustments based on feedback
 
 # Tool settings
 tools:
@@ -43,6 +78,11 @@ tools:
     - get_time
     - tell_joke
     - get_weather
+    - get_date
+    - get_memory_stats
+    - search_memories
+    - add_fact
+    - add_preference
 
 # Logging settings
 logging:

@@ -1,0 +1,122 @@
+{
+  "created_at": "2025-04-22T13:10:08.857041",
+  "last_updated": "2025-04-22T13:10:08.940776",
+  "memory_count": 6,
+  "memories": {
+    "dfd4eb78-4a3f-4c32-8c0b-27401455c148": {
+      "content": "Can you help me optimize this code for better efficiency?",
+      "timestamp": "2025-04-22T13:10:08.865925",
+      "importance": 1.0,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T13:10:08.860593",
+        "importance": 1.0,
+        "speakers": [
+          "user"
+        ],
+        "turn_ids": [
+          0
+        ],
+        "topics": []
+      }
+    },
+    "9c2c60df-1b06-47d4-a778-f595ee2aa2fb": {
+      "content": "Here's my response to: Can you help me optimize this code for better efficiency?",
+      "timestamp": "2025-04-22T13:10:08.888197",
+      "importance": 1.0,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T13:10:08.863814",
+        "importance": 1.0,
+        "speakers": [
+          "assistant"
+        ],
+        "turn_ids": [
+          1
+        ],
+        "topics": []
+      }
+    },
+    "6f7aeeb8-63cc-483b-ac5e-1dc769465eba": {
+      "content": "I'm working on a creative design project and need some ideas.",
+      "timestamp": "2025-04-22T13:10:08.898509",
+      "importance": 0.8,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T13:10:08.863814",
+        "importance": 0.8,
+        "speakers": [
+          "user"
+        ],
+        "turn_ids": [
+          2
+        ],
+        "topics": []
+      }
+    },
+    "725ab019-6c14-4700-ae39-d7a24f1e2c6c": {
+      "content": "Here's my response to: I'm working on a creative design project and need some ideas.",
+      "timestamp": "2025-04-22T13:10:08.906704",
+      "importance": 0.8,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T13:10:08.864883",
+        "importance": 0.8,
+        "speakers": [
+          "assistant"
+        ],
+        "turn_ids": [
+          3
+        ],
+        "topics": []
+      }
+    },
+    "8a9f8d6e-0725-4c3e-b4b0-a6c36901fb44": {
+      "content": "What's your opinion on workflow optimization?",
+      "timestamp": "2025-04-22T13:10:08.916969",
+      "importance": 0.9,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T13:10:08.864883",
+        "importance": 0.9,
+        "speakers": [
+          "user"
+        ],
+        "turn_ids": [
+          4
+        ],
+        "topics": []
+      }
+    },
+    "85578169-cef4-4f73-a4c2-7fec3f786721": {
+      "content": "Here's my response to: What's your opinion on workflow optimization?",
+      "timestamp": "2025-04-22T13:10:08.927175",
+      "importance": 0.9,
+      "metadata": {
+        "source_type": "conversation",
+        "timestamp": "2025-04-22T13:10:08.864883",
+        "importance": 0.9,
+        "speakers": [
+          "assistant"
+        ],
+        "turn_ids": [
+          5
+        ],
+        "topics": []
+      }
+    }
+  },
+  "user_summary": {
+    "behavior_profile": {
+      "verbosity": 0.5,
+      "assertiveness": 0.5,
+      "humor": 0.3,
+      "formality": 0.5,
+      "proactivity": 0.4,
+      "confidence": 0.1,
+      "last_updated": "2025-04-22T13:10:08.940776",
+      "observation_count": 0
+    }
+  },
+  "topics": []
+}

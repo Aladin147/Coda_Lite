@@ -215,6 +215,8 @@ If you decide a tool is needed, respond ONLY with JSON in this format:
 Do NOT include explanations, just the JSON. The system will execute the tool and provide the result.
 
 If no tool is needed, respond naturally without JSON.
+
+When users ask "What can you do?" or "Show me your capabilities", use the show_capabilities tool to display a list of available tools and features.
 """
         return instructions
 

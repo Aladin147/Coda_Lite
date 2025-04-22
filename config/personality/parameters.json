@@ -1,0 +1,54 @@
+{
+  "parameters": {
+    "verbosity": {
+      "value": 0.5,
+      "range": [0.0, 1.0],
+      "description": "Controls length and detail of responses",
+      "context_adjustments": {
+        "technical_topic": 0.2,
+        "casual_conversation": -0.1,
+        "formal_context": 0.1
+      }
+    },
+    "assertiveness": {
+      "value": 0.5,
+      "range": [0.0, 1.0],
+      "description": "Controls how assertive or tentative responses are",
+      "context_adjustments": {
+        "information_request": 0.2,
+        "creative_task": -0.1,
+        "emergency": 0.3
+      }
+    },
+    "humor": {
+      "value": 0.3,
+      "range": [0.0, 1.0],
+      "description": "Controls the level of humor in responses",
+      "context_adjustments": {
+        "entertainment": 0.3,
+        "technical_topic": -0.2,
+        "formal_context": -0.2
+      }
+    },
+    "formality": {
+      "value": 0.5,
+      "range": [0.0, 1.0],
+      "description": "Controls the formality of language",
+      "context_adjustments": {
+        "formal_context": 0.3,
+        "casual_conversation": -0.3,
+        "entertainment": -0.2
+      }
+    },
+    "proactivity": {
+      "value": 0.4,
+      "range": [0.0, 1.0],
+      "description": "Controls how proactive vs. reactive responses are",
+      "context_adjustments": {
+        "information_request": -0.2,
+        "problem_solving": 0.2,
+        "idle_time": 0.3
+      }
+    }
+  }
+}

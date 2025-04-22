@@ -1,4 +1,4 @@
-# Coda Lite – Core Operations & Digital Assistant (v0.1.0)
+# Coda Lite – Core Operations & Digital Assistant (v0.0.9)
 
 **Coda Lite** is a lightweight, local-first voice assistant prototype focused on one thing:
 ⚡ **Real-time, low-latency, human-feeling conversation.**
@@ -33,37 +33,39 @@ This project is the **first step** in building an open, modular, transparent AI 
 
 ---
 
-## 🚀 Current Version: `v0.1.0`
+## 🚀 Current Version: `v0.0.9` - Adaptive Agent
 
-> 🔧 **Enhanced tool calling system!**
+> 🧠 **Self-tuning, memory-aware assistant!**
 
 - STT module fully implemented with Whisper (GPU-accelerated)
 - LLM integration with Ollama complete
 - TTS module implemented with MeloTTS (CSM-1B) with GPU acceleration
 - Multiple English voices available (US, British, Australian, Indian)
 - Concurrent processing with threading for reduced latency
-- Personality module for more engaging interactions
-- Short-term memory for conversation context
-- **Two-pass tool calling system** with enhanced JSON cleaning
-- Improved error handling and fallbacks for tool execution
+- Advanced personality engine with behavioral conditioning
+- Long-term memory with vector embeddings and semantic search
+- Intent routing system with pattern-based detection
+- User feedback hooks for collecting and processing feedback
+- Memory-based personality conditioning system
+- Mini-command language with system commands
 - Tools include `get_time()`, `get_date()`, `tell_joke()`, etc.
-- Performance improved by ~23% with pipeline optimization
 
 ---
 
-## 🔜 Upcoming: `v0.1.1`
+## 🔜 Upcoming: `v0.1.0` - Alpha Candidate
 
-> Fixing JSON leakage and enhancing tools:
+> Fully autonomous loop, early demos possible:
 
-- Fix JSON leakage in tool calling responses
-- Add more complex tools (weather, calculator, web search)
-- Implement tool chaining (using results from one tool as input to another)
-- Add caching for frequently used tool results
+- Session summary generation for conversation sessions
+- Memory explainability for insights into what Coda remembers
+- Task management tools for productivity
+- Fix remaining JSON leakage in tool calling responses
 - Optimize performance of the two-pass approach
+- Implement tool chaining (using results from one tool as input to another)
 
-## 🔜 Future: `v0.2.0`
+## 🔜 Future: `v0.2.0` - Beta Candidate
 
-> Enhancing the voice loop and adding refinements:
+> Feature-complete with stability improvements:
 
 - Wake word detection for hands-free activation
 - Token streaming for real-time TTS output
@@ -75,7 +77,18 @@ This project is the **first step** in building an open, modular, transparent AI 
 
 ---
 
-## 🛤️ Completed in `v0.1.0`
+## 🛤️ Completed in `v0.0.9` - Adaptive Agent
+
+> Self-tuning, memory-aware assistant:
+
+- Memory-based personality conditioning system ✅
+- Feedback pattern analysis and application ✅
+- User preference insights based on feedback history ✅
+- Mini-command language with system commands ✅
+- Feedback storage in long-term memory ✅
+- Automatic feedback pattern application ✅
+
+## 🛤️ Completed in `v0.1.0` - Alpha Candidate
 
 > Enhanced tool calling system:
 
@@ -85,7 +98,7 @@ This project is the **first step** in building an open, modular, transparent AI 
 - Improved context handling for the second pass ✅
 - Test script for verifying tool calling functionality ✅
 
-## 🛤️ Completed in `v0.0.2`
+## 🛤️ Completed in `v0.0.2` - Memory & Tools
 
 > Basic tool capabilities added:
 
@@ -119,11 +132,14 @@ Coda is **a system** — and this is just its first breath.
 ```bash
 coda-lite/
 ├── main.py               # Entry point
+├── version.py            # Version information
 ├── stt/                  # Speech-to-text (Whisper)
 ├── tts/                  # Text-to-speech (MeloTTS/CSM-1B)
 ├── llm/                  # LLM handling and prompt logic
 ├── memory/               # Memory management
 ├── personality/          # Personality management
+├── intent/               # Intent routing system
+├── feedback/             # User feedback system
 ├── tools/                # Tool calling + router
 ├── config/               # Prompt and settings files
 ├── data/                 # Cached audio, logs, temp files
@@ -131,6 +147,7 @@ coda-lite/
 ├── docs/                 # Project documentation
 ├── examples/             # Example scripts
 ├── tests/                # Unit tests
+├── CHANGELOG.md          # Detailed version history
 ```
 
 ---

@@ -225,19 +225,21 @@ If no tool is needed, respond naturally without JSON.
         Returns:
             str: Summarization instructions.
         """
-        instructions = """You have received the result of a tool call.
+        instructions = """You are Coda, a helpful and natural-sounding voice assistant.
 
-DO NOT output JSON. DO NOT call the tool again.
+You have received the result of a tool call. DO NOT output any JSON.
+DO NOT repeat the tool call. DO NOT re-call the tool.
 DO NOT include any curly braces {} in your response.
 DO NOT mention tools, functions, or APIs.
+DO NOT use phrases like "according to the tool" or "the tool says".
 
-Your job is to clearly and naturally explain the result to the user in a single sentence.
-Respond in a natural, helpful tone, as if speaking to a user.
+Respond clearly and casually with just the final answer. Do not say things like "Let me check" or "I found that". Just deliver the result naturally.
 
 Examples:
-- [TOOL RESULT] The current time is 03:01 AM → It's 3:01 AM right now.
+- [TOOL RESULT] The current time is 2:45 PM → It's 2:45 PM.
 - [TOOL RESULT] Today's date is April 22, 2025 → Today is April 22nd, 2025.
+- [TOOL RESULT] Here's a joke: Why don't scientists trust atoms? Because they make up everything! → Why don't scientists trust atoms? Because they make up everything!
 
-Do not say "Let me check" or "I found that". Just deliver the answer naturally.
+Keep your response brief, conversational, and completely free of any JSON formatting.
 """
         return instructions

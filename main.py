@@ -60,15 +60,30 @@ def extract_clean_response(response: str) -> str:
     Returns:
         A cleaned response with JSON blocks removed
     """
-    # Remove any JSON blocks
-    response = re.sub(r'{.*?}', '', response, flags=re.DOTALL)
+    # Remove any JSON blocks (more aggressive pattern)
+    response = re.sub(r'\{.*?"tool_call".*?\}', '', response, flags=re.DOTALL)
+    response = re.sub(r'\{.*?\}', '', response, flags=re.DOTALL)  # Remove any remaining JSON
 
     # Remove any trailing/leading whitespace and normalize spacing
     response = response.strip()
     response = re.sub(r'\s+', ' ', response)
 
-    # Remove any tool_call mentions
+    # Remove any tool-related mentions
     response = re.sub(r'tool_call', '', response)
+    response = re.sub(r'tool result', '', response, flags=re.IGNORECASE)
+    response = re.sub(r'according to the tool', '', response, flags=re.IGNORECASE)
+    response = re.sub(r'the tool says', '', response, flags=re.IGNORECASE)
+
+    # Remove phrases like "Let me check" or "I found that"
+    response = re.sub(r'let me check', '', response, flags=re.IGNORECASE)
+    response = re.sub(r'i found that', '', response, flags=re.IGNORECASE)
+    response = re.sub(r'i can tell you that', '', response, flags=re.IGNORECASE)
+
+    # Clean up any double spaces or punctuation issues from the removals
+    response = re.sub(r'\s+', ' ', response)  # Normalize spaces again
+    response = re.sub(r'\s+\.', '.', response)  # Fix spaces before periods
+    response = re.sub(r'^[,\.\s]+', '', response)  # Remove leading punctuation
+    response = re.sub(r'\s+$', '', response)  # Remove trailing spaces
 
     # If the response is too short after cleaning, return a generic message
     if len(response) < 5:
@@ -315,7 +330,15 @@ class CodaAssistant:
                 })
 
                 # Format the tool result for better readability
+                # Make sure the tool result is already human-readable and doesn't contain JSON
+                # This is critical to prevent JSON leakage in the second pass
                 formatted_result = tool_result
+
+                # Clean up any JSON that might be in the tool result
+                if isinstance(formatted_result, str) and ('{' in formatted_result or '}' in formatted_result):
+                    formatted_result = extract_clean_response(formatted_result)
+
+                # Format the result in a natural language way
                 if tool_name == "get_time":
                     formatted_result = f"The current time is {tool_result}"
                 elif tool_name == "get_date":
@@ -377,6 +400,21 @@ class CodaAssistant:
 
                 # Log which response is being returned
                 logger.info(f"[DEBUG] Using SECOND PASS output: {final_response}")
+
+                # Apply one final safety check to ensure no JSON leaks through
+                if '{' in final_response or '}' in final_response or 'tool_call' in final_response.lower():
+                    logger.warning("JSON still detected in final response, applying aggressive cleaning")
+                    final_response = extract_clean_response(final_response)
+
+                    # If we still have JSON after cleaning, use a simple fallback
+                    if '{' in final_response or '}' in final_response:
+                        logger.warning("JSON persists after cleaning, using simple fallback")
+                        if tool_name == "get_time":
+                            final_response = f"It's {datetime.now().strftime('%H:%M')}."
+                        elif tool_name == "get_date":
+                            final_response = f"Today is {datetime.now().strftime('%A, %B %d, %Y')}."
+                        else:
+                            final_response = f"{formatted_result}"
 
                 # Update the response with the final response from the second pass
                 response = final_response

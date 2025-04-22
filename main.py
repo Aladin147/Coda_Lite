@@ -25,6 +25,8 @@ from queue import Queue
 
 from personality import PersonalityLoader
 from memory import MemoryManager
+from tools import get_tool_router
+from tools.basic_tools import set_memory_manager
 
 # Set up logging
 logging.basicConfig(
@@ -114,6 +116,14 @@ class CodaAssistant:
         max_turns = config.get("memory.max_turns", 20)
         self.memory = MemoryManager(max_turns=max_turns)
 
+        # Initialize tool router
+        logger.info("Initializing tool router...")
+        self.tool_router = get_tool_router()
+
+        # Set memory manager reference for tools
+        set_memory_manager(self.memory)
+        logger.info("Set memory manager reference for tools")
+
         # Add system message to memory
         self.memory.add_turn("system", self.system_prompt)
         logger.info("Added system prompt to memory")
@@ -169,6 +179,17 @@ class CodaAssistant:
 
             logger.info(f"LLM response generated in {end_time - start_time:.2f} seconds")
             logger.info(f"Assistant response: {response}")
+
+            # Check if the response contains a tool call
+            tool_result = self.tool_router.route_llm_output(response)
+            if tool_result:
+                logger.info(f"Tool result: {tool_result}")
+
+                # Add tool result to memory as a system message
+                self.memory.add_turn("system", f"Tool result: {tool_result}")
+
+                # Update the response with the tool result
+                response = tool_result
 
             # Add assistant response to memory
             self.memory.add_turn("assistant", response)

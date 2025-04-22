@@ -1,5 +1,5 @@
 @echo off
-echo Committing tool calling changes to Coda Lite repository...
+echo Committing tool calling implementation to Coda Lite repository...
 
 REM Set Git configuration locally
 git config --local user.name "Aladin147"

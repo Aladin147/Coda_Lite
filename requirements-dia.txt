@@ -1,0 +1,4 @@
+# Dia TTS requirements
+git+https://github.com/nari-labs/dia.git
+soundfile
+torch>=2.0.0

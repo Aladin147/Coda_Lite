@@ -255,11 +255,9 @@ class OllamaLLM:
 
                     # Create a completely new context with very explicit instructions
                     formatted_messages = [
-                        {"role": "system", "content": "You are Coda, a helpful voice assistant. Do NOT output JSON or tool instructions."},
-                        {"role": "system", "content": f"The user asked: '{original_query}'"},
-                        {"role": "system", "content": f"The tool result is: {msg['content']}"},
-                        {"role": "system", "content": "Now rephrase the result naturally in a friendly tone. Keep it brief and conversational. Do not mention that you used a tool or function."},
-                        {"role": "user", "content": "Please respond to my question using this information."}
+                        {"role": "system", "content": "You are Coda, a helpful and natural-sounding voice assistant.\n\nYou have received the result of a tool call. DO NOT output any JSON.\nDO NOT repeat the tool call. DO NOT re-call the tool.\nDO NOT include any curly braces {} in your response.\nDO NOT mention tools, functions, or APIs.\nDO NOT use phrases like \"according to the tool\" or \"the tool says\".\n\nRespond clearly and casually with just the final answer. Do not say things like \"Let me check\" or \"I found that\". Just deliver the result naturally.\n\nKeep your response brief, conversational, and completely free of any JSON formatting."},
+                        {"role": "system", "content": f"[TOOL RESULT] {msg['content']}"},
+                        {"role": "user", "content": original_query}
                     ]
 
                     # Log the messages for debugging
@@ -267,8 +265,9 @@ class OllamaLLM:
                     for i, formatted_msg in enumerate(formatted_messages):
                         logger.info(f"  Message {i}: role={formatted_msg['role']}, content={formatted_msg['content']}")
 
-                    # Return early with the completely new context
-                    return formatted_messages
+                    # Continue with these new messages instead of returning early
+                    # Skip the rest of the loop and use these new messages
+                    continue
 
                 formatted_messages.append(formatted_msg)
 

@@ -60,24 +60,36 @@ def extract_clean_response(response: str) -> str:
     Returns:
         A cleaned response with JSON blocks removed
     """
-    # Remove any JSON blocks (more aggressive pattern)
-    response = re.sub(r'\{.*?"tool_call".*?\}', '', response, flags=re.DOTALL)
-    response = re.sub(r'\{.*?\}', '', response, flags=re.DOTALL)  # Remove any remaining JSON
+    # First, try to find natural language after JSON
+    json_end = max(response.rfind('}'), response.rfind(']'))
+    if json_end > 0 and json_end < len(response) - 1:
+        # There's text after the JSON, use that
+        natural_text = response[json_end+1:].strip()
+        if len(natural_text) > 5:
+            response = natural_text
+
+    # Remove any JSON blocks (ultra-aggressive pattern)
+    response = re.sub(r'\[.*?\]', '', response, flags=re.DOTALL)  # Remove array blocks
+    response = re.sub(r'\{.*?"tool_call".*?\}', '', response, flags=re.DOTALL)  # Remove tool_call blocks
+    response = re.sub(r'\{.*?\}', '', response, flags=re.DOTALL)  # Remove any remaining JSON objects
 
     # Remove any trailing/leading whitespace and normalize spacing
     response = response.strip()
     response = re.sub(r'\s+', ' ', response)
 
     # Remove any tool-related mentions
-    response = re.sub(r'tool_call', '', response)
+    response = re.sub(r'tool_call', '', response, flags=re.IGNORECASE)
     response = re.sub(r'tool result', '', response, flags=re.IGNORECASE)
     response = re.sub(r'according to the tool', '', response, flags=re.IGNORECASE)
     response = re.sub(r'the tool says', '', response, flags=re.IGNORECASE)
+    response = re.sub(r'based on the tool', '', response, flags=re.IGNORECASE)
 
     # Remove phrases like "Let me check" or "I found that"
     response = re.sub(r'let me check', '', response, flags=re.IGNORECASE)
     response = re.sub(r'i found that', '', response, flags=re.IGNORECASE)
     response = re.sub(r'i can tell you that', '', response, flags=re.IGNORECASE)
+    response = re.sub(r'i need to use a tool', '', response, flags=re.IGNORECASE)
+    response = re.sub(r'i\'ll check', '', response, flags=re.IGNORECASE)
 
     # Clean up any double spaces or punctuation issues from the removals
     response = re.sub(r'\s+', ' ', response)  # Normalize spaces again
@@ -117,41 +129,6 @@ class CodaAssistant:
         self.running = True
         self.processing = False  # Flag to track if we're currently processing a request
         self.response_queue = Queue()  # Queue for responses to be spoken
-
-    def summarize_tool_result(self, original_query: str, tool_result: str) -> str:
-        """Helper function to summarize a tool result in a natural way.
-
-        Args:
-            original_query: The original user query that triggered the tool call
-            tool_result: The result from the tool execution
-
-        Returns:
-            A natural language summary of the tool result
-        """
-        logger.info(f"Summarizing tool result: {tool_result} for query: {original_query}")
-
-        # Create a brand new context for the second pass using the dedicated summarization prompt
-        messages = [
-            {"role": "system", "content": self.summarization_prompt},
-            {"role": "system", "content": f"[TOOL RESULT] {tool_result}"},
-            {"role": "user", "content": original_query}
-        ]
-
-        # Log the messages for debugging
-        logger.info("Summarization messages:")
-        for i, msg in enumerate(messages):
-            logger.info(f"  Message {i}: role={msg['role']}, content={msg['content']}")
-
-        # Generate a natural language summary
-        summary = self.llm.chat(
-            messages=messages,
-            temperature=0.7,
-            max_tokens=256,
-            stream=False
-        )
-
-        logger.info(f"Generated summary: {summary}")
-        return summary
 
     def __init__(self, config: ConfigLoader):
         """Initialize the Coda assistant."""
@@ -227,6 +204,44 @@ class CodaAssistant:
 
         logger.info("Coda assistant initialized successfully")
 
+    def summarize_tool_result(self, original_query: str, tool_result: str) -> str:
+        """Helper function to summarize a tool result in a natural way.
+
+        Args:
+            original_query: The original user query that triggered the tool call
+            tool_result: The result from the tool execution
+
+        Returns:
+            A natural language summary of the tool result
+        """
+        logger.info(f"Summarizing tool result: {tool_result} for query: {original_query}")
+
+        # Create a brand new context for the second pass using the dedicated summarization prompt
+        messages = [
+            {"role": "system", "content": self.summarization_prompt},
+            {"role": "system", "content": f"[TOOL RESULT] {tool_result}"},
+            {"role": "user", "content": original_query}
+        ]
+
+        # Log the messages for debugging
+        logger.info("Summarization messages:")
+        for i, msg in enumerate(messages):
+            logger.info(f"  Message {i}: role={msg['role']}, content={msg['content']}")
+
+        # Generate a natural language summary
+        logger.info("Generating summarization response...")
+        summary = ""
+        for chunk in self.llm.chat(
+            messages=messages,
+            temperature=0.7,
+            max_tokens=256,
+            stream=True
+        ):
+            summary += chunk
+
+        logger.info(f"Generated summary: {summary}")
+        return summary
+
     def _tts_worker(self):
         """Worker thread for TTS processing."""
         while self.running:
@@ -259,12 +274,15 @@ class CodaAssistant:
 
             # Generate initial response from LLM
             start_time = time.time()
-            raw_response = self.llm.chat(
+            logger.info("Generating initial LLM response...")
+            raw_response = ""
+            for chunk in self.llm.chat(
                 messages=context,
                 temperature=self.config.get("llm.temperature", 0.7),
                 max_tokens=self.config.get("llm.max_tokens", 256),
-                stream=False
-            )
+                stream=True
+            ):
+                raw_response += chunk
             end_time = time.time()
 
             logger.info(f"Initial LLM response generated in {end_time - start_time:.2f} seconds")
@@ -285,8 +303,17 @@ class CodaAssistant:
                 # Execute the tool
                 logger.info(f"Executing tool: {tool_name} with args: {tool_args}")
                 try:
-                    tool_result = self.tool_router.execute_tool(tool_name, tool_args)
-                    logger.info(f"Tool result: {tool_result}")
+                    # Force real-time values for time and date tools
+                    if tool_name == "get_time":
+                        tool_result = datetime.now().strftime("It's %H:%M.")
+                        logger.info(f"Using real-time value for get_time: {tool_result}")
+                    elif tool_name == "get_date":
+                        tool_result = datetime.now().strftime("Today is %A, %B %d, %Y.")
+                        logger.info(f"Using real-time value for get_date: {tool_result}")
+                    else:
+                        # For other tools, use the tool router
+                        tool_result = self.tool_router.execute_tool(tool_name, tool_args)
+                        logger.info(f"Tool result from router: {tool_result}")
 
                     # Make sure we have a valid tool result
                     if not tool_result:
@@ -329,26 +356,15 @@ class CodaAssistant:
                     }
                 })
 
-                # Format the tool result for better readability
-                # Make sure the tool result is already human-readable and doesn't contain JSON
-                # This is critical to prevent JSON leakage in the second pass
+                # The tool result should already be properly formatted
+                # Just use it directly without additional formatting
                 formatted_result = tool_result
 
                 # Clean up any JSON that might be in the tool result
                 if isinstance(formatted_result, str) and ('{' in formatted_result or '}' in formatted_result):
                     formatted_result = extract_clean_response(formatted_result)
 
-                # Format the result in a natural language way
-                if tool_name == "get_time":
-                    formatted_result = f"The current time is {tool_result}"
-                elif tool_name == "get_date":
-                    formatted_result = f"Today is {tool_result}"
-                elif tool_name == "tell_joke":
-                    formatted_result = f"Here's a joke: {tool_result}"
-                elif tool_name == "list_memory_files":
-                    formatted_result = f"Memory files: {tool_result}"
-                elif tool_name == "count_conversation_turns":
-                    formatted_result = f"Conversation turns: {tool_result}"
+                logger.info(f"Final formatted tool result: {formatted_result}")
 
                 # Add the function result
                 augmented_context.append({
@@ -367,18 +383,72 @@ class CodaAssistant:
                     else:
                         logger.info(f"Context [{i}] - {role}: {content[:50]}{'...' if len(content) > 50 else ''}")
 
-                # Use the summarize_tool_result helper function to generate a natural language response
+                # Create a brand new context for the second pass
                 start_time = time.time()
-                logger.info("Using summarize_tool_result helper function for second pass")
+                logger.info("Creating brand new context for second pass")
 
                 # Get the original user query
                 original_query = text  # This is the original user input
 
-                # Generate a natural language summary using a brand new context
-                raw_summary = self.summarize_tool_result(original_query, formatted_result)
+                # Create a completely new context with very explicit instructions
+                second_pass_messages = [
+                    {"role": "system", "content": "You are Coda, a helpful and natural-sounding voice assistant.\n\nYou have received the result of a tool call. DO NOT output any JSON.\nDO NOT repeat the tool call. DO NOT re-call the tool.\nDO NOT include any curly braces {} in your response.\nDO NOT mention tools, functions, or APIs.\nDO NOT use phrases like \"according to the tool\" or \"the tool says\".\n\nRespond clearly and casually with just the final answer. Do not say things like \"Let me check\" or \"I found that\". Just deliver the result naturally.\n\nKeep your response brief, conversational, and completely free of any JSON formatting."},
+                    {"role": "system", "content": f"[TOOL RESULT] {formatted_result}"},
+                    {"role": "user", "content": original_query}
+                ]
 
-                # Clean the response to remove any JSON or tool call patterns
-                final_response = extract_clean_response(raw_summary)
+                # Log the messages for debugging
+                logger.info("Second pass messages:")
+                for i, msg in enumerate(second_pass_messages):
+                    logger.info(f"  Message {i}: role={msg['role']}, content={msg['content']}")
+
+                # Generate a natural language summary
+                logger.info("Generating second pass response...")
+                logger.info("CRITICAL: Starting second LLM call with tool result")
+                raw_summary = ""
+                try:
+                    for chunk in self.llm.chat(
+                        messages=second_pass_messages,
+                        temperature=0.5,  # Lower temperature for more deterministic output
+                        max_tokens=512,  # Use a higher max_tokens for the second pass
+                        stream=True
+                    ):
+                        raw_summary += chunk
+                        logger.info(f"Received chunk: {chunk}")
+                    logger.info(f"CRITICAL: Second pass complete, raw_summary: {raw_summary}")
+                except Exception as e:
+                    logger.error(f"CRITICAL ERROR in second pass: {e}", exc_info=True)
+                    raw_summary = f"It's {datetime.now().strftime('%H:%M')}."  # Fallback
+
+                # For time and date tools, consider using direct fallbacks first
+                if tool_name == "get_time":
+                    direct_fallback = f"It's {datetime.now().strftime('%H:%M')}."
+                    logger.info(f"Direct fallback for time: {direct_fallback}")
+
+                    # If the raw summary contains the correct time, use it
+                    # Otherwise use the fallback
+                    if datetime.now().strftime('%H:%M') in raw_summary or datetime.now().strftime('%I:%M') in raw_summary:
+                        logger.info("Raw summary contains correct time, cleaning it")
+                        final_response = extract_clean_response(raw_summary)
+                    else:
+                        logger.info("Using direct fallback for time")
+                        final_response = direct_fallback
+
+                elif tool_name == "get_date":
+                    direct_fallback = f"Today is {datetime.now().strftime('%A, %B %d, %Y')}."
+                    logger.info(f"Direct fallback for date: {direct_fallback}")
+
+                    # If the raw summary contains today's date, use it
+                    # Otherwise use the fallback
+                    if datetime.now().strftime('%B') in raw_summary and datetime.now().strftime('%d') in raw_summary:
+                        logger.info("Raw summary contains correct date, cleaning it")
+                        final_response = extract_clean_response(raw_summary)
+                    else:
+                        logger.info("Using direct fallback for date")
+                        final_response = direct_fallback
+                else:
+                    # For other tools, clean the response
+                    final_response = extract_clean_response(raw_summary)
 
                 # Log the result
                 logger.info(f"Generated raw summary: {raw_summary}")
@@ -402,12 +472,26 @@ class CodaAssistant:
                 logger.info(f"[DEBUG] Using SECOND PASS output: {final_response}")
 
                 # Apply one final safety check to ensure no JSON leaks through
-                if '{' in final_response or '}' in final_response or 'tool_call' in final_response.lower():
-                    logger.warning("JSON still detected in final response, applying aggressive cleaning")
+                logger.warning("CRITICAL: Applying aggressive JSON cleaning to final response")
+
+                # First, check if we have a JSON tool call in the response
+                if '[' in final_response or '{' in final_response or '}' in final_response or 'tool_call' in final_response.lower():
+                    logger.warning("JSON detected in final response, applying aggressive cleaning")
+
+                    # Try to extract just the natural language part after any JSON
+                    json_end = max(final_response.rfind('}'), final_response.rfind(']'))
+                    if json_end > 0 and json_end < len(final_response) - 1:
+                        # There's text after the JSON, use that
+                        natural_text = final_response[json_end+1:].strip()
+                        if len(natural_text) > 5:
+                            logger.info(f"Extracted natural text after JSON: {natural_text}")
+                            final_response = natural_text
+
+                    # Apply regex cleaning
                     final_response = extract_clean_response(final_response)
 
                     # If we still have JSON after cleaning, use a simple fallback
-                    if '{' in final_response or '}' in final_response:
+                    if '{' in final_response or '}' in final_response or '[' in final_response or ']' in final_response:
                         logger.warning("JSON persists after cleaning, using simple fallback")
                         if tool_name == "get_time":
                             final_response = f"It's {datetime.now().strftime('%H:%M')}."

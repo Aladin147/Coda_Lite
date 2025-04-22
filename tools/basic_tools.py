@@ -12,7 +12,7 @@ This module provides a set of simple tools for Coda Lite v0.0.2:
 import os
 import random
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 import logging
 logger = logging.getLogger("coda.tools")
@@ -61,18 +61,18 @@ def tell_joke() -> str:
 def list_memory_files() -> str:
     """List memory files in the data directory."""
     memory_dir = "data/memory"
-    
+
     if not os.path.exists(memory_dir):
         return "No memory directory found."
-    
+
     files = [f for f in os.listdir(memory_dir) if f.endswith('.json')]
-    
+
     if not files:
         return "No memory files found."
-    
+
     file_count = len(files)
     file_list = ", ".join(files[:5])
-    
+
     if file_count > 5:
         return f"{file_count} memory files found. Most recent: {file_list}..."
     else:
@@ -81,13 +81,13 @@ def list_memory_files() -> str:
 def count_conversation_turns() -> str:
     """Count the number of turns in the current conversation."""
     global _memory_manager
-    
+
     if not _memory_manager:
         return "Memory manager not available."
-    
+
     try:
         turn_count = _memory_manager.get_turn_count()
-        
+
         if turn_count == 0:
             return "We haven't had any conversation turns yet."
         elif turn_count == 1:
@@ -101,11 +101,12 @@ def count_conversation_turns() -> str:
 # Register all tools with the tool router
 def register_tools(tool_router):
     """Register all tools with the given tool router."""
-    tool_router.register_tool("get_time", get_time)
-    tool_router.register_tool("get_date", get_date)
-    tool_router.register_tool("tell_joke", tell_joke)
-    tool_router.register_tool("list_memory_files", list_memory_files)
-    tool_router.register_tool("count_conversation_turns", count_conversation_turns)
-    
+    # Register tools with aliases
+    tool_router.register_tool("get_time", get_time, aliases=["get_system_time", "time", "current_time"])
+    tool_router.register_tool("get_date", get_date, aliases=["get_system_date", "date", "current_date"])
+    tool_router.register_tool("tell_joke", tell_joke, aliases=["joke", "tell_a_joke"])
+    tool_router.register_tool("list_memory_files", list_memory_files, aliases=["memory_files", "list_files"])
+    tool_router.register_tool("count_conversation_turns", count_conversation_turns, aliases=["count_turns", "conversation_turns"])
+
     logger.info(f"Registered {len(tool_router.tools)} tools")
     return tool_router

@@ -470,8 +470,30 @@ def process_in_thread(window, coda, text, temperature, max_tokens):
             # Check if response is valid
             response = result.get("response", "")
             if response:
-                # Update the response box
-                window['-RESPONSE-'].update(response)
+                # Check if the response is a tool call JSON
+                try:
+                    json_response = json.loads(response)
+                    if isinstance(json_response, dict) and "tool_call" in json_response:
+                        tool_call = json_response["tool_call"]
+                        tool_name = tool_call.get("name", "unknown")
+                        tool_args = tool_call.get("args", {})
+
+                        # Log the tool call
+                        log_message(window, f"Tool call detected: {tool_name} with args {tool_args}")
+
+                        # Update the response box with just the tool call for now
+                        # The final natural language response will come in the next turn
+                        window['-RESPONSE-'].update(response)
+
+                        # Add a note about the tool call
+                        log_message(window, f"Tool {tool_name} will be executed and result will be used in next response")
+                    else:
+                        # Regular response
+                        window['-RESPONSE-'].update(response)
+                except json.JSONDecodeError:
+                    # Not a JSON response, just update normally
+                    window['-RESPONSE-'].update(response)
+
                 log_message(window, f"Response received: {response[:50]}{'...' if len(response) > 50 else ''}")
 
                 # Log timing information

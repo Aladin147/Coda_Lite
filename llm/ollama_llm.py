@@ -230,9 +230,52 @@ class OllamaLLM:
             start_time = time.time()
 
             # Prepare request payload
+            # Convert messages to format Ollama expects
+            formatted_messages = []
+            for msg in messages:
+                formatted_msg = {"role": msg["role"], "content": msg.get("content", "")}
+
+                # Handle function calls and results
+                if msg["role"] == "assistant" and "function_call" in msg:
+                    # For function calls, we need to format it as content since Ollama doesn't natively support function_call
+                    func_call = msg["function_call"]
+                    formatted_msg["content"] = f"I'll use a tool to answer this question. I need to call {func_call['name']}."
+
+                if msg["role"] == "function":
+                    # Convert function messages to system messages since Ollama doesn't support function role
+                    formatted_msg["role"] = "system"
+                    formatted_msg["content"] = f"[TOOL RESULT] {msg['content']}"
+
+                    # Add the tool result message
+                    formatted_messages.append(formatted_msg)
+
+                    # Find the original user query that triggered this tool call
+                    original_query = ""
+                    for prev_msg in messages:
+                        if prev_msg["role"] == "user":
+                            original_query = prev_msg["content"]
+
+                    # Add an additional system message with clear instructions
+                    formatted_messages.append({
+                        "role": "system",
+                        "content": "You just received a tool result. Summarize it as if you're answering the user's question naturally. Keep it brief and conversational."
+                    })
+
+                    # Add the original user query again to reinforce context
+                    if original_query:
+                        formatted_messages.append({
+                            "role": "user",
+                            "content": original_query
+                        })
+
+                    # Skip adding the original message since we've already added it with the additional instruction
+                    continue
+
+                formatted_messages.append(formatted_msg)
+
             payload = {
                 "model": self.model_name,
-                "messages": messages,
+                "messages": formatted_messages,
                 "stream": stream,
                 "options": {
                     "temperature": temperature,
@@ -274,6 +317,16 @@ class OllamaLLM:
 
                     end_time = time.time()
                     logger.info(f"Chat response generated in {end_time - start_time:.2f} seconds")
+
+                    # Check if the response is a valid tool call JSON
+                    if content and content.strip():
+                        # Check if it's a valid JSON that might be a tool call
+                        try:
+                            json_response = json.loads(content)
+                            if isinstance(json_response, dict) and "tool_call" in json_response:
+                                logger.info(f"Valid tool call JSON detected: {content}")
+                        except json.JSONDecodeError:
+                            pass
 
                     return content
             except Exception as e:

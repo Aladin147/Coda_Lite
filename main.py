@@ -19,8 +19,9 @@ import logging
 import signal
 import threading
 import random
+import json
 from datetime import datetime
-from typing import List, Dict, Any, Optional, Callable
+from typing import List, Dict
 from queue import Queue
 
 from personality import PersonalityLoader
@@ -167,9 +168,9 @@ class CodaAssistant:
             context = self.memory.get_context(max_tokens=max_tokens)
             logger.info(f"Retrieved context with {len(context)} turns")
 
-            # Generate response from LLM
+            # Generate initial response from LLM
             start_time = time.time()
-            response = self.llm.chat(
+            raw_response = self.llm.chat(
                 messages=context,
                 temperature=self.config.get("llm.temperature", 0.7),
                 max_tokens=self.config.get("llm.max_tokens", 256),
@@ -177,19 +178,113 @@ class CodaAssistant:
             )
             end_time = time.time()
 
-            logger.info(f"LLM response generated in {end_time - start_time:.2f} seconds")
-            logger.info(f"Assistant response: {response}")
+            logger.info(f"Initial LLM response generated in {end_time - start_time:.2f} seconds")
+            logger.info(f"Raw LLM response: {raw_response}")
+
+            # Store the original response for debugging
+            original_response = raw_response
+            response = raw_response
 
             # Check if the response contains a tool call
-            tool_result = self.tool_router.route_llm_output(response)
-            if tool_result:
+            tool_call_info = self.tool_router.extract_tool_call(response)
+            if tool_call_info:
+                tool_name = tool_call_info.get("name")
+                tool_args = tool_call_info.get("args", {})
+
+                logger.info(f"Detected tool call: {tool_name} with args {tool_args}")
+
+                # Execute the tool
+                tool_result = self.tool_router.execute_tool(tool_name, tool_args)
                 logger.info(f"Tool result: {tool_result}")
 
-                # Add tool result to memory as a system message
-                self.memory.add_turn("system", f"Tool result: {tool_result}")
+                # Add the tool call and result to the conversation context
+                augmented_context = context.copy()
 
-                # Update the response with the tool result
-                response = tool_result
+                # Add the function call as assistant's response
+                augmented_context.append({
+                    "role": "assistant",
+                    "content": None,
+                    "function_call": {
+                        "name": tool_name,
+                        "arguments": json.dumps(tool_args)
+                    }
+                })
+
+                # Format the tool result for better readability
+                formatted_result = tool_result
+                if tool_name == "get_time":
+                    formatted_result = f"The current time is {tool_result}"
+                elif tool_name == "get_date":
+                    formatted_result = f"Today is {tool_result}"
+                elif tool_name == "tell_joke":
+                    formatted_result = f"Here's a joke: {tool_result}"
+                elif tool_name == "list_memory_files":
+                    formatted_result = f"Memory files: {tool_result}"
+                elif tool_name == "count_conversation_turns":
+                    formatted_result = f"Conversation turns: {tool_result}"
+
+                # Add the function result
+                augmented_context.append({
+                    "role": "function",
+                    "name": tool_name,
+                    "content": formatted_result
+                })
+
+                # Log the augmented context for debugging
+                logger.info(f"Augmented context with tool result, re-running LLM")
+                for i, msg in enumerate(augmented_context):
+                    role = msg.get("role", "unknown")
+                    content = msg.get("content", "")
+                    if role == "assistant" and "function_call" in msg:
+                        logger.info(f"Context [{i}] - {role} with function_call: {msg['function_call']}")
+                    else:
+                        logger.info(f"Context [{i}] - {role}: {content[:50]}{'...' if len(content) > 50 else ''}")
+
+                # Re-run the LLM with the augmented context
+                start_time = time.time()
+                logger.info("Making second LLM call with tool result in context")
+                logger.info(f"Augmented context for second call has {len(augmented_context)} messages")
+
+                # Log the last few messages for debugging
+                for i in range(max(0, len(augmented_context) - 3), len(augmented_context)):
+                    msg = augmented_context[i]
+                    logger.info(f"Context message {i}: role={msg.get('role')}, content={msg.get('content', '')[:50]}{'...' if len(msg.get('content', '')) > 50 else ''}")
+
+                final_response = self.llm.chat(
+                    messages=augmented_context,
+                    temperature=self.config.get("llm.temperature", 0.7),
+                    max_tokens=self.config.get("llm.max_tokens", 256),
+                    stream=False
+                )
+                end_time = time.time()
+
+                logger.info(f"Final LLM response generated in {end_time - start_time:.2f} seconds")
+                logger.info(f"Final response: {final_response}")
+
+                # Check if the final response is empty, too short, or just a JSON object
+                is_json = False
+                try:
+                    json_obj = json.loads(final_response)
+                    is_json = isinstance(json_obj, dict)
+                    logger.info(f"Final response is JSON: {is_json}")
+                except json.JSONDecodeError:
+                    pass
+
+                if not final_response or len(final_response.strip()) < 5 or is_json:
+                    logger.warning("Final response is empty, too short, or just JSON. Using fallback response.")
+                    final_response = f"Based on the information I found, {formatted_result}."
+
+                # Add original response and tool call to memory for debugging
+                self.memory.add_turn("system", f"Original response: {original_response}")
+                self.memory.add_turn("system", f"Tool call: {tool_name}({tool_args})")
+                self.memory.add_turn("system", f"Tool result: {tool_result}")
+                self.memory.add_turn("system", f"Final response: {final_response}")
+
+                # Update the response with the final response
+                response = final_response
+            else:
+                # No tool call detected, use the original response
+                logger.info("No tool call detected, using original response")
 
             # Add assistant response to memory
             self.memory.add_turn("assistant", response)

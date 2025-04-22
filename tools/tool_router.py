@@ -247,9 +247,12 @@ class ToolRouter:
 
         return tool_descriptions
 
-    def format_tool_descriptions(self) -> str:
+    def format_tool_descriptions(self, include_json_format: bool = True) -> str:
         """
         Format tool descriptions for inclusion in the system prompt.
+
+        Args:
+            include_json_format (bool): Whether to include JSON format instructions
 
         Returns:
             str: Formatted tool descriptions
@@ -262,5 +265,7 @@ class ToolRouter:
         for name, description in tools.items():
             result += f"- {name}: {description}\n"
 
-        result += "\nTo use a tool, respond with JSON in this format: { \"tool_call\": { \"name\": \"tool_name\", \"args\": {\"arg1\": \"value1\"} } }"
+        if include_json_format:
+            result += "\nTo use a tool, respond with JSON in this format: { \"tool_call\": { \"name\": \"tool_name\", \"args\": {\"arg1\": \"value1\"} } }"
+
         return result

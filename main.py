@@ -20,6 +20,7 @@ import signal
 import threading
 import random
 import json
+import re
 from datetime import datetime
 from typing import List, Dict
 from queue import Queue
@@ -49,6 +50,31 @@ from tts import create_tts
 # Type definitions for conversation history
 Message = Dict[str, str]
 MessageList = List[Message]
+
+def extract_clean_response(response: str) -> str:
+    """Remove any JSON blocks and clean up the response.
+
+    Args:
+        response: The response string that might contain JSON
+
+    Returns:
+        A cleaned response with JSON blocks removed
+    """
+    # Remove any JSON blocks
+    response = re.sub(r'{.*?}', '', response, flags=re.DOTALL)
+
+    # Remove any trailing/leading whitespace and normalize spacing
+    response = response.strip()
+    response = re.sub(r'\s+', ' ', response)
+
+    # Remove any tool_call mentions
+    response = re.sub(r'tool_call', '', response)
+
+    # If the response is too short after cleaning, return a generic message
+    if len(response) < 5:
+        return "I'm sorry, I couldn't process that properly."
+
+    return response
 
 def ensure_directories():
     """Ensure all required directories exist."""
@@ -89,13 +115,11 @@ class CodaAssistant:
         """
         logger.info(f"Summarizing tool result: {tool_result} for query: {original_query}")
 
-        # Create a brand new context for the second pass
+        # Create a brand new context for the second pass using the dedicated summarization prompt
         messages = [
-            {"role": "system", "content": "You are Coda, a helpful voice assistant. Do NOT output JSON or tool instructions."},
-            {"role": "system", "content": f"The user asked: '{original_query}'"},
-            {"role": "system", "content": f"The tool result is: {tool_result}"},
-            {"role": "system", "content": "Now rephrase the result naturally in a friendly tone. Keep it brief and conversational. Do not mention that you used a tool or function."},
-            {"role": "user", "content": "Please respond to my question using this information."}
+            {"role": "system", "content": self.summarization_prompt},
+            {"role": "system", "content": f"[TOOL RESULT] {tool_result}"},
+            {"role": "user", "content": original_query}
         ]
 
         # Log the messages for debugging
@@ -113,6 +137,14 @@ class CodaAssistant:
 
         logger.info(f"Generated summary: {summary}")
         return summary
+
+    def __init__(self, config: ConfigLoader):
+        """Initialize the Coda assistant."""
+        self.config = config
+        self.conversation_history: MessageList = []
+        self.running = True
+        self.processing = False  # Flag to track if we're currently processing a request
+        self.response_queue = Queue()  # Queue for responses to be spoken
 
         # Initialize STT module
         logger.info("Initializing Speech-to-Text module...")
@@ -145,9 +177,10 @@ class CodaAssistant:
         logger.info("Initializing personality...")
         self.personality = PersonalityLoader()
 
-        # Generate system prompt from personality
-        self.system_prompt = self.personality.generate_system_prompt()
-        logger.info("Generated system prompt from personality")
+        # Generate system prompts from personality
+        self.system_prompt = self.personality.generate_system_prompt("tool_detection")
+        self.summarization_prompt = self.personality.generate_system_prompt("summarization")
+        logger.info("Generated system prompts from personality")
 
         # Initialize memory manager
         logger.info("Initializing memory manager...")
@@ -161,6 +194,10 @@ class CodaAssistant:
         # Set memory manager reference for tools
         set_memory_manager(self.memory)
         logger.info("Set memory manager reference for tools")
+
+        # Add tool descriptions to the system prompt (only for tool detection)
+        tool_descriptions = self.tool_router.format_tool_descriptions(include_json_format=True)
+        self.system_prompt += f"\n\n{tool_descriptions}"
 
         # Add system message to memory
         self.memory.add_turn("system", self.system_prompt)
@@ -231,8 +268,38 @@ class CodaAssistant:
                 logger.info(f"Detected tool call: {tool_name} with args {tool_args}")
 
                 # Execute the tool
-                tool_result = self.tool_router.execute_tool(tool_name, tool_args)
-                logger.info(f"Tool result: {tool_result}")
+                logger.info(f"Executing tool: {tool_name} with args: {tool_args}")
+                try:
+                    tool_result = self.tool_router.execute_tool(tool_name, tool_args)
+                    logger.info(f"Tool result: {tool_result}")
+
+                    # Make sure we have a valid tool result
+                    if not tool_result:
+                        logger.warning(f"Tool {tool_name} returned empty result, using fallback")
+                        # Generate fallback results based on tool name
+                        if tool_name == "get_time":
+                            tool_result = datetime.now().strftime("It's %H:%M.")
+                        elif tool_name == "get_date":
+                            tool_result = datetime.now().strftime("Today is %A, %B %d, %Y.")
+                        elif tool_name == "tell_joke":
+                            tool_result = "Why don't scientists trust atoms? Because they make up everything!"
+                        else:
+                            tool_result = f"No result available from {tool_name}."
+
+                        logger.info(f"Using fallback tool result: {tool_result}")
+                except Exception as e:
+                    logger.error(f"Error executing tool {tool_name}: {e}")
+                    # Generate fallback results based on tool name
+                    if tool_name == "get_time":
+                        tool_result = datetime.now().strftime("It's %H:%M.")
+                    elif tool_name == "get_date":
+                        tool_result = datetime.now().strftime("Today is %A, %B %d, %Y.")
+                    elif tool_name == "tell_joke":
+                        tool_result = "Why don't scientists trust atoms? Because they make up everything!"
+                    else:
+                        tool_result = f"Error executing {tool_name}."
+
+                    logger.info(f"Using fallback tool result due to error: {tool_result}")
 
                 # Add the tool call and result to the conversation context
                 augmented_context = context.copy()
@@ -285,54 +352,17 @@ class CodaAssistant:
                 original_query = text  # This is the original user input
 
                 # Generate a natural language summary using a brand new context
-                final_response = self.summarize_tool_result(original_query, formatted_result)
+                raw_summary = self.summarize_tool_result(original_query, formatted_result)
+
+                # Clean the response to remove any JSON or tool call patterns
+                final_response = extract_clean_response(raw_summary)
 
                 # Log the result
-                logger.info(f"Generated natural language summary: {final_response}")
+                logger.info(f"Generated raw summary: {raw_summary}")
+                logger.info(f"Cleaned final response: {final_response}")
                 end_time = time.time()
 
                 logger.info(f"Final LLM response generated in {end_time - start_time:.2f} seconds")
-                logger.info(f"Final response: {final_response}")
-
-                # Check if the final response is empty, too short, or contains JSON
-                is_json = False
-                contains_tool_call = False
-
-                logger.info("Analyzing final response for JSON or tool call patterns")
-
-                # Check for JSON format
-                try:
-                    # Try to parse the entire response as JSON
-                    json_obj = json.loads(final_response)
-                    is_json = isinstance(json_obj, dict)
-                    contains_tool_call = is_json and "tool_call" in json_obj
-                    logger.info(f"Final response is valid JSON: {is_json}, contains tool_call: {contains_tool_call}")
-
-                    # If it's valid JSON, we need to use a fallback
-                    logger.warning("Final response is valid JSON, using fallback response")
-                    final_response = f"The current {tool_name.replace('get_', '')} is {tool_result}."
-                except json.JSONDecodeError:
-                    # Not valid JSON, but might contain JSON patterns
-                    logger.info("Final response is not valid JSON, checking for JSON patterns")
-
-                    # Check if the response contains a tool_call pattern
-                    contains_tool_call = "tool_call" in final_response or ("{" in final_response and "}" in final_response)
-
-                    if contains_tool_call:
-                        logger.warning(f"Final response contains JSON-like patterns: {final_response}")
-
-                        # Try to extract just the text part before any JSON
-                        if "{" in final_response:
-                            text_part = final_response.split("{")[0].strip()
-                            logger.info(f"Extracted text part before JSON: '{text_part}'")
-
-                            if text_part and len(text_part) > 5:
-                                logger.info(f"Using extracted text part as final response")
-                                final_response = text_part
-                            else:
-                                # If we couldn't extract a meaningful text part, use a fallback
-                                logger.warning("Could not extract meaningful text from response with JSON patterns. Using fallback.")
-                                final_response = f"The current {tool_name.replace('get_', '')} is {tool_result}."
 
                 # Final check for empty or too short responses
                 if not final_response or len(final_response.strip()) < 5:

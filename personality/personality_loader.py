@@ -135,9 +135,15 @@ class PersonalityLoader:
             "Respect user privacy at all times"
         ])
 
-    def generate_system_prompt(self) -> str:
+    def generate_system_prompt(self, prompt_type: str = "default") -> str:
         """
         Generate a system prompt based on the personality.
+
+        Args:
+            prompt_type (str): Type of prompt to generate. Options are:
+                - "default": Standard system prompt
+                - "tool_detection": Prompt for detecting when to use tools
+                - "summarization": Prompt for summarizing tool results
 
         Returns:
             str: The generated system prompt.
@@ -145,38 +151,93 @@ class PersonalityLoader:
         name = self.get_name()
         role = self.get_role()
         style = self.get_interaction_style()
-        
+
         # Select a subset of traits to include (to keep the prompt concise)
         traits = self.personality.get("personality_traits", [])
         selected_traits = random.sample(traits, min(5, len(traits)))
-        
+
         # Select a subset of directives
         directives = self.get_operational_directives()
         selected_directives = random.sample(directives, min(3, len(directives)))
-        
-        # Build the prompt
+
+        # Build the base prompt
         prompt = f"You are {name}, a {role}.\n\n"
-        
+
+        # Add personality traits
         prompt += "Your personality is characterized by these traits:\n"
         for trait in selected_traits:
             prompt += f"- {trait}\n"
-        
+
+        # Add communication style
         prompt += f"\nYour communication style is {style.get('language', 'concise')}, "
         prompt += f"with a {style.get('tone', 'professional')} tone, "
         prompt += f"and a {style.get('pace', 'measured')} pace.\n\n"
-        
+
+        # Add operational directives
         prompt += "Your operational directives include:\n"
         for directive in selected_directives:
             prompt += f"- {directive}\n"
-        
+
+        # Add response guidelines
         prompt += "\nYour responses should be:\n"
         prompt += "- Very concise and to the point (preferably 1-3 sentences)\n"
         prompt += "- Helpful and informative\n"
         prompt += "- Conversational but not verbose\n"
         prompt += "- Optimized for quick voice delivery\n"
-        
+
+        # Add voice assistant reminder
         prompt += "\nRemember that you are a voice assistant, so your responses will be spoken aloud to the user. "
         prompt += "Keep your responses brief (ideally under 30 words) to minimize latency while still being helpful. "
-        prompt += "Avoid long explanations unless specifically requested."
-        
+        prompt += "Avoid long explanations unless specifically requested.\n"
+
+        # Add specific instructions based on prompt type
+        if prompt_type == "tool_detection":
+            # For tool detection, add instructions to output JSON for tool calls
+            prompt += "\n" + self._generate_tool_detection_instructions()
+        elif prompt_type == "summarization":
+            # For summarization, add instructions to avoid JSON and provide natural responses
+            prompt += "\n" + self._generate_summarization_instructions()
+
         return prompt
+
+    def _generate_tool_detection_instructions(self) -> str:
+        """
+        Generate instructions for tool detection.
+
+        Returns:
+            str: Tool detection instructions.
+        """
+        instructions = """You can use tools to help answer user questions.
+
+If you decide a tool is needed, respond ONLY with JSON in this format:
+{ "tool_call": { "name": "tool_name", "args": { ... } } }
+
+Do NOT include explanations, just the JSON. The system will execute the tool and provide the result.
+
+If no tool is needed, respond naturally without JSON.
+"""
+        return instructions
+
+    def _generate_summarization_instructions(self) -> str:
+        """
+        Generate instructions for summarizing tool results.
+
+        Returns:
+            str: Summarization instructions.
+        """
+        instructions = """You have received the result of a tool call.
+
+DO NOT output JSON. DO NOT call the tool again.
+DO NOT include any curly braces {} in your response.
+DO NOT mention tools, functions, or APIs.
+
+Your job is to clearly and naturally explain the result to the user in a single sentence.
+Respond in a natural, helpful tone, as if speaking to a user.
+
+Examples:
+- [TOOL RESULT] The current time is 03:01 AM → It's 3:01 AM right now.
+- [TOOL RESULT] Today's date is April 22, 2025 → Today is April 22nd, 2025.
+
+Do not say "Let me check" or "I found that". Just deliver the answer naturally.
+"""
+        return instructions

@@ -28,7 +28,7 @@ This project is the **first step** in building an open, modular, transparent AI 
 |---------------|----------------------------------|--------------------------------|
 | 🎙️ STT        | [faster-whisper](https://github.com/guillaumekln/faster-whisper)  | Local speech-to-text          |
 | 🧠 LLM        | [Ollama](https://ollama.com/) + LLaMA 3 / DeepSeek   | Local reasoning engine        |
-| 🗣️ TTS        | [MeloTTS (CSM-1B)](https://github.com/myshell-ai/MeloTTS)       | High-quality speech generation       |
+| 🗣️ TTS        | [MeloTTS (CSM-1B)](https://github.com/myshell-ai/MeloTTS) / [Dia TTS](https://github.com/nari-labs/dia)       | High-quality speech generation       |
 | 🔧 Tools      | Python function routing          | Responding to structured LLM output |
 
 ---
@@ -39,7 +39,7 @@ This project is the **first step** in building an open, modular, transparent AI 
 
 - STT module fully implemented with Whisper (GPU-accelerated)
 - LLM integration with Ollama complete
-- TTS module implemented with MeloTTS (CSM-1B) with GPU acceleration
+- TTS module implemented with MeloTTS (CSM-1B) and Dia TTS with GPU acceleration
 - Multiple English voices available (US, British, Australian, Indian)
 - Concurrent processing with threading for reduced latency
 - Advanced personality engine with behavioral conditioning
@@ -127,6 +127,18 @@ Coda is **a system** — and this is just its first breath.
 
 ---
 
+## 🚀 GPU Acceleration
+
+Coda Lite supports GPU acceleration for improved performance:
+
+- **Dia TTS**: Uses CUDA for faster speech synthesis (3-5x speedup)
+- **Ollama**: Uses GPU for faster language model inference (4-6x speedup)
+- **Whisper**: Uses GPU for faster speech recognition
+
+See [GPU Configuration](docs/gpu_configuration.md) for setup instructions.
+
+---
+
 ## 📁 Repository Structure
 
 ```bash
@@ -134,7 +146,7 @@ coda-lite/
 ├── main.py               # Entry point
 ├── version.py            # Version information
 ├── stt/                  # Speech-to-text (Whisper)
-├── tts/                  # Text-to-speech (MeloTTS/CSM-1B)
+├── tts/                  # Text-to-speech (MeloTTS/CSM-1B, Dia TTS)
 ├── llm/                  # LLM handling and prompt logic
 ├── memory/               # Memory management
 ├── personality/          # Personality management

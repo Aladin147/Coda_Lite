@@ -12,6 +12,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
+## [0.1.0-dia-tts] - 2025-04-22
+
+### Added
+- Dia TTS integration for high-quality speech synthesis
+- GPU acceleration for both Dia TTS and Ollama
+- Comprehensive GPU configuration documentation
+- Automatic fallback to CPU when GPU is not available
+- Performance monitoring for speech synthesis
+
+### Changed
+- Updated configuration to support Dia TTS
+- Improved TTS module to handle multiple TTS engines
+- Enhanced logging with GPU memory usage information
+- Updated README with GPU acceleration information
+
 ## [0.0.9] - 2025-05-03
 
 ### Added

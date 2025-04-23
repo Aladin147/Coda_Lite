@@ -59,7 +59,7 @@ Coda Lite is in active development, with most core components implemented and fu
 - 🔄 Architecture Transformation (Phase 2)
   - ✅ Integrate WebSocket events into STT module
   - ✅ Integrate WebSocket events into LLM module
-  - 🔄 Integrate WebSocket events into TTS module
+  - ✅ Integrate WebSocket events into TTS module (ElevenLabs)
   - 🔄 Implement performance tracking throughout the system
   - 🔄 Enhance dashboard visualizations
 

@@ -82,9 +82,9 @@ def get_tts_instance(
                 from tts.websocket_elevenlabs_tts import WebSocketElevenLabsTTS
 
                 # Extract ElevenLabs-specific parameters from config
-                api_key = config.get("tts.elevenlabs_api_key") if config else kwargs.get("api_key")
-                voice_id = config.get("tts.elevenlabs_voice_id") if config else kwargs.get("voice_id", "21m00Tcm4TlvDq8ikWAM")
-                model_id = config.get("tts.elevenlabs_model_id") if config else kwargs.get("model_id", "eleven_multilingual_v2")
+                api_key = config.get("tts.elevenlabs_api_key", "sk_7b576d29574b14a97150b864497d937c4e1fdd2d6b3a1e4d") if config else kwargs.get("api_key")
+                voice_id = config.get("tts.elevenlabs_voice_id", "21m00Tcm4TlvDq8ikWAM") if config else kwargs.get("voice_id", "21m00Tcm4TlvDq8ikWAM")
+                model_id = config.get("tts.elevenlabs_model_id", "eleven_multilingual_v2") if config else kwargs.get("model_id", "eleven_multilingual_v2")
 
                 logger.info(f"Creating WebSocketElevenLabsTTS instance with voice_id={voice_id}")
                 _tts_instance = WebSocketElevenLabsTTS(
@@ -98,9 +98,9 @@ def get_tts_instance(
                 from tts.elevenlabs_tts import ElevenLabsTTS
 
                 # Extract ElevenLabs-specific parameters from config
-                api_key = config.get("tts.elevenlabs_api_key") if config else kwargs.get("api_key")
-                voice_id = config.get("tts.elevenlabs_voice_id") if config else kwargs.get("voice_id", "21m00Tcm4TlvDq8ikWAM")
-                model_id = config.get("tts.elevenlabs_model_id") if config else kwargs.get("model_id", "eleven_multilingual_v2")
+                api_key = config.get("tts.elevenlabs_api_key", "sk_7b576d29574b14a97150b864497d937c4e1fdd2d6b3a1e4d") if config else kwargs.get("api_key")
+                voice_id = config.get("tts.elevenlabs_voice_id", "21m00Tcm4TlvDq8ikWAM") if config else kwargs.get("voice_id", "21m00Tcm4TlvDq8ikWAM")
+                model_id = config.get("tts.elevenlabs_model_id", "eleven_multilingual_v2") if config else kwargs.get("model_id", "eleven_multilingual_v2")
 
                 logger.info(f"Creating ElevenLabsTTS instance with voice_id={voice_id}")
                 _tts_instance = ElevenLabsTTS(

@@ -2,7 +2,7 @@
 
 ## Current Version: v0.0.9 (Working toward v0.1.0)
 
-**Last Updated:** April 24, 2025
+**Last Updated:** April 25, 2025
 
 ## Overview
 
@@ -57,7 +57,9 @@ Coda Lite is in active development, with most core components implemented and fu
 ## Pending Tasks
 
 - 🔄 Architecture Transformation (Phase 2)
-  - 🔄 Integrate WebSocket events into core components
+  - ✅ Integrate WebSocket events into STT module
+  - 🔄 Integrate WebSocket events into LLM module
+  - 🔄 Integrate WebSocket events into TTS module
   - 🔄 Implement performance tracking throughout the system
   - 🔄 Enhance dashboard visualizations
 

@@ -151,10 +151,10 @@ WebSocket Push   Local logs/events
 ### Phase 2: Core Functionality (Weeks 3-4) 🔄 IN PROGRESS
 
 #### 2.1 Event Integration
-- Integrate events into STT pipeline
-- Integrate events into LLM processing
-- Integrate events into TTS pipeline
-- Implement memory system events
+- ✅ Integrate events into STT pipeline
+- 🔄 Integrate events into LLM processing
+- 🔄 Integrate events into TTS pipeline
+- 🔄 Implement memory system events
 
 #### 2.2 Performance Tracking
 - Implement PerfTracker utility

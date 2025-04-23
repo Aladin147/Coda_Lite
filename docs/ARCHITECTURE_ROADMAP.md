@@ -163,104 +163,104 @@ WebSocket Push   Local logs/events
 - ✅ Implement latency calculation
 
 #### 2.3 Dashboard Enhancements
-- Create conversation view
-- Implement performance metrics display
-- Add basic memory viewer
-- Design tool usage display
+- 🔄 Create conversation view
+- 🔄 Implement performance metrics display
+- 🔄 Add basic memory viewer
+- 🔄 Design tool usage display
 
-**Milestone**: Full event stream from all core components with basic visualization
+**Milestone**: ✅ Full event stream from all core components with basic visualization framework
 
-### Phase 3: Resilience & Security (Weeks 5-6)
+### Phase 3: Resilience & Security (Weeks 5-6) 🔄 IN PROGRESS
 
 #### 3.1 Graceful Degradation
-- Implement client pruning
-- Add replay buffer for important events
-- Create reconnection handling
-- Test disconnection scenarios
+- 🔄 Implement client pruning
+- 🔄 Add replay buffer for important events
+- 🔄 Create reconnection handling
+- 🔄 Test disconnection scenarios
 
 #### 3.2 Security Implementation
-- Add local-only mode (default)
-- Implement token authentication
-- Create token rotation mechanism
-- Add connection logging
+- ✅ Add local-only mode (default)
+- 🔄 Implement token authentication
+- 🔄 Create token rotation mechanism
+- 🔄 Add connection logging
 
 #### 3.3 Error Handling
-- Implement structured error events
-- Add error isolation between components
-- Create error visualization in UI
-- Test error recovery scenarios
+- ✅ Implement structured error events
+- 🔄 Add error isolation between components
+- 🔄 Create error visualization in UI
+- 🔄 Test error recovery scenarios
 
 **Milestone**: Robust, secure system with graceful handling of failures
 
-### Phase 4: Polish & Documentation (Weeks 7-8)
+### Phase 4: Polish & Documentation (Weeks 7-8) ⏳ PLANNED
 
 #### 4.1 Configuration System
-- Implement unified configuration
-- Add profile support
-- Create configuration viewer in UI
-- Test configuration changes
+- ⏳ Implement unified configuration
+- ⏳ Add profile support
+- ⏳ Create configuration viewer in UI
+- ⏳ Test configuration changes
 
 #### 4.2 Versioning & Compatibility
-- Add protocol versioning
-- Implement compatibility checks
-- Create version mismatch handling
-- Test version scenarios
+- ✅ Add protocol versioning
+- ⏳ Implement compatibility checks
+- ⏳ Create version mismatch handling
+- ⏳ Test version scenarios
 
 #### 4.3 Documentation
-- Create event reference documentation
-- Document architecture and flows
-- Write extension guides
-- Add inline code documentation
+- 🔄 Create event reference documentation
+- 🔄 Document architecture and flows
+- ⏳ Write extension guides
+- 🔄 Add inline code documentation
 
 #### 4.4 Monitoring & Alerting
-- Implement threshold monitoring
-- Add visual status indicators
-- Create optional notification system
-- Test alerting scenarios
+- 🔄 Implement threshold monitoring
+- 🔄 Add visual status indicators
+- ⏳ Create optional notification system
+- ⏳ Test alerting scenarios
 
 **Milestone**: Complete, well-documented system ready for production use
 
-### Phase 5: Testing & Optimization (Weeks 9-10)
+### Phase 5: Testing & Optimization (Weeks 9-10) ⏳ PLANNED
 
 #### 5.1 Comprehensive Testing
-- Implement unit tests for all components
-- Create integration tests for WebSocket
-- Add stress tests for high event volumes
-- Test edge cases and failure scenarios
+- 🔄 Implement unit tests for all components
+- ⏳ Create integration tests for WebSocket
+- ⏳ Add stress tests for high event volumes
+- ⏳ Test edge cases and failure scenarios
 
 #### 5.2 Performance Optimization
-- Profile and optimize WebSocket handling
-- Reduce serialization overhead
-- Optimize event processing
-- Minimize memory usage
+- 🔄 Profile and optimize WebSocket handling
+- 🔄 Reduce serialization overhead
+- 🔄 Optimize event processing
+- 🔄 Minimize memory usage
 
 #### 5.3 Final Polishing
-- Address any remaining issues
-- Perform final UI refinements
-- Complete documentation updates
-- Prepare for release
+- ⏳ Address any remaining issues
+- ⏳ Perform final UI refinements
+- ⏳ Complete documentation updates
+- ⏳ Prepare for release
 
 **Milestone**: Fully tested, optimized system ready for deployment
 
 ## Priority Matrix
 
-| Component | Priority | Impact | Complexity | Phase |
-|-----------|----------|--------|------------|-------|
-| WebSocket Infrastructure | High | High | Medium | 1 |
-| Event Schema | High | High | Medium | 1 |
-| Basic Tauri Shell | Medium | Medium | Low | 1 |
-| Event Integration | High | High | High | 2 |
-| Performance Tracking | High | Medium | Medium | 2 |
-| Dashboard UI | Medium | Medium | Medium | 2 |
-| Graceful Degradation | Medium | High | Medium | 3 |
-| Security Implementation | Medium | High | High | 3 |
-| Error Handling | High | High | Medium | 3 |
-| Configuration System | Medium | Medium | Medium | 4 |
-| Versioning & Compatibility | Medium | Medium | Low | 4 |
-| Documentation | High | Medium | Medium | 4 |
-| Monitoring & Alerting | Medium | Medium | Medium | 4 |
-| Testing | High | High | High | 5 |
-| Optimization | Medium | High | High | 5 |
+| Component | Priority | Impact | Complexity | Phase | Status |
+|-----------|----------|--------|------------|-------|--------|
+| WebSocket Infrastructure | High | High | Medium | 1 | ✅ Complete |
+| Event Schema | High | High | Medium | 1 | ✅ Complete |
+| Basic Tauri Shell | Medium | Medium | Low | 1 | ✅ Complete |
+| Event Integration | High | High | High | 2 | ✅ Complete |
+| Performance Tracking | High | Medium | Medium | 2 | ✅ Complete |
+| Dashboard UI | Medium | Medium | Medium | 2 | 🔄 In Progress |
+| Graceful Degradation | Medium | High | Medium | 3 | 🔄 In Progress |
+| Security Implementation | Medium | High | High | 3 | 🔄 In Progress |
+| Error Handling | High | High | Medium | 3 | 🔄 In Progress |
+| Configuration System | Medium | Medium | Medium | 4 | ⏳ Planned |
+| Versioning & Compatibility | Medium | Medium | Low | 4 | 🔄 In Progress |
+| Documentation | High | Medium | Medium | 4 | 🔄 In Progress |
+| Monitoring & Alerting | Medium | Medium | Medium | 4 | 🔄 In Progress |
+| Testing | High | High | High | 5 | 🔄 In Progress |
+| Optimization | Medium | High | High | 5 | 🔄 In Progress |
 
 ## Success Metrics
 
@@ -272,8 +272,52 @@ The success of this architecture transformation will be measured by:
 4. **Maintainability**: Easier debugging and feature addition
 5. **Extensibility**: Ability to add new components without disruption
 
+## Dashboard Implementation Plan
+
+As part of our architecture transformation, we are implementing a React-based Tauri dashboard with the following key features:
+
+### Core Dashboard Components
+
+1. **Speaking Animation**: Visual feedback when Coda is speaking
+   - Pulsing rings around Coda's avatar
+   - Triggered by TTS events
+
+2. **Real-Time Event Log**: Chronological display of system events
+   - Scrollable timeline with icons and timestamps
+   - Categorized by event type (STT, LLM, TTS, etc.)
+
+3. **Latency Monitor**: Performance visualization
+   - Horizontal stacked bars for processing stages
+   - Color-coded performance indicators
+
+4. **Memory Viewer**: Insight into Coda's memory system
+   - Display of recent memories
+   - Memory statistics and metrics
+
+5. **Tool Usage Cards**: Visualization of tool calls
+   - Display of tool parameters and results
+   - Status indicators for pending/completed calls
+
+### Implementation Approach
+
+- **React + Tauri**: Using React for UI components within Tauri framework
+- **WebSocket Integration**: Direct connection to Coda's WebSocket server
+- **Reactive UI**: State management with React hooks and context
+- **CSS Animations**: Lightweight, performant animations for visual feedback
+- **Modular Components**: Clean separation of concerns for maintainability
+
+### Performance Considerations
+
+- Dashboard runs as a separate process from Coda's core
+- Asynchronous, non-blocking communication via WebSockets
+- Efficient React patterns to minimize render cycles
+- Lazy loading of components to reduce initial load time
+- Adaptive throttling for high-frequency events
+
 ## Conclusion
 
 This roadmap provides a comprehensive plan for transforming Coda's architecture into a modular, observable, and resilient system. By following this plan, we will create a foundation that supports Coda's evolution while maintaining its core principles of speed, reliability, and modularity.
 
-The decoupling of core functionality from the UI will resolve current issues with memory system integration while providing a platform for future enhancements. This architecture ensures that Coda remains "a system, not a gimmick" that can evolve into a full digital operator.
+The decoupling of core functionality from the UI will resolve current issues with memory system integration while providing a platform for future enhancements. The React-based Tauri dashboard will provide a visual interface for monitoring and interacting with Coda, enhancing both development and user experience.
+
+This architecture ensures that Coda remains "a system, not a gimmick" that can evolve into a full digital operator.

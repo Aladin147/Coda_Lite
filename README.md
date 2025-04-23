@@ -1,4 +1,4 @@
-# Coda Lite – Core Operations & Digital Assistant (v0.0.9)
+# Coda Lite – Core Operations & Digital Assistant (v0.1.0)
 
 **Coda Lite** is a lightweight, local-first voice assistant prototype focused on one thing:
 ⚡ **Real-time, low-latency, human-feeling conversation.**
@@ -28,18 +28,23 @@ This project is the **first step** in building an open, modular, transparent AI 
 |---------------|----------------------------------|--------------------------------|
 | 🎙️ STT        | [faster-whisper](https://github.com/guillaumekln/faster-whisper)  | Local speech-to-text          |
 | 🧠 LLM        | [Ollama](https://ollama.com/) + LLaMA 3 / DeepSeek   | Local reasoning engine        |
-| 🗣️ TTS        | [MeloTTS (CSM-1B)](https://github.com/myshell-ai/MeloTTS) / [Dia TTS](https://github.com/nari-labs/dia)       | High-quality speech generation       |
+| 🗣️ TTS        | [MeloTTS (CSM-1B)](https://github.com/myshell-ai/MeloTTS) / [Dia TTS](https://github.com/nari-labs/dia) / [ElevenLabs](https://elevenlabs.io/)      | High-quality speech generation       |
 | 🔧 Tools      | Python function routing          | Responding to structured LLM output |
 
 ---
 
-## 🚀 Current Version: `v0.0.9` - Adaptive Agent
+## 🚀 Current Version: `v0.1.0` - WebSocket Architecture
 
-> 🧠 **Self-tuning, memory-aware assistant!**
+> 🔸 **Modular, decoupled system with WebSocket communication!**
 
+- WebSocket server implementation for decoupled architecture
+- Event-based communication between components
+- Performance tracking throughout the system
+- TTS factory with ElevenLabs integration
+- Modular architecture for easy extension
 - STT module fully implemented with Whisper (GPU-accelerated)
 - LLM integration with Ollama complete
-- TTS module implemented with MeloTTS (CSM-1B) and Dia TTS with GPU acceleration
+- TTS module implemented with MeloTTS (CSM-1B), Dia TTS, and ElevenLabs
 - Multiple English voices available (US, British, Australian, Indian)
 - Concurrent processing with threading for reduced latency
 - Advanced personality engine with behavioral conditioning
@@ -52,18 +57,21 @@ This project is the **first step** in building an open, modular, transparent AI 
 
 ---
 
-## 🔜 Upcoming: `v0.1.0` - Alpha Candidate
+## 🔜 Upcoming: `v0.1.1` - Dashboard Integration
 
-> Fully autonomous loop, early demos possible:
+> Visual interface for monitoring and interaction:
 
+- React-based Tauri dashboard implementation
+- Real-time visualization of system events
+- Performance monitoring and metrics display
+- Memory inspection and visualization
+- Tool usage tracking and display
 - Session summary generation for conversation sessions
 - Memory explainability for insights into what Coda remembers
 - Task management tools for productivity
-- Fix remaining JSON leakage in tool calling responses
-- Optimize performance of the two-pass approach
 - Implement tool chaining (using results from one tool as input to another)
 
-## 🔜 Future: `v0.2.0` - Beta Candidate
+## 🔜 Future: `v0.2.0` - Beta Release
 
 > Feature-complete with stability improvements:
 
@@ -74,8 +82,19 @@ This project is the **first step** in building an open, modular, transparent AI 
 - Improved error handling and recovery
 - Expanded personality with context-aware responses
 - Memory summarization for longer conversations
+- Comprehensive testing suite
 
 ---
+
+## 🛤️ Completed in `v0.1.0` - WebSocket Architecture
+
+> Modular, decoupled system with WebSocket communication:
+
+- WebSocket server implementation ✅
+- Event-based communication between components ✅
+- Performance tracking throughout the system ✅
+- TTS factory with ElevenLabs integration ✅
+- Modular architecture for easy extension ✅
 
 ## 🛤️ Completed in `v0.0.9` - Adaptive Agent
 
@@ -88,7 +107,7 @@ This project is the **first step** in building an open, modular, transparent AI 
 - Feedback storage in long-term memory ✅
 - Automatic feedback pattern application ✅
 
-## 🛤️ Completed in `v0.1.0` - Alpha Candidate
+## 🛤️ Completed in `v0.0.8` - Tool Calling
 
 > Enhanced tool calling system:
 
@@ -160,19 +179,23 @@ See [Memory System Documentation](docs/LONG_TERM_MEMORY.md) for more details.
 
 ```bash
 coda-lite/
-├── main.py               # Entry point
+├── main.py               # Entry point (CLI version)
+├── main_websocket.py      # Entry point (WebSocket version)
 ├── version.py            # Version information
 ├── stt/                  # Speech-to-text (Whisper)
-├── tts/                  # Text-to-speech (MeloTTS/CSM-1B, Dia TTS)
+├── tts/                  # Text-to-speech (MeloTTS/CSM-1B, Dia TTS, ElevenLabs)
 ├── llm/                  # LLM handling and prompt logic
 ├── memory/               # Memory management (short-term and long-term)
 ├── personality/          # Personality management
 ├── intent/               # Intent routing system
 ├── feedback/             # User feedback system
 ├── tools/                # Tool calling + router
+├── websocket/            # WebSocket server and event handling
+├── utils/                # Utility functions and helpers
 ├── config/               # Prompt and settings files
 ├── data/                 # Cached audio, logs, temp files
 ├── gui/                  # Debug GUI for testing
+├── dashboard/            # Tauri + React dashboard
 ├── docs/                 # Project documentation
 ├── examples/             # Example scripts
 ├── tests/                # Unit tests

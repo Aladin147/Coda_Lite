@@ -4,7 +4,7 @@
 api_key: ""  # Your ElevenLabs API key (leave empty to use ELEVENLABS_API_KEY environment variable)
 
 # Voice settings
-voice_id: "3sJ9qwog9VNmFa3qD96n"  # Matilda's voice
+voice_id: "kdmDKE6EkgrWrrykO9Qt"  # Alexandra - Conversational and Real
 # Other popular voices:
 # - "JBFqnCBsd6RMkjVDRZzb" - Josh (male)
 # - "21m00Tcm4TlvDq8ikWAM" - Rachel (female)

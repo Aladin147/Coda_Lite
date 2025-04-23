@@ -237,11 +237,7 @@ class CodaAssistant:
             logger.info("Using enhanced memory manager with long-term memory and WebSocket integration")
             self.memory = WebSocketEnhancedMemoryManager(
                 websocket_integration=self.ws,
-                config=config.get_all(),
-                max_turns=config.get("memory.max_turns", 20),
-                memory_path=config.get("memory.path", "data/memory/long_term"),
-                embedding_model=config.get("memory.embedding_model", "all-MiniLM-L6-v2"),
-                device=config.get("memory.device", "cpu")
+                config=config.get_all()
             )
         else:
             logger.info("Using standard short-term memory manager (without WebSocket integration)")

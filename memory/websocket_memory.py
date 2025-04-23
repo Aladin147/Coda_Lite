@@ -8,6 +8,7 @@ import time
 from typing import Dict, List, Optional, Any, Union, Tuple
 
 from memory.enhanced_memory_manager import EnhancedMemoryManager
+from memory.short_term import MemoryManager as ShortTermMemory
 from memory.long_term import LongTermMemory
 from memory.encoder import MemoryEncoder
 from websocket.integration import CodaWebSocketIntegration
@@ -21,12 +22,8 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
         self,
         websocket_integration: CodaWebSocketIntegration,
         config: Dict[str, Any],
-        max_turns: int = 20,
-        memory_path: str = "data/memory/long_term",
-        embedding_model: str = "all-MiniLM-L6-v2",
-        device: str = "cpu",
-        chunk_size: int = 200,
-        chunk_overlap: int = 50
+        short_term_memory: Optional[ShortTermMemory] = None,
+        long_term_memory: Optional[LongTermMemory] = None
     ):
         """
         Initialize the WebSocketEnhancedMemoryManager.
@@ -34,21 +31,13 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
         Args:
             websocket_integration: The WebSocket integration instance
             config: Configuration dictionary
-            max_turns: Maximum number of conversation turns to keep in short-term memory
-            memory_path: Path to store long-term memories
-            embedding_model: Model to use for embeddings
-            device: Device to use for embeddings ("cpu" or "cuda")
-            chunk_size: Size of text chunks for memory encoding
-            chunk_overlap: Overlap between chunks
+            short_term_memory: Optional existing short-term memory instance
+            long_term_memory: Optional existing long-term memory instance
         """
         super().__init__(
             config=config,
-            max_turns=max_turns,
-            memory_path=memory_path,
-            embedding_model=embedding_model,
-            device=device,
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap
+            short_term_memory=short_term_memory,
+            long_term_memory=long_term_memory
         )
 
         self.ws = websocket_integration

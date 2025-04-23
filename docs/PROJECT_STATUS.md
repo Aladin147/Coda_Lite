@@ -2,11 +2,11 @@
 
 ## Current Version: v0.0.9 (Working toward v0.1.0)
 
-**Last Updated:** April 23, 2025
+**Last Updated:** April 24, 2025
 
 ## Overview
 
-Coda Lite is in active development, with most core components implemented and functional. We are currently working on integrating ElevenLabs TTS and planning a major architecture transformation to decouple the core logic from the UI using a WebSocket-based approach.
+Coda Lite is in active development, with most core components implemented and functional. We are currently working on integrating ElevenLabs TTS and implementing a major architecture transformation to decouple the core logic from the UI using a WebSocket-based approach. Phase 1 of the architecture transformation has been completed, providing the foundation for this decoupled system.
 
 ## Completed Items
 
@@ -48,19 +48,24 @@ Coda Lite is in active development, with most core components implemented and fu
   - 🔄 Enhancing memory retrieval during conversations
   - 🔄 Resolving dependency conflicts
 
-- 🔄 Architecture Transformation (Phase 1)
-  - 🔄 Planning WebSocket infrastructure
-  - 🔄 Designing event schema
-  - 🔄 Researching Tauri implementation
+- ✅ Architecture Transformation (Phase 1)
+  - ✅ Implemented WebSocket server with client management
+  - ✅ Defined comprehensive event schema with Pydantic models
+  - ✅ Created Tauri dashboard with React frontend
+  - ✅ Implemented WebSocket client for real-time updates
 
 ## Pending Tasks
 
-- ⏳ Architecture Transformation (Phases 2-5)
-  - ⏳ Implement WebSocket server in core
-  - ⏳ Create basic Tauri shell
-  - ⏳ Integrate events into core components
-  - ⏳ Implement performance tracking
-  - ⏳ Add security and error handling
+- 🔄 Architecture Transformation (Phase 2)
+  - 🔄 Integrate WebSocket events into core components
+  - 🔄 Implement performance tracking throughout the system
+  - 🔄 Enhance dashboard visualizations
+
+- ⏳ Architecture Transformation (Phases 3-5)
+  - ⏳ Add security and authentication
+  - ⏳ Implement advanced error handling
+  - ⏳ Create comprehensive testing suite
+  - ⏳ Optimize performance
 
 - ⏳ v0.1.0 Features
   - ⏳ Session summary generation
@@ -90,7 +95,8 @@ Coda Lite is in active development, with most core components implemented and fu
 **Goals:**
 
 - 🔄 ElevenLabs TTS integration for improved voice quality
-- 🔄 Architecture transformation (Phase 1: WebSocket foundation)
+- ✅ Architecture transformation (Phase 1: WebSocket foundation)
+- 🔄 Architecture transformation (Phase 2: Core Integration)
 - 🔄 Memory system improvements for reliable persistence
 - ⏳ Session summary generation for conversation sessions
 - ⏳ Memory explainability for insights into what Coda remembers

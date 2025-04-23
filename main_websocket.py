@@ -59,7 +59,7 @@ logger.info(get_full_version_string())
 from config.config_loader import ConfigLoader
 from stt import WebSocketWhisperSTT
 from llm import WebSocketOllamaLLM
-from tts import create_tts
+from tts import create_tts, WebSocketElevenLabsTTS
 from websocket import CodaWebSocketServer, CodaWebSocketIntegration
 
 # Type definitions for conversation history
@@ -175,14 +175,32 @@ class CodaAssistant:
             timeout=120
         )
 
-        # Initialize TTS module
-        logger.info("Initializing Text-to-Speech module...")
-        self.tts = create_tts(
-            engine="csm",  # Use CSM-1B TTS
-            language=config.get("tts.language", "EN"),
-            voice=config.get("tts.voice", "EN-US"),
-            device=config.get("tts.device", "cuda")
-        )
+        # Initialize TTS module with WebSocket integration
+        logger.info("Initializing Text-to-Speech module with WebSocket integration...")
+
+        # Use ElevenLabs TTS as requested by the user
+        tts_engine = config.get("tts.engine", "elevenlabs")
+
+        if tts_engine == "elevenlabs":
+            # Initialize ElevenLabs TTS with WebSocket integration
+            self.tts = WebSocketElevenLabsTTS(
+                websocket_integration=self.ws,
+                api_key=config.get("tts.elevenlabs_api_key", "sk_7b576d29574b14a97150b864497d937c4e1fdd2d6b3a1e4d"),
+                voice_id=config.get("tts.elevenlabs_voice_id", "21m00Tcm4TlvDq8ikWAM"),  # Alexandra voice
+                model_id=config.get("tts.elevenlabs_model_id", "eleven_multilingual_v2"),
+                stability=config.get("tts.elevenlabs_stability", 0.5),
+                similarity_boost=config.get("tts.elevenlabs_similarity_boost", 0.75)
+            )
+            logger.info(f"Initialized ElevenLabs TTS with voice: {config.get('tts.elevenlabs_voice_id', '21m00Tcm4TlvDq8ikWAM')}")
+        else:
+            # Fallback to CSM TTS (without WebSocket integration for now)
+            self.tts = create_tts(
+                engine="csm",
+                language=config.get("tts.language", "EN"),
+                voice=config.get("tts.voice", "EN-US"),
+                device=config.get("tts.device", "cuda")
+            )
+            logger.info(f"Initialized CSM TTS with language: {config.get('tts.language', 'EN')}")
 
         # Initialize personality
         logger.info("Initializing personality...")
@@ -355,31 +373,14 @@ class CodaAssistant:
                 except Exception:  # Queue.Empty
                     continue
 
-                # Signal start of TTS
-                self.ws.tts_start(
-                    text=response,
-                    voice=self.config.get("tts.voice", "EN-US"),
-                    provider="csm"
-                )
-
                 # Speak the response
-                start_time = time.time()
+                # WebSocket events are handled by the WebSocketElevenLabsTTS class
                 self.tts.speak(response)
-                end_time = time.time()
-
-                # Signal TTS completion
-                self.ws.tts_result(
-                    audio_duration_seconds=end_time - start_time,
-                    char_count=len(response)
-                )
 
                 # Mark the task as done
                 self.response_queue.task_done()
             except Exception as e:
                 logger.error(f"Error in TTS worker: {e}", exc_info=True)
-
-                # Signal TTS error
-                self.ws.tts_error(str(e))
 
     def _process_user_input(self, text: str):
         """Process user input in a separate thread."""

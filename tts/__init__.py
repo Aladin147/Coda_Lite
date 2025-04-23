@@ -22,6 +22,7 @@ except ImportError:
 # Import ElevenLabs TTS
 try:
     from tts.elevenlabs_tts import ElevenLabsTTS
+    from tts.websocket_elevenlabs_tts import WebSocketElevenLabsTTS
     ELEVENLABS_AVAILABLE = True
 except ImportError as e:
     print(f"Error importing ElevenLabsTTS: {e}")
@@ -60,4 +61,4 @@ def create_tts(engine="csm", **kwargs):
     else:
         raise NotImplementedError(f"Unknown TTS engine: {engine}. Currently supported engines: 'csm', 'dia', 'elevenlabs'")
 
-__all__ = ["BaseTTS", "create_tts", "CSMTTS", "DiaTTS", "ElevenLabsTTS"]
+__all__ = ["BaseTTS", "create_tts", "CSMTTS", "DiaTTS", "ElevenLabsTTS", "WebSocketElevenLabsTTS"]

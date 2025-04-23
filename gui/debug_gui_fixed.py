@@ -63,6 +63,16 @@ except ImportError as e:
     print(f"Error importing TTS module: {e}")
     sys.exit(1)
 
+# Import STT module
+try:
+    from stt.whisper_stt import WhisperSTT
+    STT_AVAILABLE = True
+    logger.info("STT module imported successfully")
+except ImportError as e:
+    STT_AVAILABLE = False
+    logger.error(f"Error importing STT module: {e}")
+    print(f"Error importing STT module: {e}")
+
 # Import audio modules for device verification
 try:
     import sounddevice as sd
@@ -196,6 +206,39 @@ class CodaDebugWrapper:
             self.tts = MockTTS()
             self.current_tts_engine = "mock"
             print("\n[WARNING] Using MockTTS - no audio output will be produced")
+
+        # Initialize STT module
+        if STT_AVAILABLE:
+            logger.info("Initializing Speech-to-Text module...")
+            try:
+                # Get STT parameters from config
+                stt_model_size = self.config.get("stt.model_size", "base")
+                stt_device = self.config.get("stt.device", "cuda" if torch.cuda.is_available() else "cpu")
+                stt_compute_type = self.config.get("stt.compute_type", "float16" if stt_device == "cuda" else "float32")
+                stt_language = self.config.get("stt.language", None)  # Auto-detect language by default
+
+                # Initialize WhisperSTT
+                self.stt = WhisperSTT(
+                    model_size=stt_model_size,
+                    device=stt_device,
+                    compute_type=stt_compute_type,
+                    language=stt_language,
+                    vad_filter=True
+                )
+                logger.info(f"STT initialized with model: {stt_model_size} on {stt_device}")
+                self.stt_available = True
+            except Exception as e:
+                logger.error(f"Error initializing STT: {e}")
+                self.stt = None
+                self.stt_available = False
+                print("\n[WARNING] STT initialization failed - speech recognition will not work")
+        else:
+            logger.warning("STT module not available. Speech recognition will not work.")
+            self.stt = None
+            self.stt_available = False
+
+        # Initialize demo mode flag
+        self.demo_mode = False
 
         logger.info("Coda debug wrapper initialized successfully")
 
@@ -405,6 +448,58 @@ class CodaDebugWrapper:
             logger.error(f"Error saving conversation: {e}", exc_info=True)
             return False
 
+    def listen(self, duration: int = 5) -> Dict[str, Any]:
+        """
+        Listen for speech and transcribe it.
+
+        Args:
+            duration: Duration to listen in seconds
+
+        Returns:
+            Dict with transcription text and timing information
+        """
+        if not self.stt_available or self.stt is None:
+            logger.error("STT is not available")
+            return {"transcription": "", "error": "STT is not available", "timings": {}}
+
+        try:
+            # Timing information
+            timings = {}
+
+            # Start STT
+            logger.info(f"Listening for {duration} seconds...")
+            print(f"\n[STT] Listening for {duration} seconds...")
+
+            stt_start = time.time()
+
+            # Listen and transcribe
+            transcription = self.stt.listen(duration=duration)
+
+            stt_end = time.time()
+
+            # Record timing
+            timings["stt_time"] = stt_end - stt_start
+
+            # Log results
+            logger.info(f"Transcription completed in {timings['stt_time']:.2f} seconds")
+            print(f"[STT] Transcription: {transcription}")
+            print(f"[STT] Time taken: {timings['stt_time']:.2f} seconds")
+
+            return {
+                "transcription": transcription,
+                "error": None,
+                "timings": timings
+            }
+
+        except Exception as e:
+            logger.error(f"Error during speech recognition: {e}", exc_info=True)
+            print(f"\n[STT] ERROR: {e}")
+            return {
+                "transcription": "",
+                "error": str(e),
+                "timings": {}
+            }
+
     def clear_conversation(self) -> None:
         """Clear the conversation history except for the system prompt."""
         self.conversation_history = [self.conversation_history[0]]
@@ -429,6 +524,12 @@ def create_gui():
             sg.Slider(range=(0.1, 1.0), default_value=0.7, resolution=0.1, orientation='h', size=(10, 15), key='-TEMP-'),
             sg.Text('Max Tokens:'),
             sg.Slider(range=(50, 500), default_value=256, resolution=1, orientation='h', size=(10, 15), key='-MAX_TOKENS-')
+        ],
+        [
+            sg.Button('Push-to-Talk', key='-PTT-', size=(15, 1), button_color=('white', 'green')),
+            sg.Text('Duration:'),
+            sg.Slider(range=(1, 10), default_value=5, resolution=1, orientation='h', size=(10, 15), key='-PTT_DURATION-'),
+            sg.Button('Demo Mode', key='-DEMO-', size=(15, 1), button_color=('white', 'blue'))
         ],
 
         [sg.HorizontalSeparator()],
@@ -565,8 +666,8 @@ def process_in_thread(window, coda, text, temperature, max_tokens):
                     llm_time = result["timings"].get("llm_time", 0)
                     log_message(window, f"Response generated in {llm_time:.2f} seconds")
 
-                # Auto-speak if enabled
-                if window['-AUTO_SPEAK-'].get():
+                # Auto-speak if enabled or in demo mode
+                if window['-AUTO_SPEAK-'].get() or coda.demo_mode:
                     window['-STATUS-'].update('Speaking...')
                     window.refresh()
 
@@ -676,6 +777,15 @@ def main():
 
                         if success:
                             log_message(window, "Speech played successfully")
+
+                            # If in demo mode and auto-speak is enabled, listen for the next input
+                            if coda.demo_mode and window['-AUTO_SPEAK-'].get():
+                                # Wait a moment before starting to listen again
+                                time.sleep(1)
+
+                                # Simulate clicking the Push-to-Talk button
+                                log_message(window, "Demo mode: Automatically listening for next input")
+                                window.write_event_value('-PTT-', None)
                         else:
                             log_message(window, "Error playing speech", "ERROR")
                     except Exception as e:
@@ -784,6 +894,70 @@ def main():
                         log_message(window, f"Error switching TTS engine: {e}", "ERROR")
                 else:
                     log_message(window, f"Already using {new_engine} TTS engine")
+            else:
+                log_message(window, "Coda is not initialized", "ERROR")
+
+        # Push-to-Talk
+        elif event == '-PTT-':
+            if coda and coda.stt_available:
+                # Get the duration from the slider
+                duration = int(values['-PTT_DURATION-'])
+
+                # Update status
+                window['-STATUS-'].update('Listening...')
+                window['-PTT-'].update('Listening...', button_color=('white', 'red'))
+                window.refresh()
+
+                # Start listening in a separate thread to keep the GUI responsive
+                def listen_thread():
+                    try:
+                        # Listen for speech
+                        log_message(window, f"Listening for {duration} seconds...")
+                        result = coda.listen(duration=duration)
+
+                        # Update the input field with the transcription
+                        if result["error"]:
+                            log_message(window, f"Error during speech recognition: {result['error']}", "ERROR")
+                        else:
+                            transcription = result.get("transcription", "")
+                            if transcription:
+                                # Update the input field
+                                window['-INPUT-'].update(transcription)
+                                log_message(window, f"Transcription: {transcription}")
+
+                                # If in demo mode, automatically send the transcription to the LLM
+                                if coda.demo_mode:
+                                    # Process the transcription
+                                    log_message(window, "Demo mode: Automatically sending transcription to LLM")
+                                    threading.Thread(target=process_in_thread, args=(window, coda, transcription, values['-TEMP-'], int(values['-MAX_TOKENS-']))).start()
+                            else:
+                                log_message(window, "No speech detected or transcription failed", "WARNING")
+
+                        # Reset the button
+                        window['-PTT-'].update('Push-to-Talk', button_color=('white', 'green'))
+                        window['-STATUS-'].update('Ready')
+                    except Exception as e:
+                        log_message(window, f"Error in listen thread: {e}", "ERROR")
+                        window['-PTT-'].update('Push-to-Talk', button_color=('white', 'green'))
+                        window['-STATUS-'].update('Ready')
+
+                # Start the listening thread
+                threading.Thread(target=listen_thread).start()
+            else:
+                log_message(window, "STT is not available", "ERROR")
+
+        # Demo Mode
+        elif event == '-DEMO-':
+            if coda:
+                # Toggle demo mode
+                coda.demo_mode = not coda.demo_mode
+
+                if coda.demo_mode:
+                    window['-DEMO-'].update('Demo Mode: ON', button_color=('white', 'red'))
+                    log_message(window, "Demo mode enabled - Push-to-Talk will automatically process responses")
+                else:
+                    window['-DEMO-'].update('Demo Mode', button_color=('white', 'blue'))
+                    log_message(window, "Demo mode disabled")
             else:
                 log_message(window, "Coda is not initialized", "ERROR")
 

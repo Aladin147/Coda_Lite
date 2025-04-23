@@ -15,6 +15,14 @@ llm:
   system_prompt_file: "config/prompts/system.txt"
   tool_prompt_file: "config/prompts/tools.txt"
 
+# Speech-to-Text settings
+stt:
+  model_size: "base"  # Options: tiny, base, small, medium, large-v3
+  device: "cuda"  # Options: cpu, cuda - Using GPU for better performance
+  compute_type: "float16"  # Options: float32, float16, int8 - float16 is good for GPU
+  language: null  # Language code (null for auto-detection)
+  vad_filter: true  # Whether to use Voice Activity Detection to filter out silence
+
 # Text-to-Speech settings
 tts:
   engine: "elevenlabs"  # Options: csm, dia, elevenlabs

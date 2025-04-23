@@ -1,82 +1,122 @@
 # Coda Lite - Project Status
 
-## Current Version: v0.0.1 (In Development)
+## Current Version: v0.0.9 (Working toward v0.1.0)
 
-**Last Updated:** May 15, 2024
+**Last Updated:** April 23, 2025
 
 ## Overview
 
-Coda Lite is currently in the development phase. The basic project structure has been established, and we are implementing the core components one by one. Both the STT and TTS modules have been implemented and tested.
+Coda Lite is in active development, with most core components implemented and functional. We are currently working on integrating ElevenLabs TTS and planning a major architecture transformation to decouple the core logic from the UI using a WebSocket-based approach.
 
 ## Completed Items
 
-- ✅ Project repository initialized
-- ✅ Basic project structure created
-- ✅ Module placeholders established
-- ✅ Documentation framework set up
-- ✅ Development environment set up with pre-commit hooks
-- ✅ Implement speech-to-text functionality (WhisperSTT)
-  - ✅ File-based transcription
-  - ✅ Real-time audio capture and transcription
-  - ✅ Continuous listening mode with silence detection
-  - ✅ Voice Activity Detection (VAD) integration
-- ✅ Implement text-to-speech functionality (CoquiTTS)
-  - ✅ File-based synthesis
-  - ✅ Direct audio playback
-  - ✅ Multiple speaker and language support
-  - ✅ Speech speed control
-- ✅ Implement LLM integration with Ollama
-  - ✅ Text generation with streaming support
-  - ✅ Error handling and fallback mechanisms
-- ✅ Create debug GUI for testing
-  - ✅ Text input and response display
-  - ✅ TTS playback controls
-  - ✅ Performance monitoring
+- ✅ Core Components
+  - ✅ STT module with Whisper (GPU-accelerated)
+  - ✅ LLM integration with Ollama
+  - ✅ TTS module with MeloTTS (CSM-1B) and Dia TTS
+  - ✅ Multiple English voices (US, British, Australian, Indian)
+  - ✅ Concurrent processing with threading for reduced latency
+
+- ✅ Advanced Features
+  - ✅ Advanced personality engine with behavioral conditioning
+  - ✅ Long-term memory with vector embeddings and semantic search
+  - ✅ Intent routing system with pattern-based detection
+  - ✅ User feedback hooks for collecting and processing feedback
+  - ✅ Memory-based personality conditioning system
+  - ✅ Mini-command language with system commands
+
+- ✅ Tool System
+  - ✅ Two-pass tool calling implementation
+  - ✅ JSON cleaning to reduce leakage
+  - ✅ Enhanced error handling and fallbacks
+  - ✅ Basic tools (`get_time()`, `get_date()`, `tell_joke()`, etc.)
+
+- ✅ Development Infrastructure
+  - ✅ Debug GUI for testing and development
+  - ✅ Comprehensive documentation
+  - ✅ Performance monitoring and optimization
 
 ## In Progress
 
-- 🔄 Creating main conversation loop
-- 🔄 Researching CSM-1B integration for TTS
-- 🔄 Optimizing performance for real-time interactions
+- 🔄 ElevenLabs TTS Integration
+  - 🔄 Implementing API-based TTS with ElevenLabs
+  - 🔄 Optimizing for low latency
+  - 🔄 Configuring voice selection
+
+- 🔄 Memory System Improvements
+  - 🔄 Fixing persistence issues between sessions
+  - 🔄 Enhancing memory retrieval during conversations
+  - 🔄 Resolving dependency conflicts
+
+- 🔄 Architecture Transformation (Phase 1)
+  - 🔄 Planning WebSocket infrastructure
+  - 🔄 Designing event schema
+  - 🔄 Researching Tauri implementation
 
 ## Pending Tasks
 
-- ⏳ Implement basic tool calling
-- ⏳ Replace Coqui TTS with CSM-1B
-- ⏳ Create voice-activated wake word detection
-- ⏳ Implement full conversation memory
+- ⏳ Architecture Transformation (Phases 2-5)
+  - ⏳ Implement WebSocket server in core
+  - ⏳ Create basic Tauri shell
+  - ⏳ Integrate events into core components
+  - ⏳ Implement performance tracking
+  - ⏳ Add security and error handling
+
+- ⏳ v0.1.0 Features
+  - ⏳ Session summary generation
+  - ⏳ Memory explainability
+  - ⏳ Task management tools
+  - ⏳ Tool chaining implementation
+
+- ⏳ Future Enhancements
+  - ⏳ Wake word detection
+  - ⏳ Token streaming for real-time TTS
+  - ⏳ Additional languages support
+  - ⏳ Memory summarization for longer conversations
 
 ## Known Issues
 
-- Coqui TTS is using high CPU resources and sometimes fails to generate speech
-- Need to implement CSM-1B for better TTS quality and performance
-- GUI needs refinement for better user experience
+- Memory system not effectively retrieving memories from previous sessions
+- Integration between GUI and memory system causing persistence issues
+- Dependency conflicts between various components (NumPy, Pydantic, Torch)
+- Dia TTS has GPU performance issues in some environments
 
 ## Next Milestone
 
-**Target:** v0.0.1a - Basic Voice Loop
+**Target:** v0.1.0 - Alpha Candidate
 
-**Estimated Completion:** May 30, 2024
+**Estimated Completion:** June 30, 2025
 
 **Goals:**
 
-- ✅ Functional STT module with Whisper
-- ✅ Functional TTS module (currently Coqui TTS)
-- ✅ Basic LLM integration with Ollama
-- 🔄 Simple conversation loop with minimal latency
-- ⏳ CSM-1B integration for improved TTS
+- 🔄 ElevenLabs TTS integration for improved voice quality
+- 🔄 Architecture transformation (Phase 1: WebSocket foundation)
+- 🔄 Memory system improvements for reliable persistence
+- ⏳ Session summary generation for conversation sessions
+- ⏳ Memory explainability for insights into what Coda remembers
+- ⏳ Task management tools for productivity
+- ⏳ Tool chaining implementation
 
 ## Performance Metrics
 
 Current performance metrics:
 
-- STT (Whisper): 1-2 seconds for short audio clips
-- LLM (Ollama): 2-4 seconds for generating responses
-- TTS (Coqui): 3-5 seconds for synthesizing speech with high CPU usage
+- STT (Whisper): 0.8-1.5 seconds for short audio clips
+- LLM (Ollama): 1.5-3 seconds for generating responses
+- TTS (Dia/CSM-1B): 1-2 seconds for synthesizing speech with GPU
+- End-to-end latency: 3.5-6 seconds
 
-Target performance for v0.0.1a:
-- Complete interaction cycle under 5 seconds
-- TTS synthesis under 2 seconds with CSM-1B
+Target performance for v0.1.0:
+
+- End-to-end latency under 3 seconds
+- TTS synthesis under 1 second with ElevenLabs
+- Memory retrieval under 100ms
+
+## Related Documentation
+
+- [Architecture Transformation Roadmap](ARCHITECTURE_ROADMAP.md) - Detailed plan for the WebSocket-based architecture
+- [Memory System Investigation](MEMORY_SYSTEM_INVESTIGATION.md) - Analysis of memory system issues
+- [Long-Term Memory Documentation](LONG_TERM_MEMORY.md) - Overview of the memory system
 
 ---
 

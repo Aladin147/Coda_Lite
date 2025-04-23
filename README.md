@@ -139,6 +139,23 @@ See [GPU Configuration](docs/gpu_configuration.md) for setup instructions.
 
 ---
 
+## 🧠 Memory System
+
+Coda Lite features a sophisticated memory system with both short-term and long-term capabilities:
+
+- **Short-Term Memory**: Maintains the current conversation context
+- **Long-Term Memory**: Stores important information across sessions using vector embeddings
+- **Memory Encoder**: Intelligently chunks and encodes conversations for efficient storage
+- **Semantic Search**: Retrieves relevant memories based on semantic similarity
+- **Time-Based Decay**: Applies recency bias to prioritize newer memories
+- **Importance Scoring**: Assigns higher importance to facts, preferences, and key information
+
+The memory system enables Coda to remember user preferences, important facts, and previous conversations, creating a more personalized and contextually aware experience.
+
+See [Memory System Documentation](docs/LONG_TERM_MEMORY.md) for more details.
+
+---
+
 ## 📁 Repository Structure
 
 ```bash
@@ -148,7 +165,7 @@ coda-lite/
 ├── stt/                  # Speech-to-text (Whisper)
 ├── tts/                  # Text-to-speech (MeloTTS/CSM-1B, Dia TTS)
 ├── llm/                  # LLM handling and prompt logic
-├── memory/               # Memory management
+├── memory/               # Memory management (short-term and long-term)
 ├── personality/          # Personality management
 ├── intent/               # Intent routing system
 ├── feedback/             # User feedback system

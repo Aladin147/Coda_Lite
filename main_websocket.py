@@ -60,6 +60,7 @@ from config.config_loader import ConfigLoader
 from stt import WebSocketWhisperSTT
 from llm import WebSocketOllamaLLM
 from tts import create_tts, WebSocketElevenLabsTTS
+from memory import WebSocketEnhancedMemoryManager, MemoryManager
 from websocket import CodaWebSocketServer, CodaWebSocketIntegration
 
 # Type definitions for conversation history
@@ -222,15 +223,22 @@ class CodaAssistant:
         self.summarization_prompt = self.personality.generate_system_prompt("summarization")
         logger.info("Generated system prompts from personality")
 
-        # Initialize memory manager
-        logger.info("Initializing memory manager...")
+        # Initialize memory manager with WebSocket integration
+        logger.info("Initializing memory manager with WebSocket integration...")
         long_term_enabled = config.get("memory.long_term_enabled", False)
 
         if long_term_enabled:
-            logger.info("Using enhanced memory manager with long-term memory")
-            self.memory = EnhancedMemoryManager(config.get_all())
+            logger.info("Using enhanced memory manager with long-term memory and WebSocket integration")
+            self.memory = WebSocketEnhancedMemoryManager(
+                websocket_integration=self.ws,
+                config=config.get_all(),
+                max_turns=config.get("memory.max_turns", 20),
+                memory_path=config.get("memory.path", "data/memory/long_term"),
+                embedding_model=config.get("memory.embedding_model", "all-MiniLM-L6-v2"),
+                device=config.get("memory.device", "cpu")
+            )
         else:
-            logger.info("Using standard short-term memory manager")
+            logger.info("Using standard short-term memory manager (without WebSocket integration)")
             max_turns = config.get("memory.max_turns", 20)
             self.memory = MemoryManager(max_turns=max_turns)
 

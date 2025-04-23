@@ -711,8 +711,109 @@ class CodaAssistant:
         # Mark the end of STT handling
         self.perf.mark_component("stt", "handle_transcription", start=False)
 
+    def _register_client_message_handler(self):
+        """Register a handler for client messages."""
+        # Define the handler function
+        def handle_client_message(event_type, data):
+            try:
+                message_type = data.get("message_type")
+                message_data = data.get("message_data", {})
+                client_id = data.get("client_id")
+
+                logger.info(f"Handling client message: {message_type} from {client_id}")
+
+                # Handle different message types
+                if message_type == "stt_start":
+                    # Start speech-to-text processing
+                    mode = message_data.get("mode", "push_to_talk")
+                    logger.info(f"Starting STT in {mode} mode")
+
+                    # If in push-to-talk mode, start listening
+                    if mode == "push_to_talk":
+                        # Start listening in a separate thread
+                        threading.Thread(
+                            target=self.handle_push_to_talk,
+                            args=(message_data.get("duration", 5),),
+                            daemon=True
+                        ).start()
+
+                elif message_type == "stt_stop":
+                    # Stop speech-to-text processing
+                    logger.info("Stopping STT")
+                    # Signal to stop listening (implementation depends on your STT module)
+                    if hasattr(self.stt, "stop_listening") and callable(self.stt.stop_listening):
+                        self.stt.stop_listening()
+
+                elif message_type == "demo_flow":
+                    # Run a demo flow
+                    logger.info("Running demo flow")
+                    threading.Thread(
+                        target=self.run_demo_flow,
+                        daemon=True
+                    ).start()
+
+            except Exception as e:
+                logger.error(f"Error handling client message: {e}", exc_info=True)
+
+        # Register the handler with the WebSocket server
+        # We need to use a custom event handler since the server doesn't support this directly
+        original_push_event = self.ws.server.push_event
+
+        def push_event_with_handler(event_type, data, high_priority=False):
+            # Call the original method
+            result = original_push_event(event_type, data, high_priority)
+
+            # Handle client messages
+            if event_type == "client_message":
+                handle_client_message(event_type, data)
+
+            return result
+
+        # Replace the push_event method with our custom handler
+        self.ws.server.push_event = push_event_with_handler
+
+    def handle_push_to_talk(self, duration=5):
+        """Handle push-to-talk mode."""
+        try:
+            # Mark the start of STT processing
+            self.perf.mark_component("stt", "listen", start=True)
+
+            # Listen for speech
+            logger.info(f"Listening for {duration} seconds...")
+            result = self.stt.listen(duration=duration)
+
+            # Mark the end of STT processing
+            self.perf.mark_component("stt", "listen", start=False)
+
+            # Process the transcription if we got a result
+            if result and result.strip():
+                logger.info(f"Transcription: {result}")
+                self.handle_transcription(result)
+            else:
+                logger.info("No transcription result")
+
+        except Exception as e:
+            logger.error(f"Error in push-to-talk: {e}", exc_info=True)
+            self.perf.mark_component("stt", "listen", start=False)
+
+    def run_demo_flow(self):
+        """Run a demo flow with a predefined input."""
+        try:
+            # Use a predefined input for the demo
+            demo_input = "Tell me a short joke."
+            logger.info(f"Running demo flow with input: {demo_input}")
+
+            # Process the demo input
+            self.handle_transcription(demo_input)
+
+        except Exception as e:
+            logger.error(f"Error in demo flow: {e}", exc_info=True)
+
     def run(self) -> None:
         """Run the conversation loop."""
+        # Register the client message handler
+        self._register_client_message_handler()
+
         # Get the name from the personality
         name = self.personality.get_name()
         logger.info(f"Starting conversation loop with name: {name}")

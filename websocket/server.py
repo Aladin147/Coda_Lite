@@ -164,9 +164,23 @@ class CodaWebSocketServer:
             client_id: The client ID
             message: The message data
         """
-        # Currently, we don't expect clients to send messages
-        # This is a placeholder for future functionality
         logger.debug(f"Received message from client {client_id}: {message}")
+
+        # Check if the message has a type
+        if "type" not in message:
+            logger.warning(f"Message from client {client_id} missing 'type' field")
+            return
+
+        # Handle different message types
+        message_type = message.get("type")
+        message_data = message.get("data", {})
+
+        # Emit a client message event for other components to handle
+        self.push_event("client_message", {
+            "client_id": client_id,
+            "message_type": message_type,
+            "message_data": message_data
+        })
 
     async def broadcast_event(self, event_type: str, data: Dict[str, Any],
                              high_priority: bool = False):

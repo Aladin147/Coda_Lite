@@ -152,7 +152,7 @@ WebSocket Push   Local logs/events
 
 #### 2.1 Event Integration
 - ✅ Integrate events into STT pipeline
-- 🔄 Integrate events into LLM processing
+- ✅ Integrate events into LLM processing
 - 🔄 Integrate events into TTS pipeline
 - 🔄 Implement memory system events
 

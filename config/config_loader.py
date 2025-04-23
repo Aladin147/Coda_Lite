@@ -12,18 +12,18 @@ logger = logging.getLogger("coda.config")
 
 class ConfigLoader:
     """Configuration loader for Coda Lite."""
-    
+
     def __init__(self, config_path: str = "config/config.yaml"):
         """
         Initialize ConfigLoader.
-        
+
         Args:
             config_path: Path to the YAML configuration file
         """
         self.config_path = config_path
         self.config: Dict[str, Any] = {}
         self._load_config()
-        
+
     def _load_config(self) -> None:
         """Load configuration from YAML file."""
         if os.path.exists(self.config_path):
@@ -37,15 +37,15 @@ class ConfigLoader:
         else:
             logger.info(f"Configuration file not found at {self.config_path}, using defaults")
             self.config = {}
-            
+
     def get(self, key: str, default: Any = None) -> Any:
         """
         Get a configuration value.
-        
+
         Args:
             key: Configuration key (can use dot notation for nested keys)
             default: Default value if key not found
-            
+
         Returns:
             Configuration value or default
         """
@@ -54,7 +54,7 @@ class ConfigLoader:
         env_value = os.environ.get(env_key)
         if env_value is not None:
             return env_value
-            
+
         # Then check config file
         keys = key.split('.')
         value = self.config
@@ -64,27 +64,27 @@ class ConfigLoader:
             else:
                 return default
         return value
-        
+
     def set(self, key: str, value: Any) -> None:
         """
         Set a configuration value.
-        
+
         Args:
             key: Configuration key (can use dot notation for nested keys)
             value: Configuration value
         """
         keys = key.split('.')
         config = self.config
-        
+
         # Navigate to the nested dictionary
         for k in keys[:-1]:
             if k not in config:
                 config[k] = {}
             config = config[k]
-            
+
         # Set the value
         config[keys[-1]] = value
-        
+
     def save(self) -> None:
         """Save configuration to YAML file."""
         os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
@@ -94,11 +94,11 @@ class ConfigLoader:
             logger.info(f"Saved configuration to {self.config_path}")
         except Exception as e:
             logger.error(f"Error saving configuration: {e}", exc_info=True)
-            
+
     def load_defaults(self, defaults: Dict[str, Any]) -> None:
         """
         Load default configuration values.
-        
+
         Args:
             defaults: Dictionary of default configuration values
         """
@@ -113,3 +113,12 @@ class ConfigLoader:
             else:
                 if self.get(key) is None:
                     self.set(key, value)
+
+    def get_all(self) -> Dict[str, Any]:
+        """
+        Get the entire configuration dictionary.
+
+        Returns:
+            Dict[str, Any]: The complete configuration dictionary
+        """
+        return self.config.copy()

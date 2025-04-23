@@ -141,31 +141,60 @@ class CodaDebugWrapper:
         # Initialize TTS module
         logger.info("Initializing Text-to-Speech module...")
         try:
-            # Try to create TTS with specific model
-            try:
-                device = self.config.get("tts.device", "cuda" if torch.cuda.is_available() else "cpu")
+            # Get TTS engine from config
+            tts_engine = self.config.get("tts.engine", "elevenlabs")
+            device = self.config.get("tts.device", "cuda" if torch.cuda.is_available() else "cpu")
 
-                logger.info(f"Creating CSM-1B TTS with device={device}")
+            logger.info(f"Creating TTS with engine={tts_engine}, device={device}")
 
+            # Initialize TTS based on the configured engine
+            if tts_engine == "elevenlabs":
+                # ElevenLabs-specific parameters
+                self.tts = create_tts(
+                    engine="elevenlabs",
+                    api_key=self.config.get("tts.elevenlabs_api_key", ""),
+                    voice_id=self.config.get("tts.elevenlabs_voice_id", "JBFqnCBsd6RMkjVDRZzb"),
+                    model_id=self.config.get("tts.elevenlabs_model_id", "eleven_multilingual_v2"),
+                    stability=self.config.get("tts.elevenlabs_stability", 0.5),
+                    similarity_boost=self.config.get("tts.elevenlabs_similarity_boost", 0.75),
+                    style=self.config.get("tts.elevenlabs_style", 0.0),
+                    use_speaker_boost=self.config.get("tts.elevenlabs_use_speaker_boost", True)
+                )
+                logger.info(f"ElevenLabs TTS initialized with voice={self.config.get('tts.elevenlabs_voice_id')}")
+            elif tts_engine == "dia":
+                # Dia-specific parameters
+                self.tts = create_tts(
+                    engine="dia",
+                    device=device,
+                    audio_prompt_path=self.config.get("tts.audio_prompt_path"),
+                    temperature=self.config.get("tts.temperature", 1.3),
+                    top_p=self.config.get("tts.top_p", 0.95),
+                    cfg_scale=self.config.get("tts.cfg_scale", 3.0),
+                    use_torch_compile=self.config.get("tts.use_torch_compile", True)
+                )
+                logger.info(f"Dia TTS initialized with device={device}")
+            else:  # Default to CSM
                 # CSM-specific parameters
                 self.tts = create_tts(
                     engine="csm",
                     device=device,
                     language=self.config.get("tts.language", "en")
                 )
-            except Exception as model_error:
-                # If that fails, log the error
-                logger.error(f"Failed to initialize CSM-1B TTS: {model_error}")
-                logger.warning("No TTS engine available. Speech synthesis will not work.")
-                self.tts = None
+                logger.info(f"CSM-1B TTS initialized with device={device}")
 
-            logger.info("TTS initialized successfully")
+            # Store the current TTS engine for reference
+            self.current_tts_engine = tts_engine
+            logger.info(f"TTS initialized successfully with engine: {tts_engine}")
         except Exception as e:
-            logger.error(f"Error initializing TTS: {e}")
+            # If initialization fails, log the error
+            logger.error(f"Failed to initialize TTS: {e}")
+            logger.warning("No TTS engine available. Speech synthesis will not work.")
+
             # Create a mock TTS for testing
             from tts.mock_tts import MockTTS
             logger.warning("Using MockTTS as fallback")
             self.tts = MockTTS()
+            self.current_tts_engine = "mock"
             print("\n[WARNING] Using MockTTS - no audio output will be produced")
 
         logger.info("Coda debug wrapper initialized successfully")
@@ -413,6 +442,13 @@ def create_gui():
             sg.Button('Clear Response', key='-CLEAR_RESPONSE-', size=(10, 1)),
             sg.Checkbox('Auto-speak', key='-AUTO_SPEAK-', default=False)
         ],
+        [
+            sg.Text('TTS Engine:'),
+            sg.Radio('CSM', 'TTS_ENGINE', key='-TTS_CSM-'),
+            sg.Radio('Dia', 'TTS_ENGINE', key='-TTS_DIA-'),
+            sg.Radio('ElevenLabs', 'TTS_ENGINE', key='-TTS_ELEVENLABS-', default=True),
+            sg.Button('Switch TTS Engine', key='-SWITCH_TTS-', size=(15, 1))
+        ],
 
         [sg.HorizontalSeparator()],
 
@@ -575,6 +611,16 @@ def main():
         log_message(window, "Initializing Coda debug wrapper...")
         coda = CodaDebugWrapper()
         log_message(window, "Coda debug wrapper initialized successfully")
+
+        # Set the correct radio button based on the current TTS engine
+        if hasattr(coda, 'current_tts_engine'):
+            if coda.current_tts_engine == "csm":
+                window['-TTS_CSM-'].update(True)
+            elif coda.current_tts_engine == "dia":
+                window['-TTS_DIA-'].update(True)
+            elif coda.current_tts_engine == "elevenlabs":
+                window['-TTS_ELEVENLABS-'].update(True)
+            log_message(window, f"Current TTS engine: {coda.current_tts_engine}")
     except Exception as e:
         import traceback
         error_traceback = traceback.format_exc()
@@ -668,6 +714,78 @@ def main():
             if coda:
                 coda.clear_conversation()
                 log_message(window, "Conversation history cleared")
+
+        # Switch TTS Engine
+        elif event == '-SWITCH_TTS-':
+            if coda:
+                # Determine which engine is selected
+                if values['-TTS_CSM-']:
+                    new_engine = "csm"
+                elif values['-TTS_DIA-']:
+                    new_engine = "dia"
+                elif values['-TTS_ELEVENLABS-']:
+                    new_engine = "elevenlabs"
+                else:
+                    new_engine = "csm"  # Default fallback
+
+                # Check if we're actually changing engines
+                if new_engine != coda.current_tts_engine:
+                    log_message(window, f"Switching TTS engine from {coda.current_tts_engine} to {new_engine}...")
+
+                    try:
+                        # Get device from config
+                        device = coda.config.get("tts.device", "cuda" if torch.cuda.is_available() else "cpu")
+
+                        # Initialize the new TTS engine
+                        if new_engine == "elevenlabs":
+                            # ElevenLabs-specific parameters
+                            coda.tts = create_tts(
+                                engine="elevenlabs",
+                                api_key=coda.config.get("tts.elevenlabs_api_key", ""),
+                                voice_id=coda.config.get("tts.elevenlabs_voice_id", "JBFqnCBsd6RMkjVDRZzb"),
+                                model_id=coda.config.get("tts.elevenlabs_model_id", "eleven_multilingual_v2"),
+                                stability=coda.config.get("tts.elevenlabs_stability", 0.5),
+                                similarity_boost=coda.config.get("tts.elevenlabs_similarity_boost", 0.75),
+                                style=coda.config.get("tts.elevenlabs_style", 0.0),
+                                use_speaker_boost=coda.config.get("tts.elevenlabs_use_speaker_boost", True)
+                            )
+                            log_message(window, f"ElevenLabs TTS initialized with voice={coda.config.get('tts.elevenlabs_voice_id')}")
+                        elif new_engine == "dia":
+                            # Dia-specific parameters
+                            coda.tts = create_tts(
+                                engine="dia",
+                                device=device,
+                                audio_prompt_path=coda.config.get("tts.audio_prompt_path"),
+                                temperature=coda.config.get("tts.temperature", 1.3),
+                                top_p=coda.config.get("tts.top_p", 0.95),
+                                cfg_scale=coda.config.get("tts.cfg_scale", 3.0),
+                                use_torch_compile=coda.config.get("tts.use_torch_compile", True)
+                            )
+                            log_message(window, f"Dia TTS initialized with device={device}")
+                        else:  # Default to CSM
+                            # CSM-specific parameters
+                            coda.tts = create_tts(
+                                engine="csm",
+                                device=device,
+                                language=coda.config.get("tts.language", "en")
+                            )
+                            log_message(window, f"CSM-1B TTS initialized with device={device}")
+
+                        # Update the current TTS engine
+                        coda.current_tts_engine = new_engine
+                        log_message(window, f"TTS engine switched to {new_engine} successfully")
+
+                        # Update the config file to persist the change
+                        coda.config.set("tts.engine", new_engine)
+                        coda.config.save()  # Save the configuration to disk
+                        log_message(window, f"Updated configuration with new TTS engine: {new_engine}")
+
+                    except Exception as e:
+                        log_message(window, f"Error switching TTS engine: {e}", "ERROR")
+                else:
+                    log_message(window, f"Already using {new_engine} TTS engine")
+            else:
+                log_message(window, "Coda is not initialized", "ERROR")
 
         # Save conversation
         elif event == '-SAVE-':

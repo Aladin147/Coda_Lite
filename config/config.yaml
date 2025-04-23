@@ -32,7 +32,7 @@ tts:
 
   # ElevenLabs TTS specific settings
   elevenlabs_api_key: "sk_7b576d29574b14a97150b864497d937c4e1fdd2d6b3a1e4d"  # Your ElevenLabs API key
-  elevenlabs_voice_id: "JBFqnCBsd6RMkjVDRZzb"  # Default voice: Josh (male)
+  elevenlabs_voice_id: "3sJ9qwog9VNmFa3qD96n"  # Matilda's voice
   elevenlabs_model_id: "eleven_multilingual_v2"  # Default model: Multilingual v2
   elevenlabs_stability: 0.5  # Controls stability of the voice (0.0 to 1.0)
   elevenlabs_similarity_boost: 0.75  # Controls similarity to the original voice (0.0 to 1.0)

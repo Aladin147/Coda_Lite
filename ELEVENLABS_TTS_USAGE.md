@@ -25,6 +25,7 @@ This document provides a quick guide to using the ElevenLabs Text-to-Speech (TTS
 
 ElevenLabs offers a variety of voices. Some popular options include:
 
+- Matilda (female): `3sJ9qwog9VNmFa3qD96n` - **Default for Coda**
 - Josh (male): `JBFqnCBsd6RMkjVDRZzb`
 - Rachel (female): `21m00Tcm4TlvDq8ikWAM`
 - Domi (female): `AZnzlk1XvdvUeBnXmlld`

@@ -58,7 +58,7 @@ logger.info(get_full_version_string())
 # Import modules
 from config.config_loader import ConfigLoader
 from stt import WebSocketWhisperSTT
-from llm import OllamaLLM
+from llm import WebSocketOllamaLLM
 from tts import create_tts
 from websocket import CodaWebSocketServer, CodaWebSocketIntegration
 
@@ -166,9 +166,10 @@ class CodaAssistant:
             vad_filter=True
         )
 
-        # Initialize LLM module
-        logger.info("Initializing Language Model module...")
-        self.llm = OllamaLLM(
+        # Initialize LLM module with WebSocket integration
+        logger.info("Initializing Language Model module with WebSocket integration...")
+        self.llm = WebSocketOllamaLLM(
+            websocket_integration=self.ws,
             model_name=config.get("llm.model_name", "llama3"),
             host="http://localhost:11434",
             timeout=120
@@ -329,7 +330,7 @@ class CodaAssistant:
             stream=True
         ):
             summary += chunk
-            
+
             # Send token event
             self.ws.llm_token(chunk, token_index)
             token_index += 1
@@ -376,7 +377,7 @@ class CodaAssistant:
                 self.response_queue.task_done()
             except Exception as e:
                 logger.error(f"Error in TTS worker: {e}", exc_info=True)
-                
+
                 # Signal TTS error
                 self.ws.tts_error(str(e))
 
@@ -488,7 +489,7 @@ class CodaAssistant:
             if isinstance(self.memory, EnhancedMemoryManager):
                 context = self.memory.get_enhanced_context(text, max_tokens=max_tokens)
                 logger.info(f"Retrieved enhanced context with {len(context)} turns (including long-term memories)")
-                
+
                 # Send memory retrieve event if memories were retrieved
                 if hasattr(self.memory, 'last_retrieved_memories') and self.memory.last_retrieved_memories:
                     self.ws.memory_retrieve(
@@ -518,18 +519,18 @@ class CodaAssistant:
                 stream=True
             ):
                 raw_response += chunk
-                
+
                 # Send token event
                 self.ws.llm_token(chunk, token_index)
                 token_index += 1
-                
+
             end_time = time.time()
 
             logger.info(f"Initial LLM response generated in {end_time - start_time:.2f} seconds")
             logger.info(f"Raw LLM response: {raw_response}")
 
-            # Store the original response for debugging
-            original_response = raw_response
+            # Store the original response for debugging if needed
+            # original_response = raw_response
             response = raw_response
 
             # Check if the response contains a tool call
@@ -572,10 +573,10 @@ class CodaAssistant:
                     response = self.summarize_tool_result(text, tool_result)
                 except Exception as e:
                     logger.error(f"Error executing tool {tool_name}: {e}", exc_info=True)
-                    
+
                     # Signal tool error
                     self.ws.tool_error(tool_name, str(e))
-                    
+
                     response = f"I'm sorry, I encountered an error while trying to {tool_name}: {str(e)}"
             else:
                 # Send LLM result event
@@ -613,10 +614,10 @@ class CodaAssistant:
             self.processing = False
         except Exception as e:
             logger.error(f"Error processing user input: {e}", exc_info=True)
-            
+
             # Signal LLM error
             self.ws.llm_error(str(e))
-            
+
             # Add an error message to memory
             error_message = f"I'm sorry, I encountered an error: {str(e)}"
             self.memory.add_turn("assistant", error_message)
@@ -698,10 +699,10 @@ class CodaAssistant:
     def cleanup(self) -> None:
         """Clean up resources."""
         logger.info("Cleaning up resources")
-        
+
         # End the WebSocket session
         self.ws.end_session()
-        
+
         # Close the STT module
         if hasattr(self, 'stt') and self.stt:
             self.stt.close()
@@ -720,15 +721,15 @@ class CodaAssistant:
 
         logger.info("Cleanup complete")
 
-def signal_handler(sig, frame):
+def signal_handler(sig, _):
     """Handle signals for graceful shutdown."""
     global assistant, websocket_server
-    
+
     logger.info(f"Received signal {sig}, shutting down...")
-    
+
     if assistant:
         assistant.stop()
-    
+
     # Schedule the WebSocket server to stop
     if websocket_server:
         asyncio.create_task(websocket_server.stop())
@@ -736,17 +737,17 @@ def signal_handler(sig, frame):
 async def main_async():
     """Async main entry point for Coda Lite."""
     global assistant, websocket_server, websocket_integration
-    
+
     logger.info(f"Starting Coda Lite {__version__} ({__version_name__})")
     ensure_directories()
-    
+
     # Set up signal handlers for graceful shutdown
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-    
+
     # Load configuration
     config = ConfigLoader()
-    
+
     try:
         # Initialize WebSocket server
         logger.info("Initializing WebSocket server...")
@@ -754,27 +755,27 @@ async def main_async():
             host=config.get("websocket.host", "localhost"),
             port=config.get("websocket.port", 8765)
         )
-        
+
         # Initialize WebSocket integration
         logger.info("Initializing WebSocket integration...")
         websocket_integration = CodaWebSocketIntegration(websocket_server)
-        
+
         # Start the WebSocket server
         await websocket_server.start()
         logger.info("WebSocket server started")
-        
+
         # Initialize and run the assistant
         assistant = CodaAssistant(config, websocket_integration)
         logger.info("Coda Lite is ready. Press Ctrl+C to exit.")
-        
+
         # Run the assistant in a separate thread
         assistant_thread = threading.Thread(target=assistant.run, daemon=True)
         assistant_thread.start()
-        
+
         # Keep the main thread alive
         while assistant.running:
             await asyncio.sleep(1)
-            
+
     except Exception as e:
         logger.error(f"Error in main: {e}", exc_info=True)
     finally:
@@ -782,7 +783,7 @@ async def main_async():
         if websocket_server:
             await websocket_server.stop()
             logger.info("WebSocket server stopped")
-        
+
         logger.info("Coda Lite shutdown complete. Goodbye!")
 
 def main():

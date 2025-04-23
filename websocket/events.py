@@ -34,6 +34,7 @@ class EventType(str, Enum):
     TTS_PROGRESS = "tts_progress"
     TTS_RESULT = "tts_result"
     TTS_ERROR = "tts_error"
+    TTS_STATUS = "tts_status"
 
     # Memory events
     MEMORY_STORE = "memory_store"
@@ -179,6 +180,13 @@ class TTSErrorEvent(BaseEvent):
     message: str
     details: Optional[Dict[str, Any]] = None
 
+class TTSStatusEvent(BaseEvent):
+    """TTS status event."""
+
+    type: EventType = EventType.TTS_STATUS
+    status: str  # "loaded", "unloaded", "switching"
+    details: Optional[Dict[str, Any]] = None
+
 class MemoryStoreEvent(BaseEvent):
     """Memory store event."""
 
@@ -298,6 +306,7 @@ EVENT_CLASS_MAP = {
     EventType.TTS_PROGRESS: TTSProgressEvent,
     EventType.TTS_RESULT: TTSResultEvent,
     EventType.TTS_ERROR: TTSErrorEvent,
+    EventType.TTS_STATUS: TTSStatusEvent,
     EventType.MEMORY_STORE: MemoryStoreEvent,
     EventType.MEMORY_RETRIEVE: MemoryRetrieveEvent,
     EventType.MEMORY_UPDATE: MemoryUpdateEvent,

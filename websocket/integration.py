@@ -381,6 +381,25 @@ class CodaWebSocketIntegration:
         # Send latency trace
         self._send_latency_trace()
 
+    def tts_status(self, status: str, details: Optional[Dict[str, Any]] = None) -> None:
+        """
+        Signal a TTS status change.
+
+        Args:
+            status: The status ("loaded", "unloaded", "switching")
+            details: Additional status details
+        """
+        # Send TTS status event
+        self.server.push_event(
+            EventType.TTS_STATUS,
+            {
+                "status": status,
+                "details": details
+            }
+        )
+
+        logger.debug(f"TTS status: {status}")
+
     # Memory integration methods
 
     def memory_store(self, content: str, memory_type: str, importance: float, memory_id: str) -> None:

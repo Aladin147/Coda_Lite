@@ -63,7 +63,7 @@ class WebSocketElevenLabsTTS(ElevenLabsTTS):
             output_format=output_format,
             **kwargs
         )
-        
+
         self.ws = websocket_integration
         logger.info("WebSocketElevenLabsTTS initialized with WebSocket integration")
 
@@ -83,7 +83,7 @@ class WebSocketElevenLabsTTS(ElevenLabsTTS):
             return np.array([], dtype=np.float32)
 
         logger.info(f"Synthesizing speech: {text[:50]}...")
-        
+
         # Signal start of TTS
         self.ws.tts_start(
             text=text,
@@ -102,7 +102,7 @@ class WebSocketElevenLabsTTS(ElevenLabsTTS):
                 "style": self.style,
                 "use_speaker_boost": self.use_speaker_boost
             }
-            
+
             # Track progress
             progress = 0
             self.ws.tts_progress(progress)
@@ -123,7 +123,7 @@ class WebSocketElevenLabsTTS(ElevenLabsTTS):
                 if isinstance(chunk, bytes):
                     audio_chunks.append(chunk)
                     chunk_count += 1
-                    
+
                     # Update progress (approximate)
                     if chunk_count % 5 == 0:  # Update every 5 chunks
                         progress = min(progress + 10, 90)  # Cap at 90% until complete
@@ -132,11 +132,11 @@ class WebSocketElevenLabsTTS(ElevenLabsTTS):
             # Create a temporary file to save the audio
             with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
                 temp_path = temp_file.name
-                
+
                 # Write all chunks to the file
                 for chunk in audio_chunks:
                     temp_file.write(chunk)
-            
+
             # Final progress update
             self.ws.tts_progress(100)
 
@@ -146,12 +146,12 @@ class WebSocketElevenLabsTTS(ElevenLabsTTS):
 
             # Clean up the temporary file
             os.unlink(temp_path)
-            
+
             # Calculate duration
             end_time = time.time()
             processing_duration = end_time - start_time
             audio_duration = len(audio_array) / 44100  # in seconds
-            
+
             # Signal TTS completion
             self.ws.tts_result(
                 audio_duration_seconds=audio_duration,
@@ -162,10 +162,10 @@ class WebSocketElevenLabsTTS(ElevenLabsTTS):
 
         except Exception as e:
             logger.error(f"Error synthesizing speech: {e}")
-            
+
             # Signal TTS error
             self.ws.tts_error(str(e))
-            
+
             raise
 
     def stream_synthesize(self, text: str) -> Generator[bytes, None, None]:
@@ -183,7 +183,7 @@ class WebSocketElevenLabsTTS(ElevenLabsTTS):
             return np.array([], dtype=np.float32)
 
         logger.info(f"Streaming speech synthesis: {text[:50]}...")
-        
+
         # Signal start of TTS
         self.ws.tts_start(
             text=text,
@@ -202,7 +202,7 @@ class WebSocketElevenLabsTTS(ElevenLabsTTS):
                 "style": self.style,
                 "use_speaker_boost": self.use_speaker_boost
             }
-            
+
             # Track progress
             progress = 0
             self.ws.tts_progress(progress)
@@ -219,26 +219,26 @@ class WebSocketElevenLabsTTS(ElevenLabsTTS):
             # Return a generator that yields audio chunks with progress updates
             chunk_count = 0
             total_bytes = 0
-            
+
             for chunk in audio_stream:
                 if isinstance(chunk, bytes):
                     chunk_count += 1
                     total_bytes += len(chunk)
-                    
+
                     # Update progress (approximate)
                     if chunk_count % 5 == 0:  # Update every 5 chunks
                         progress = min(progress + 10, 90)  # Cap at 90% until complete
                         self.ws.tts_progress(progress)
-                    
+
                     yield chunk
-            
+
             # Final progress update
             self.ws.tts_progress(100)
-            
+
             # Estimate audio duration (rough approximation)
             # MP3 at 128kbps is about 16KB per second of audio
             audio_duration = total_bytes / (16 * 1024)
-            
+
             # Signal TTS completion
             end_time = time.time()
             self.ws.tts_result(
@@ -248,10 +248,10 @@ class WebSocketElevenLabsTTS(ElevenLabsTTS):
 
         except Exception as e:
             logger.error(f"Error streaming speech synthesis: {e}")
-            
+
             # Signal TTS error
             self.ws.tts_error(str(e))
-            
+
             raise
 
     def speak(self, text: str) -> bool:
@@ -271,41 +271,41 @@ class WebSocketElevenLabsTTS(ElevenLabsTTS):
                 voice=self._get_voice_name(),
                 provider="elevenlabs"
             )
-            
+
             # Start timing
             start_time = time.time()
-            
+
             # Synthesize speech
             logger.info(f"Synthesizing and playing speech: {text[:50]}...")
             audio = self.synthesize(text)
 
             # Play the audio
             self.play_audio(audio)
-            
+
             # Calculate duration
             end_time = time.time()
             processing_duration = end_time - start_time
             audio_duration = len(audio) / 44100  # in seconds
-            
+
             # Signal TTS completion
             self.ws.tts_result(
                 audio_duration_seconds=audio_duration,
                 char_count=len(text)
             )
-            
+
             return True
         except Exception as e:
             logger.error(f"Error speaking text: {e}")
-            
+
             # Signal TTS error
             self.ws.tts_error(str(e))
-            
+
             return False
-    
+
     def _get_voice_name(self) -> str:
         """
         Get the name of the current voice.
-        
+
         Returns:
             str: Voice name or ID if name cannot be determined
         """
@@ -316,5 +316,24 @@ class WebSocketElevenLabsTTS(ElevenLabsTTS):
                     return voice.name
         except Exception as e:
             logger.warning(f"Could not get voice name: {e}")
-        
+
         return self.voice_id
+
+    def unload(self) -> None:
+        """
+        Unload the TTS engine and free resources.
+        Also sends a WebSocket event to notify clients.
+        """
+        logger.info("Unloading WebSocketElevenLabsTTS resources")
+
+        # Send a WebSocket event to notify clients
+        try:
+            if hasattr(self, 'ws'):
+                self.ws.tts_status("unloaded")
+        except Exception as e:
+            logger.warning(f"Error sending TTS unload event: {e}")
+
+        # Call the parent class's unload method
+        super().unload()
+
+        logger.info("WebSocketElevenLabsTTS resources unloaded")

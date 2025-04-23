@@ -299,3 +299,27 @@ class ElevenLabsTTS(BaseTTS):
         else:
             # Monolingual v1 supports only English
             return ["en"]
+
+    def unload(self) -> None:
+        """
+        Unload the TTS engine and free resources.
+        """
+        logger.info("Unloading ElevenLabs TTS resources")
+
+        # Close any open connections
+        if hasattr(self, 'client'):
+            # The ElevenLabs client doesn't have a close method,
+            # but we can set it to None to help with garbage collection
+            self.client = None
+
+        # Clean up any other resources
+        import gc
+        gc.collect()
+
+        logger.info("ElevenLabs TTS resources unloaded")
+
+    def close(self) -> None:
+        """
+        Alias for unload() for compatibility.
+        """
+        self.unload()

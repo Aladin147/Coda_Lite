@@ -59,7 +59,7 @@ logger.info(get_full_version_string())
 from config.config_loader import ConfigLoader
 from stt import WebSocketWhisperSTT
 from llm import WebSocketOllamaLLM
-from tts import create_tts, WebSocketElevenLabsTTS
+from tts.factory import get_tts_instance, get_available_tts_engines
 from memory import WebSocketEnhancedMemoryManager, MemoryManager
 from websocket import CodaWebSocketServer, CodaWebSocketIntegration
 from websocket.perf_integration import WebSocketPerfIntegration
@@ -188,26 +188,40 @@ class CodaAssistant:
         # Use ElevenLabs TTS as requested by the user
         tts_engine = config.get("tts.engine", "elevenlabs")
 
-        if tts_engine == "elevenlabs":
-            # Initialize ElevenLabs TTS with WebSocket integration
-            self.tts = WebSocketElevenLabsTTS(
+        # Get available TTS engines
+        available_engines = get_available_tts_engines()
+        logger.info(f"Available TTS engines: {available_engines}")
+
+        # Check if the requested engine is available
+        if tts_engine not in available_engines or not available_engines[tts_engine]:
+            logger.warning(f"Requested TTS engine '{tts_engine}' is not available. Falling back to ElevenLabs.")
+            tts_engine = "elevenlabs"
+
+        try:
+            # Initialize TTS with lazy loading
+            self.tts = get_tts_instance(
+                tts_type=tts_engine,
                 websocket_integration=self.ws,
-                api_key=config.get("tts.elevenlabs_api_key", "sk_7b576d29574b14a97150b864497d937c4e1fdd2d6b3a1e4d"),
-                voice_id=config.get("tts.elevenlabs_voice_id", "21m00Tcm4TlvDq8ikWAM"),  # Alexandra voice
-                model_id=config.get("tts.elevenlabs_model_id", "eleven_multilingual_v2"),
-                stability=config.get("tts.elevenlabs_stability", 0.5),
-                similarity_boost=config.get("tts.elevenlabs_similarity_boost", 0.75)
+                config=config.get_all()
+            )
+
+            if tts_engine == "elevenlabs":
+                logger.info(f"Initialized ElevenLabs TTS with voice: {config.get('tts.elevenlabs_voice_id', '21m00Tcm4TlvDq8ikWAM')}")
+            elif tts_engine == "csm":
+                logger.info(f"Initialized CSM TTS with language: {config.get('tts.language', 'EN')}")
+            elif tts_engine == "dia":
+                logger.info(f"Initialized Dia TTS with model: {config.get('tts.dia_model_path', 'default')}")
+        except Exception as e:
+            logger.error(f"Error initializing TTS engine '{tts_engine}': {e}")
+            logger.info("Falling back to ElevenLabs TTS")
+
+            # Fallback to ElevenLabs TTS
+            self.tts = get_tts_instance(
+                tts_type="elevenlabs",
+                websocket_integration=self.ws,
+                config=config.get_all()
             )
             logger.info(f"Initialized ElevenLabs TTS with voice: {config.get('tts.elevenlabs_voice_id', '21m00Tcm4TlvDq8ikWAM')}")
-        else:
-            # Fallback to CSM TTS (without WebSocket integration for now)
-            self.tts = create_tts(
-                engine="csm",
-                language=config.get("tts.language", "EN"),
-                voice=config.get("tts.voice", "EN-US"),
-                device=config.get("tts.device", "cuda")
-            )
-            logger.info(f"Initialized CSM TTS with language: {config.get('tts.language', 'EN')}")
 
         # Initialize personality
         logger.info("Initializing personality...")
@@ -760,8 +774,23 @@ class CodaAssistant:
 
         # Close the TTS module
         if hasattr(self, 'tts') and self.tts:
-            self.tts.close()
-            logger.info("Closed TTS module")
+            # Try to close the TTS module
+            try:
+                # First try the close method if it exists
+                if hasattr(self.tts, 'close'):
+                    self.tts.close()
+                    logger.info("Closed TTS module using close() method")
+                # Then try the unload method if it exists
+                elif hasattr(self.tts, 'unload'):
+                    self.tts.unload()
+                    logger.info("Closed TTS module using unload() method")
+            except Exception as e:
+                logger.warning(f"Error closing TTS module: {e}")
+
+            # Use the factory's unload function to ensure proper cleanup
+            from tts.factory import unload_current_tts
+            unload_current_tts()
+            logger.info("Unloaded TTS module using factory")
 
         # Close the memory manager
         if hasattr(self, 'memory') and self.memory:

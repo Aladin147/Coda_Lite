@@ -26,7 +26,7 @@ You can provide your ElevenLabs API key in one of two ways:
 
 ElevenLabs offers a variety of voices. You can specify which voice to use by setting the `elevenlabs_voice_id` in the configuration file. Some popular voices include:
 
-- `3sJ9qwog9VNmFa3qD96n` - Matilda (female) - **Default for Coda**
+- `kdmDKE6EkgrWrrykO9Qt` - Alexandra (female) - **Default for Coda**
 - `JBFqnCBsd6RMkjVDRZzb` - Josh (male)
 - `21m00Tcm4TlvDq8ikWAM` - Rachel (female)
 - `AZnzlk1XvdvUeBnXmlld` - Domi (female)

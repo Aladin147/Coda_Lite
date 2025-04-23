@@ -115,86 +115,16 @@ def get_tts_instance(
             logger.error(f"Error importing ElevenLabs TTS: {e}")
             raise ImportError(f"ElevenLabs TTS is not available: {e}")
 
-    elif tts_type == "csm":
-        try:
-            # Only import CSM TTS when needed
-            if websocket_integration:
-                # WebSocket CSM TTS not implemented yet, fall back to regular CSM TTS
-                logger.warning("WebSocket CSM TTS not implemented yet, falling back to regular CSM TTS")
-                from tts.csm_tts import CSMTTS
+    elif tts_type in ["csm", "dia"]:
+        # CSM and Dia TTS are disabled until better versions are available
+        logger.warning(f"{tts_type.upper()} TTS is currently disabled. Falling back to ElevenLabs TTS.")
 
-                # Extract CSM-specific parameters from config
-                language = config.get("tts.language") if config else kwargs.get("language", "EN")
-                voice = config.get("tts.voice") if config else kwargs.get("voice", "EN-US")
-                device = config.get("tts.device") if config else kwargs.get("device", "cuda")
-
-                logger.info(f"Creating CSMTTS instance with language={language}, voice={voice}")
-                _tts_instance = CSMTTS(
-                    language=language,
-                    voice=voice,
-                    device=device,
-                    **kwargs
-                )
-            else:
-                from tts.csm_tts import CSMTTS
-
-                # Extract CSM-specific parameters from config
-                language = config.get("tts.language") if config else kwargs.get("language", "EN")
-                voice = config.get("tts.voice") if config else kwargs.get("voice", "EN-US")
-                device = config.get("tts.device") if config else kwargs.get("device", "cuda")
-
-                logger.info(f"Creating CSMTTS instance with language={language}, voice={voice}")
-                _tts_instance = CSMTTS(
-                    language=language,
-                    voice=voice,
-                    device=device,
-                    **kwargs
-                )
-
-            _current_tts_type = "csm"
-        except ImportError as e:
-            logger.error(f"Error importing CSM TTS: {e}")
-            raise ImportError(f"CSM TTS is not available: {e}")
-
-    elif tts_type == "dia":
-        try:
-            # Only import Dia TTS when needed
-            if websocket_integration:
-                # WebSocket Dia TTS not implemented yet, fall back to regular Dia TTS
-                logger.warning("WebSocket Dia TTS not implemented yet, falling back to regular Dia TTS")
-                from tts.dia_tts import DiaTTS
-
-                # Extract Dia-specific parameters from config
-                model_path = config.get("tts.dia_model_path") if config else kwargs.get("model_path")
-                device = config.get("tts.device") if config else kwargs.get("device", "cuda")
-
-                logger.info(f"Creating DiaTTS instance with device={device}")
-                _tts_instance = DiaTTS(
-                    model_path=model_path,
-                    device=device,
-                    **kwargs
-                )
-            else:
-                from tts.dia_tts import DiaTTS
-
-                # Extract Dia-specific parameters from config
-                model_path = config.get("tts.dia_model_path") if config else kwargs.get("model_path")
-                device = config.get("tts.device") if config else kwargs.get("device", "cuda")
-
-                logger.info(f"Creating DiaTTS instance with device={device}")
-                _tts_instance = DiaTTS(
-                    model_path=model_path,
-                    device=device,
-                    **kwargs
-                )
-
-            _current_tts_type = "dia"
-        except ImportError as e:
-            logger.error(f"Error importing Dia TTS: {e}")
-            raise ImportError(f"Dia TTS is not available: {e}")
+        # Recursively call this function with ElevenLabs TTS
+        return get_tts_instance("elevenlabs", websocket_integration, config, **kwargs)
 
     else:
-        raise ValueError(f"Unsupported TTS type: {tts_type}")
+        logger.warning(f"Unsupported TTS type: {tts_type}. Falling back to ElevenLabs TTS.")
+        return get_tts_instance("elevenlabs", websocket_integration, config, **kwargs)
 
     return _tts_instance
 
@@ -203,16 +133,16 @@ def get_available_tts_engines() -> Dict[str, bool]:
     """
     Get a dictionary of available TTS engines.
 
-    This function checks which TTS engines are available without loading them.
-    It only imports the minimum necessary to check availability.
+    Currently, we're focusing exclusively on ElevenLabs TTS.
+    Other engines (CSM, Dia) are disabled until better versions are available.
 
     Returns:
         Dict[str, bool]: Dictionary of TTS engine names and their availability
     """
     engines = {
         "elevenlabs": False,
-        "csm": False,
-        "dia": False
+        "csm": False,  # Disabled
+        "dia": False   # Disabled
     }
 
     # Check ElevenLabs availability
@@ -223,21 +153,8 @@ def get_available_tts_engines() -> Dict[str, bool]:
     except ImportError:
         pass
 
-    # Check CSM availability
-    try:
-        import importlib.util
-        if importlib.util.find_spec("melotts") is not None:
-            engines["csm"] = True
-    except ImportError:
-        pass
-
-    # Check Dia availability
-    try:
-        import importlib.util
-        if importlib.util.find_spec("dia") is not None:
-            engines["dia"] = True
-    except ImportError:
-        pass
+    # Other engines are intentionally disabled
+    # We're focusing exclusively on ElevenLabs TTS
 
     return engines
 

@@ -24,7 +24,6 @@ import logging
 import signal
 import threading
 import random
-import json
 import re
 import asyncio
 from datetime import datetime
@@ -59,7 +58,7 @@ logger.info(get_full_version_string())
 from config.config_loader import ConfigLoader
 from stt import WebSocketWhisperSTT
 from llm import WebSocketOllamaLLM
-from tts.factory import get_tts_instance, get_available_tts_engines
+from tts.factory import get_tts_instance
 from memory import WebSocketEnhancedMemoryManager, MemoryManager
 from websocket import CodaWebSocketServer, CodaWebSocketIntegration
 from websocket.perf_integration import WebSocketPerfIntegration
@@ -185,17 +184,9 @@ class CodaAssistant:
         # Initialize TTS module with WebSocket integration
         logger.info("Initializing Text-to-Speech module with WebSocket integration...")
 
-        # Use ElevenLabs TTS as requested by the user
-        tts_engine = config.get("tts.engine", "elevenlabs")
-
-        # Get available TTS engines
-        available_engines = get_available_tts_engines()
-        logger.info(f"Available TTS engines: {available_engines}")
-
-        # Check if the requested engine is available
-        if tts_engine not in available_engines or not available_engines[tts_engine]:
-            logger.warning(f"Requested TTS engine '{tts_engine}' is not available. Falling back to ElevenLabs.")
-            tts_engine = "elevenlabs"
+        # We're focusing exclusively on ElevenLabs TTS
+        tts_engine = "elevenlabs"
+        logger.info("Using ElevenLabs TTS exclusively as per project requirements")
 
         try:
             # Initialize TTS with lazy loading
@@ -205,23 +196,24 @@ class CodaAssistant:
                 config=config.get_all()
             )
 
-            if tts_engine == "elevenlabs":
-                logger.info(f"Initialized ElevenLabs TTS with voice: {config.get('tts.elevenlabs_voice_id', '21m00Tcm4TlvDq8ikWAM')}")
-            elif tts_engine == "csm":
-                logger.info(f"Initialized CSM TTS with language: {config.get('tts.language', 'EN')}")
-            elif tts_engine == "dia":
-                logger.info(f"Initialized Dia TTS with model: {config.get('tts.dia_model_path', 'default')}")
-        except Exception as e:
-            logger.error(f"Error initializing TTS engine '{tts_engine}': {e}")
-            logger.info("Falling back to ElevenLabs TTS")
-
-            # Fallback to ElevenLabs TTS
-            self.tts = get_tts_instance(
-                tts_type="elevenlabs",
-                websocket_integration=self.ws,
-                config=config.get_all()
-            )
             logger.info(f"Initialized ElevenLabs TTS with voice: {config.get('tts.elevenlabs_voice_id', '21m00Tcm4TlvDq8ikWAM')}")
+        except Exception as e:
+            logger.error(f"Error initializing ElevenLabs TTS: {e}")
+
+            # Try again with default parameters
+            logger.info("Retrying with default parameters")
+            try:
+                self.tts = get_tts_instance(
+                    tts_type="elevenlabs",
+                    websocket_integration=self.ws,
+                    api_key="sk_7b576d29574b14a97150b864497d937c4e1fdd2d6b3a1e4d",
+                    voice_id="21m00Tcm4TlvDq8ikWAM",
+                    model_id="eleven_multilingual_v2"
+                )
+                logger.info("Initialized ElevenLabs TTS with default parameters")
+            except Exception as e2:
+                logger.error(f"Critical error initializing ElevenLabs TTS: {e2}")
+                raise RuntimeError(f"Failed to initialize ElevenLabs TTS: {e2}")
 
         # Initialize personality
         logger.info("Initializing personality...")

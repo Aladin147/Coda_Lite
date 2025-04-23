@@ -1,4 +1,4 @@
-# Coda Lite – Core Operations & Digital Assistant (v0.1.0)
+# Coda Lite – Core Operations & Digital Assistant (v0.1.1)
 
 **Coda Lite** is a lightweight, local-first voice assistant prototype focused on one thing:
 ⚡ **Real-time, low-latency, human-feeling conversation.**
@@ -28,7 +28,7 @@ This project is the **first step** in building an open, modular, transparent AI 
 |---------------|----------------------------------|--------------------------------|
 | 🎙️ STT        | [faster-whisper](https://github.com/guillaumekln/faster-whisper)  | Local speech-to-text          |
 | 🧠 LLM        | [Ollama](https://ollama.com/) + LLaMA 3 / DeepSeek   | Local reasoning engine        |
-| 🗣️ TTS        | [MeloTTS (CSM-1B)](https://github.com/myshell-ai/MeloTTS) / [Dia TTS](https://github.com/nari-labs/dia) / [ElevenLabs](https://elevenlabs.io/)      | High-quality speech generation       |
+| 🗣️ TTS        | [ElevenLabs](https://elevenlabs.io/) / [MeloTTS (CSM-1B)](https://github.com/myshell-ai/MeloTTS) / [Dia TTS](https://github.com/nari-labs/dia)      | High-quality speech generation       |
 | 🔧 Tools      | Python function routing          | Responding to structured LLM output |
 
 ---
@@ -161,7 +161,8 @@ Coda is **a system** — and this is just its first breath.
 
 Coda Lite supports GPU acceleration for improved performance:
 
-- **Dia TTS**: Uses CUDA for faster speech synthesis (3-5x speedup)
+- **ElevenLabs TTS**: Cloud-based API for high-quality speech synthesis
+- **Dia TTS**: Uses CUDA for faster speech synthesis (3-5x speedup) when used as a fallback
 - **Ollama**: Uses GPU for faster language model inference (4-6x speedup)
 - **Whisper**: Uses GPU for faster speech recognition
 

@@ -1,6 +1,6 @@
 # ElevenLabs TTS Integration for Coda
 
-This document describes how to set up and use the ElevenLabs Text-to-Speech (TTS) integration for Coda. ElevenLabs TTS is now fully integrated into Coda's TTS factory system as of v0.1.0.
+This document describes how to set up and use the ElevenLabs Text-to-Speech (TTS) integration for Coda. ElevenLabs TTS is now fully integrated into Coda's TTS factory system as of v0.1.1.
 
 ## Overview
 
@@ -59,7 +59,7 @@ You can customize the voice characteristics by adjusting the following parameter
 
 ### Basic Usage
 
-As of v0.1.0, Coda uses a TTS factory system that automatically selects the best available TTS engine. ElevenLabs is now the default TTS engine when properly configured. The system will automatically fall back to local TTS options (CSM-1B or Dia TTS) if ElevenLabs is not available.
+As of v0.1.1, Coda uses a TTS factory system that automatically selects the best available TTS engine. ElevenLabs is now the default TTS engine when properly configured. The system will automatically fall back to local TTS options (CSM-1B or Dia TTS) if ElevenLabs is not available.
 
 You can still manually specify ElevenLabs as the TTS engine by setting the `engine` parameter in the `tts` section of `config/config.yaml` to `"elevenlabs"`:
 
@@ -129,7 +129,7 @@ Based on our testing, ElevenLabs TTS provides the following performance characte
 
 ## Integration with WebSocket Architecture
 
-As of v0.1.0, ElevenLabs TTS is fully integrated with Coda's WebSocket architecture. The system emits the following events related to ElevenLabs TTS:
+As of v0.1.1, ElevenLabs TTS is fully integrated with Coda's WebSocket architecture. The system emits the following events related to ElevenLabs TTS:
 
 - `tts_start`: When speech synthesis begins
 - `tts_progress`: During speech synthesis (percentage complete)

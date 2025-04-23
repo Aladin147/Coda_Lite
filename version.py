@@ -4,9 +4,9 @@ Coda Lite version information.
 This module provides version information for the Coda Lite project.
 """
 
-__version__ = "0.1.0"
-__version_name__ = "WebSocket Architecture"
-__version_description__ = "Modular, decoupled system with WebSocket communication"
+__version__ = "0.1.1-dev"
+__version_name__ = "Dashboard Integration"
+__version_description__ = "Visual interface for monitoring and interaction"
 
 # Version history
 VERSION_HISTORY = {

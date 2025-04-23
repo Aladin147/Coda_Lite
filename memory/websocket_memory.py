@@ -7,7 +7,7 @@ import logging
 import time
 from typing import Dict, List, Optional, Any, Union, Tuple
 
-from memory.enhanced import EnhancedMemoryManager
+from memory.enhanced_memory_manager import EnhancedMemoryManager
 from memory.long_term import LongTermMemory
 from memory.encoder import MemoryEncoder
 from websocket.integration import CodaWebSocketIntegration
@@ -50,7 +50,7 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap
         )
-        
+
         self.ws = websocket_integration
         logger.info("WebSocketEnhancedMemoryManager initialized with WebSocket integration")
 
@@ -64,10 +64,10 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
         """
         # Add the turn to memory
         super().add_turn(role, content)
-        
+
         # Emit conversation turn event
         self.ws.add_conversation_turn(role, content)
-        
+
         logger.debug(f"Added conversation turn: {role}")
 
     def add_memory(
@@ -96,7 +96,7 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
             importance=importance,
             metadata=metadata
         )
-        
+
         # Emit memory store event
         self.ws.memory_store(
             content=content,
@@ -104,9 +104,9 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
             importance=importance,
             memory_id=memory_id
         )
-        
+
         logger.debug(f"Added memory: {memory_id} - {content[:30]}...")
-        
+
         return memory_id
 
     def get_memories(
@@ -135,15 +135,15 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
             min_relevance=min_relevance,
             memory_type=memory_type
         )
-        
+
         # Emit memory retrieve event
         self.ws.memory_retrieve(
             query=query,
             results=memories
         )
-        
+
         logger.debug(f"Retrieved {len(memories)} memories for query: {query}")
-        
+
         return memories
 
     def update_memory(
@@ -167,7 +167,7 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
         """
         # Get the original memory
         original_memory = self.long_term.get_memory_by_id(memory_id)
-        
+
         # Update the memory
         result = super().update_memory(
             memory_id=memory_id,
@@ -175,7 +175,7 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
             importance=importance,
             metadata=metadata
         )
-        
+
         if result:
             # Emit memory update events for each changed field
             if content is not None and original_memory and original_memory.get("content") != content:
@@ -185,7 +185,7 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
                     old_value=original_memory.get("content"),
                     new_value=content
                 )
-            
+
             if importance is not None and original_memory and original_memory.get("importance") != importance:
                 self.ws.memory_update(
                     memory_id=memory_id,
@@ -193,7 +193,7 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
                     old_value=original_memory.get("importance"),
                     new_value=importance
                 )
-            
+
             if metadata is not None and original_memory:
                 original_metadata = original_memory.get("metadata", {})
                 for key, value in metadata.items():
@@ -204,9 +204,9 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
                             old_value=original_metadata.get(key),
                             new_value=value
                         )
-            
+
             logger.debug(f"Updated memory: {memory_id}")
-        
+
         return result
 
     def delete_memory(self, memory_id: str) -> bool:
@@ -221,10 +221,10 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
         """
         # Get the original memory
         original_memory = self.long_term.get_memory_by_id(memory_id)
-        
+
         # Delete the memory
         result = super().delete_memory(memory_id)
-        
+
         if result and original_memory:
             # Emit memory update event (deletion)
             self.ws.memory_update(
@@ -233,9 +233,9 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
                 old_value=False,
                 new_value=True
             )
-            
+
             logger.debug(f"Deleted memory: {memory_id}")
-        
+
         return result
 
     def get_enhanced_context(
@@ -261,23 +261,23 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
             max_tokens=max_tokens,
             include_system=include_system
         )
-        
+
         # If we have retrieved memories, emit memory retrieve event
         if hasattr(self, 'last_retrieved_memories') and self.last_retrieved_memories:
             self.ws.memory_retrieve(
                 query=query,
                 results=self.last_retrieved_memories
             )
-            
+
             logger.debug(f"Retrieved {len(self.last_retrieved_memories)} memories for context: {query}")
-        
+
         return context
 
     def clear_short_term(self) -> None:
         """Clear short-term memory with WebSocket events."""
         # Clear short-term memory
         super().clear_short_term()
-        
+
         # Emit memory update event (clear short-term)
         self.ws.memory_update(
             memory_id="short_term",
@@ -285,7 +285,7 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
             old_value=False,
             new_value=True
         )
-        
+
         logger.debug("Cleared short-term memory")
 
     def get_memory_stats(self) -> Dict[str, Any]:
@@ -297,12 +297,12 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
         """
         # Get memory statistics
         stats = super().get_memory_stats()
-        
+
         # Emit system info event with memory stats
         self.ws.system_info({
             "memory_stats": stats
         })
-        
+
         logger.debug(f"Memory stats: {stats}")
-        
+
         return stats

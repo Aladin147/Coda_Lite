@@ -253,6 +253,28 @@ class ElevenLabsTTS(BaseTTS):
             logger.error(f"Error getting available voices: {e}")
             return []
 
+    def speak(self, text: str) -> bool:
+        """
+        Synthesize speech from text and play it.
+
+        Args:
+            text: Text to synthesize and play.
+
+        Returns:
+            bool: True if successful, False otherwise.
+        """
+        try:
+            # Synthesize speech
+            logger.info(f"Synthesizing and playing speech: {text[:50]}...")
+            audio = self.synthesize(text)
+
+            # Play the audio
+            self.play_audio(audio)
+            return True
+        except Exception as e:
+            logger.error(f"Error speaking text: {e}")
+            return False
+
     def get_available_languages(self) -> List[str]:
         """
         Get list of available languages.

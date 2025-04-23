@@ -19,13 +19,21 @@ try:
 except ImportError:
     DIA_AVAILABLE = False
 
+# Import ElevenLabs TTS
+try:
+    from tts.elevenlabs_tts import ElevenLabsTTS
+    ELEVENLABS_AVAILABLE = True
+except ImportError as e:
+    print(f"Error importing ElevenLabsTTS: {e}")
+    ELEVENLABS_AVAILABLE = False
+
 # Factory function to create TTS instances
 def create_tts(engine="csm", **kwargs):
     """
     Create a TTS instance based on the specified engine.
 
     Args:
-        engine (str): TTS engine to use ("csm" or "dia")
+        engine (str): TTS engine to use ("csm", "dia", or "elevenlabs")
         **kwargs: Additional parameters to pass to the TTS constructor
 
     Returns:
@@ -44,7 +52,12 @@ def create_tts(engine="csm", **kwargs):
             return DiaTTS(**kwargs)
         else:
             raise ImportError("Dia TTS is not available. Please install dia package.")
+    elif engine == "elevenlabs":
+        if ELEVENLABS_AVAILABLE:
+            return ElevenLabsTTS(**kwargs)
+        else:
+            raise ImportError("ElevenLabs TTS is not available. Please install elevenlabs package.")
     else:
-        raise NotImplementedError(f"Unknown TTS engine: {engine}. Currently supported engines: 'csm', 'dia'")
+        raise NotImplementedError(f"Unknown TTS engine: {engine}. Currently supported engines: 'csm', 'dia', 'elevenlabs'")
 
-__all__ = ["BaseTTS", "create_tts", "CSMTTS", "DiaTTS"]
+__all__ = ["BaseTTS", "create_tts", "CSMTTS", "DiaTTS", "ElevenLabsTTS"]

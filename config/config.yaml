@@ -17,7 +17,7 @@ llm:
 
 # Text-to-Speech settings
 tts:
-  engine: "dia"  # Options: csm, dia
+  engine: "elevenlabs"  # Options: csm, dia, elevenlabs
   language: "EN"  # Language code for CSM-1B (EN, ES, FR, ZH, JP, KR)
   voice: "EN-Default"  # Available voices for English: EN-US, EN-BR, EN_INDIA, EN-AU, EN-Default
   speed: 1.0
@@ -29,6 +29,15 @@ tts:
   top_p: 0.95             # Top-p sampling parameter (0-1)
   cfg_scale: 3.0          # Classifier-free guidance scale (higher = more adherence to the prompt)
   use_torch_compile: true  # Whether to use torch.compile for faster inference
+
+  # ElevenLabs TTS specific settings
+  elevenlabs_api_key: "sk_7b576d29574b14a97150b864497d937c4e1fdd2d6b3a1e4d"  # Your ElevenLabs API key
+  elevenlabs_voice_id: "JBFqnCBsd6RMkjVDRZzb"  # Default voice: Josh (male)
+  elevenlabs_model_id: "eleven_multilingual_v2"  # Default model: Multilingual v2
+  elevenlabs_stability: 0.5  # Controls stability of the voice (0.0 to 1.0)
+  elevenlabs_similarity_boost: 0.75  # Controls similarity to the original voice (0.0 to 1.0)
+  elevenlabs_style: 0.0  # Controls speaking style (0.0 to 1.0)
+  elevenlabs_use_speaker_boost: true  # Whether to use speaker boost
 
 # Audio settings
 audio:

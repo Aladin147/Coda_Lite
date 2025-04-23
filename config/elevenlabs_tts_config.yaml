@@ -1,0 +1,31 @@
+# ElevenLabs TTS Configuration
+
+# API settings
+api_key: ""  # Your ElevenLabs API key (leave empty to use ELEVENLABS_API_KEY environment variable)
+
+# Voice settings
+voice_id: "JBFqnCBsd6RMkjVDRZzb"  # Default voice: Josh (male)
+# Other popular voices:
+# - "21m00Tcm4TlvDq8ikWAM" - Rachel (female)
+# - "AZnzlk1XvdvUeBnXmlld" - Domi (female)
+# - "EXAVITQu4vr4xnSDxMaL" - Bella (female)
+# - "MF3mGyEYCl7XYWbV9V6O" - Elli (female)
+# - "TxGEqnHWrfWFTfGW9XjX" - Adam (male)
+# - "VR6AewLTigWG4xSOukaG" - Arnold (male)
+# - "pNInz6obpgDQGcFmaJgB" - Sam (male)
+
+# Model settings
+model_id: "eleven_multilingual_v2"  # Default model: Multilingual v2
+# Available models:
+# - "eleven_multilingual_v2" - Multilingual v2 (best quality, supports 29 languages)
+# - "eleven_turbo_v2_5" - Turbo v2.5 (fastest, supports 32 languages)
+# - "eleven_monolingual_v1" - Monolingual v1 (English only)
+
+# Voice customization
+stability: 0.5  # Controls stability of the voice (0.0 to 1.0)
+similarity_boost: 0.75  # Controls similarity to the original voice (0.0 to 1.0)
+style: 0.0  # Controls speaking style (0.0 to 1.0)
+use_speaker_boost: true  # Whether to use speaker boost
+
+# Output settings
+output_format: "mp3_44100_128"  # Output format (mp3_44100_128, mp3_44100_192, pcm_44100, etc.)

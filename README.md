@@ -33,7 +33,7 @@ This project is the **first step** in building an open, modular, transparent AI 
 
 ---
 
-## 🚀 Current Version: `v0.1.0` - WebSocket Architecture
+## ✅ Completed in `v0.1.0` - WebSocket Architecture
 
 > 🔸 **Modular, decoupled system with WebSocket communication!**
 
@@ -57,19 +57,30 @@ This project is the **first step** in building an open, modular, transparent AI 
 
 ---
 
-## 🔜 Upcoming: `v0.1.1` - Dashboard Integration
+## 🚀 Current Version: `v0.1.1` - Dashboard Integration
 
 > Visual interface for monitoring and interaction:
 
-- React-based Tauri dashboard implementation
-- Real-time visualization of system events
-- Performance monitoring and metrics display
-- Memory inspection and visualization
-- Tool usage tracking and display
-- Session summary generation for conversation sessions
-- Memory explainability for insights into what Coda remembers
-- Task management tools for productivity
-- Implement tool chaining (using results from one tool as input to another)
+- React-based Tauri dashboard implementation ✅
+- Real-time visualization of system events ✅
+- Performance monitoring and metrics display ✅
+- Memory inspection and visualization ✅
+- Tool usage tracking and display ✅
+- Conversation view with real-time updates ✅
+- Push-to-talk and demo functionality ✅
+- Dark/light theme support ✅
+- WebSocket server compatibility with websockets 15.0.1+ ✅
+- Responsive design for different screen sizes ✅
+
+**Dashboard Features:**
+
+- Avatar with speaking animation
+- Real-time event log
+- Performance metrics visualization
+- Memory viewer
+- Tool usage cards
+- System information display
+- Theme toggle for light/dark mode
 
 ## 🔜 Future: `v0.2.0` - Beta Release
 

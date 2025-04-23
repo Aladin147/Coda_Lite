@@ -31,9 +31,19 @@ npm install
 
 2. Run the development server:
 
-```bash
-npm run tauri dev
-```
+   With Tauri (requires Rust):
+
+   ```bash
+   npm run tauri dev
+   ```
+
+   Or without Tauri (React-only):
+
+   ```bash
+   npm run dev
+   ```
+
+   The React-only version will run in your browser at `http://localhost:5173/`
 
 ### Building
 
@@ -74,6 +84,16 @@ The dashboard listens for the following event types:
 - `tool_call`, `tool_result`, `tool_error`: Tool usage events
 - `latency_trace`: Performance metrics
 - `system_info`: System information
+
+## WebSocket Server Compatibility
+
+The dashboard is designed to work with Coda's WebSocket server. The server implementation has been updated to be compatible with websockets 15.0.1 and higher. If you encounter connection issues, ensure your WebSocket server implementation is up to date.
+
+## Troubleshooting
+
+- **Connection Issues**: Ensure Coda's WebSocket server is running at ws://localhost:8765
+- **Missing UI Elements**: Check browser console for errors and ensure all dependencies are installed
+- **Tauri Build Errors**: Verify that Rust and Cargo are properly installed
 
 ## License
 

@@ -12,6 +12,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
+## [0.1.1-dashboard] - 2025-04-23
+
+### Added
+
+- React-based Tauri dashboard implementation
+- Real-time visualization of system events
+- Performance monitoring and metrics display
+- Memory inspection and visualization
+- Tool usage tracking and display
+- Conversation view with real-time updates
+- Push-to-talk and demo functionality
+- Dark/light theme support
+- Responsive design for different screen sizes
+- Avatar component with speaking animation
+- System information display in footer
+- WebSocket server compatibility with websockets 15.0.1+
+
+### Changed
+
+- Updated WebSocket server to be compatible with latest websockets library
+- Improved event handling in WebSocket server
+- Enhanced WebSocket client with global accessibility
+- Updated main README with dashboard information
+
+### Fixed
+
+- Fixed WebSocket server handler to work with websockets 15.0.1+
+
 ## [0.1.0-dia-tts] - 2025-04-22
 
 ### Added

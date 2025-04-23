@@ -80,15 +80,21 @@ class MemoryEncoder:
             importance = self._calculate_importance(chunk["content"])
 
             # Create memory
+            # Convert lists to strings for ChromaDB compatibility
+            speakers_str = ",".join(chunk["speakers"])
+            turn_ids_str = ",".join(map(str, chunk["turn_ids"]))
+            topics = self._extract_topics(chunk["content"])
+            topics_str = ",".join(topics) if topics else ""
+
             memory = {
                 "content": chunk["content"],
                 "source_type": "conversation",
                 "importance": importance,
                 "metadata": {
-                    "speakers": chunk["speakers"],
-                    "turn_ids": chunk["turn_ids"],
+                    "speakers": speakers_str,
+                    "turn_ids": turn_ids_str,
                     "timestamp": chunk["timestamp"],
-                    "topics": self._extract_topics(chunk["content"])
+                    "topics": topics_str
                 }
             }
 
@@ -302,15 +308,30 @@ class MemoryEncoder:
         # Increase importance for facts
         importance = min(importance + 0.2, 1.0)
 
+        # Convert lists to strings for ChromaDB compatibility
+        topics = self._extract_topics(fact)
+        topics_str = ",".join(topics) if topics else ""
+
+        # Create metadata with primitive types only
+        fact_metadata = {
+            "source": source,
+            "topics": topics_str
+        }
+
+        # Add additional metadata, ensuring all values are primitive types
+        for key, value in metadata.items():
+            if isinstance(value, (str, int, float, bool)):
+                fact_metadata[key] = value
+            elif isinstance(value, (list, tuple)):
+                fact_metadata[key] = ",".join(map(str, value))
+            else:
+                fact_metadata[key] = str(value)
+
         memory = {
             "content": fact,
             "source_type": "fact",
             "importance": importance,
-            "metadata": {
-                "source": source,
-                "topics": self._extract_topics(fact),
-                **metadata
-            }
+            "metadata": fact_metadata
         }
 
         return memory
@@ -334,14 +355,29 @@ class MemoryEncoder:
         # Preferences are important
         importance = 0.8
 
+        # Convert lists to strings for ChromaDB compatibility
+        topics = self._extract_topics(preference)
+        topics_str = ",".join(topics) if topics else ""
+
+        # Create metadata with primitive types only
+        pref_metadata = {
+            "topics": topics_str
+        }
+
+        # Add additional metadata, ensuring all values are primitive types
+        for key, value in metadata.items():
+            if isinstance(value, (str, int, float, bool)):
+                pref_metadata[key] = value
+            elif isinstance(value, (list, tuple)):
+                pref_metadata[key] = ",".join(map(str, value))
+            else:
+                pref_metadata[key] = str(value)
+
         memory = {
             "content": preference,
             "source_type": "preference",
             "importance": importance,
-            "metadata": {
-                "topics": self._extract_topics(preference),
-                **metadata
-            }
+            "metadata": pref_metadata
         }
 
         return memory
@@ -375,17 +411,29 @@ class MemoryEncoder:
         elif sentiment == "negative":
             importance += 0.2  # Negative feedback is more important to learn from
 
-        # Create metadata
+        # Convert lists to strings for ChromaDB compatibility
+        topics = self._extract_topics(content)
+        topics_str = ",".join(topics) if topics else ""
+
+        # Create metadata with primitive types only
         feedback_metadata = {
             "feedback_type": str(feedback.get("type")),
-            "prompt": feedback.get("prompt"),
+            "prompt": str(feedback.get("prompt", "")),
             "sentiment": sentiment,
-            "intent_type": feedback.get("intent_type"),
-            "timestamp": feedback.get("timestamp"),
-            "turn": feedback.get("turn"),
-            "topics": self._extract_topics(content),
-            **metadata
+            "intent_type": str(feedback.get("intent_type", "")),
+            "timestamp": str(feedback.get("timestamp", "")),
+            "turn": str(feedback.get("turn", "")),
+            "topics": topics_str
         }
+
+        # Add additional metadata, ensuring all values are primitive types
+        for key, value in metadata.items():
+            if isinstance(value, (str, int, float, bool)):
+                feedback_metadata[key] = value
+            elif isinstance(value, (list, tuple)):
+                feedback_metadata[key] = ",".join(map(str, value))
+            else:
+                feedback_metadata[key] = str(value)
 
         memory = {
             "content": content,

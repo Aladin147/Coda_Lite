@@ -62,6 +62,7 @@ from llm import WebSocketOllamaLLM
 from tts import create_tts, WebSocketElevenLabsTTS
 from memory import WebSocketEnhancedMemoryManager, MemoryManager
 from websocket import CodaWebSocketServer, CodaWebSocketIntegration
+from websocket.perf_integration import WebSocketPerfIntegration
 
 # Type definitions for conversation history
 Message = Dict[str, str]
@@ -71,6 +72,7 @@ MessageList = List[Message]
 assistant = None
 websocket_server = None
 websocket_integration = None
+perf_integration = None
 
 def extract_clean_response(response: str) -> str:
     """Remove any JSON blocks and clean up the response.
@@ -144,7 +146,7 @@ def load_system_prompt(file_path: str) -> str:
 class CodaAssistant:
     """Main Coda Lite assistant class with WebSocket integration."""
 
-    def __init__(self, config: ConfigLoader, websocket_integration: CodaWebSocketIntegration):
+    def __init__(self, config: ConfigLoader, websocket_integration: CodaWebSocketIntegration, perf_integration: WebSocketPerfIntegration):
         """Initialize the Coda assistant with WebSocket integration."""
         self.config = config
         self.conversation_history: MessageList = []
@@ -152,9 +154,13 @@ class CodaAssistant:
         self.processing = False  # Flag to track if we're currently processing a request
         self.response_queue = Queue()  # Queue for responses to be spoken
         self.ws = websocket_integration
+        self.perf = perf_integration
 
         # Start a new session
         self.ws.start_session()
+
+        # Send system information
+        self.perf.send_system_info()
 
         # Initialize STT module with WebSocket integration
         logger.info("Initializing Speech-to-Text module with WebSocket integration...")
@@ -381,18 +387,33 @@ class CodaAssistant:
                 except Exception:  # Queue.Empty
                     continue
 
+                # Mark the start of TTS processing
+                self.perf.mark_component("tts", "speak", start=True)
+
                 # Speak the response
                 # WebSocket events are handled by the WebSocketElevenLabsTTS class
                 self.tts.speak(response)
 
+                # Mark the end of TTS processing
+                self.perf.mark_component("tts", "speak", start=False)
+
                 # Mark the task as done
                 self.response_queue.task_done()
+
+                # Send latency trace after TTS completes
+                self.perf.send_latency_trace()
             except Exception as e:
                 logger.error(f"Error in TTS worker: {e}", exc_info=True)
+
+                # Mark the end of TTS processing (even though it failed)
+                self.perf.mark_component("tts", "speak", start=False)
 
     def _process_user_input(self, text: str):
         """Process user input in a separate thread."""
         try:
+            # Mark the start of processing
+            self.perf.mark_component("assistant", "process_input", start=True)
+
             # Add user input to memory
             self.memory.add_turn("user", text)
             logger.info("Added user input to memory")
@@ -492,6 +513,7 @@ class CodaAssistant:
                         return
 
             # Get conversation context from memory
+            self.perf.mark_component("memory", "get_context", start=True)
             max_tokens = self.config.get("memory.max_tokens", 800)
 
             # Use enhanced context if we have an EnhancedMemoryManager
@@ -509,6 +531,8 @@ class CodaAssistant:
                 context = self.memory.get_context(max_tokens=max_tokens)
                 logger.info(f"Retrieved context with {len(context)} turns")
 
+            self.perf.mark_component("memory", "get_context", start=False)
+
             # Signal start of LLM processing
             self.ws.llm_start(
                 model=self.config.get("llm.model_name", "llama3"),
@@ -517,6 +541,7 @@ class CodaAssistant:
             )
 
             # Generate initial response from LLM
+            self.perf.mark_component("llm", "generate_response", start=True)
             start_time = time.time()
             logger.info("Generating initial LLM response...")
             raw_response = ""
@@ -534,6 +559,7 @@ class CodaAssistant:
                 token_index += 1
 
             end_time = time.time()
+            self.perf.mark_component("llm", "generate_response", start=False)
 
             logger.info(f"Initial LLM response generated in {end_time - start_time:.2f} seconds")
             logger.info(f"Raw LLM response: {raw_response}")
@@ -621,6 +647,12 @@ class CodaAssistant:
 
             # We're done processing this input
             self.processing = False
+
+            # Mark the end of processing
+            self.perf.mark_component("assistant", "process_input", start=False)
+
+            # Send component stats
+            self.perf.send_component_stats()
         except Exception as e:
             logger.error(f"Error processing user input: {e}", exc_info=True)
 
@@ -637,15 +669,25 @@ class CodaAssistant:
             # We're done processing this input
             self.processing = False
 
+            # Mark the end of processing (even though it failed)
+            self.perf.mark_component("assistant", "process_input", start=False)
+
     def handle_transcription(self, text: str) -> None:
         """Handle transcribed text from STT."""
+        # Mark the start of STT handling
+        self.perf.mark_component("stt", "handle_transcription", start=True)
+
         if not text.strip():
             logger.info("Empty transcription, ignoring")
+            # Mark the end of STT handling (early return)
+            self.perf.mark_component("stt", "handle_transcription", start=False)
             return
 
         # If we're already processing a request, ignore this one
         if self.processing:
             logger.info("Already processing a request, ignoring")
+            # Mark the end of STT handling (early return)
+            self.perf.mark_component("stt", "handle_transcription", start=False)
             return
 
         logger.info(f"User said: {text}")
@@ -663,6 +705,9 @@ class CodaAssistant:
             args=(text,),
             daemon=True
         ).start()
+
+        # Mark the end of STT handling
+        self.perf.mark_component("stt", "handle_transcription", start=False)
 
     def run(self) -> None:
         """Run the conversation loop."""
@@ -732,12 +777,16 @@ class CodaAssistant:
 
 def signal_handler(sig, _):
     """Handle signals for graceful shutdown."""
-    global assistant, websocket_server
+    global assistant, websocket_server, perf_integration
 
     logger.info(f"Received signal {sig}, shutting down...")
 
     if assistant:
         assistant.stop()
+
+    # Stop performance monitoring
+    if perf_integration:
+        perf_integration.get_tracker().stop_monitoring()
 
     # Schedule the WebSocket server to stop
     if websocket_server:
@@ -745,7 +794,7 @@ def signal_handler(sig, _):
 
 async def main_async():
     """Async main entry point for Coda Lite."""
-    global assistant, websocket_server, websocket_integration
+    global assistant, websocket_server, websocket_integration, perf_integration
 
     logger.info(f"Starting Coda Lite {__version__} ({__version_name__})")
     ensure_directories()
@@ -769,12 +818,19 @@ async def main_async():
         logger.info("Initializing WebSocket integration...")
         websocket_integration = CodaWebSocketIntegration(websocket_server)
 
+        # Initialize performance integration
+        logger.info("Initializing performance tracking...")
+        perf_integration = WebSocketPerfIntegration(
+            server=websocket_server,
+            monitoring_interval=config.get("performance.monitoring_interval", 5.0)
+        )
+
         # Start the WebSocket server
         await websocket_server.start()
         logger.info("WebSocket server started")
 
         # Initialize and run the assistant
-        assistant = CodaAssistant(config, websocket_integration)
+        assistant = CodaAssistant(config, websocket_integration, perf_integration)
         logger.info("Coda Lite is ready. Press Ctrl+C to exit.")
 
         # Run the assistant in a separate thread

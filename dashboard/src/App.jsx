@@ -5,6 +5,11 @@ import EventLog from './components/EventLog';
 import PerformanceMonitor from './components/PerformanceMonitor';
 import MemoryViewer from './components/MemoryViewer';
 import Header from './components/Header';
+import Avatar from './components/Avatar';
+import ToolDisplay from './components/ToolDisplay';
+import ConversationView from './components/ConversationView';
+import VoiceControls from './components/VoiceControls';
+import SystemInfo from './components/SystemInfo';
 
 function App() {
   const [connected, setConnected] = useState(false);
@@ -25,21 +30,21 @@ function App() {
 
   useEffect(() => {
     const client = new WebSocketClient('ws://localhost:8765');
-    
+
     client.onConnect = () => {
       console.log('Connected to WebSocket server');
       setConnected(true);
     };
-    
+
     client.onDisconnect = () => {
       console.log('Disconnected from WebSocket server');
       setConnected(false);
     };
-    
+
     client.onEvent = (event) => {
       // Add event to events list
       setEvents(prevEvents => [event, ...prevEvents].slice(0, 100));
-      
+
       // Process specific event types
       switch (event.type) {
         case 'latency_trace':
@@ -50,7 +55,7 @@ function App() {
             total: event.data.total_seconds
           });
           break;
-          
+
         case 'system_metrics':
           setSystemMetrics({
             memory_mb: event.data.memory_mb,
@@ -58,7 +63,7 @@ function App() {
             gpu_vram_mb: event.data.gpu_vram_mb || 0
           });
           break;
-          
+
         case 'memory_store':
           setMemories(prevMemories => [
             {
@@ -73,28 +78,67 @@ function App() {
           break;
       }
     };
-    
+
     // Connect to the WebSocket server
     client.connect();
-    
+
     // Clean up on unmount
     return () => {
       client.disconnect();
     };
   }, []);
 
+  const sendMessage = (type, data) => {
+    // Create a WebSocket client if it doesn't exist
+    if (!window.wsClient) {
+      console.error('WebSocket client not initialized');
+      return;
+    }
+
+    // Send the message if connected
+    if (window.wsClient.isConnected()) {
+      const message = {
+        type,
+        data,
+        timestamp: new Date().toISOString()
+      };
+
+      try {
+        window.wsClient.socket.send(JSON.stringify(message));
+      } catch (error) {
+        console.error('Error sending message:', error);
+      }
+    } else {
+      console.error('WebSocket not connected');
+    }
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard 
-          connected={connected} 
-          performanceMetrics={performanceMetrics}
-          systemMetrics={systemMetrics}
-        />;
+        return (
+          <div className="dashboard-layout">
+            <div className="dashboard-main">
+              <div className="dashboard-top">
+                <Avatar events={events} />
+                <VoiceControls sendMessage={sendMessage} connected={connected} />
+              </div>
+              <Dashboard
+                connected={connected}
+                performanceMetrics={performanceMetrics}
+                systemMetrics={systemMetrics}
+              />
+            </div>
+            <div className="dashboard-side">
+              <ConversationView events={events} />
+              <ToolDisplay events={events} />
+            </div>
+          </div>
+        );
       case 'events':
         return <EventLog events={events} />;
       case 'performance':
-        return <PerformanceMonitor 
+        return <PerformanceMonitor
           performanceMetrics={performanceMetrics}
           systemMetrics={systemMetrics}
         />;
@@ -107,14 +151,17 @@ function App() {
 
   return (
     <div className="app">
-      <Header 
-        connected={connected} 
+      <Header
+        connected={connected}
         activeTab={activeTab}
         onTabChange={setActiveTab}
       />
       <main className="content">
         {renderContent()}
       </main>
+      <footer className="app-footer">
+        <SystemInfo events={events} />
+      </footer>
     </div>
   );
 }

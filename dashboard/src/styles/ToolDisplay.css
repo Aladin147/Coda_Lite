@@ -1,0 +1,118 @@
+.tool-display {
+  background: var(--card-background);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.tool-display-title {
+  margin-bottom: 16px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.tool-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.tool-card {
+  background: white;
+  border-radius: 6px;
+  padding: 12px;
+  border-left: 4px solid var(--primary-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.tool-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+.tool-card.pending {
+  border-left-color: var(--warning-color);
+}
+
+.tool-card.success {
+  border-left-color: var(--success-color);
+}
+
+.tool-card.error {
+  border-left-color: var(--danger-color);
+}
+
+.tool-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.tool-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.tool-status {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: capitalize;
+}
+
+.tool-card.pending .tool-status {
+  background: rgba(255, 190, 11, 0.2);
+  color: #856404;
+}
+
+.tool-card.success .tool-status {
+  background: rgba(6, 214, 160, 0.2);
+  color: #155724;
+}
+
+.tool-card.error .tool-status {
+  background: rgba(239, 71, 111, 0.2);
+  color: #721c24;
+}
+
+.tool-params, .tool-result {
+  background: #f8f9fa;
+  border-radius: 4px;
+  padding: 8px;
+  margin-bottom: 8px;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.tool-params pre, .tool-result pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.result-label {
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.tool-time {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.no-tools {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
+}

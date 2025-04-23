@@ -4,7 +4,7 @@
 class WebSocketClient {
   /**
    * Create a new WebSocket client.
-   * 
+   *
    * @param {string} url - The WebSocket server URL
    */
   constructor(url) {
@@ -13,42 +13,45 @@ class WebSocketClient {
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 1000;
-    
+
     // Event handlers
     this.onConnect = () => {};
     this.onDisconnect = () => {};
     this.onEvent = (event) => {};
     this.onError = (error) => {};
   }
-  
+
   /**
    * Connect to the WebSocket server.
    */
   connect() {
     try {
       this.socket = new WebSocket(this.url);
-      
+
+      // Store the client in the window object for global access
+      window.wsClient = this;
+
       this.socket.onopen = () => {
         console.log(`Connected to ${this.url}`);
         this.reconnectAttempts = 0;
         this.onConnect();
       };
-      
+
       this.socket.onclose = (event) => {
         console.log(`Disconnected from ${this.url}: ${event.code} ${event.reason}`);
         this.onDisconnect();
         this.reconnect();
       };
-      
+
       this.socket.onerror = (error) => {
         console.error(`WebSocket error: ${error}`);
         this.onError(error);
       };
-      
+
       this.socket.onmessage = (message) => {
         try {
           const event = JSON.parse(message.data);
-          
+
           // Handle replay events
           if (event.type === 'replay' && Array.isArray(event.events)) {
             console.log(`Received replay with ${event.events.length} events`);
@@ -68,7 +71,7 @@ class WebSocketClient {
       this.reconnect();
     }
   }
-  
+
   /**
    * Disconnect from the WebSocket server.
    */
@@ -76,9 +79,14 @@ class WebSocketClient {
     if (this.socket) {
       this.socket.close();
       this.socket = null;
+
+      // Remove the client from the window object
+      if (window.wsClient === this) {
+        window.wsClient = null;
+      }
     }
   }
-  
+
   /**
    * Reconnect to the WebSocket server.
    */
@@ -87,21 +95,21 @@ class WebSocketClient {
       console.log(`Maximum reconnect attempts (${this.maxReconnectAttempts}) reached`);
       return;
     }
-    
+
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-    
+
     console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-    
+
     setTimeout(() => {
       console.log(`Attempting to reconnect to ${this.url}`);
       this.connect();
     }, delay);
   }
-  
+
   /**
    * Check if the client is connected.
-   * 
+   *
    * @returns {boolean} True if connected, false otherwise
    */
   isConnected() {

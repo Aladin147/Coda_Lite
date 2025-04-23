@@ -73,6 +73,16 @@ except ImportError as e:
     logger.error(f"Error importing STT module: {e}")
     print(f"Error importing STT module: {e}")
 
+# Import memory module
+try:
+    from memory import MemoryManager, EnhancedMemoryManager, LongTermMemory
+    MEMORY_AVAILABLE = True
+    logger.info("Memory module imported successfully")
+except ImportError as e:
+    MEMORY_AVAILABLE = False
+    logger.error(f"Error importing Memory module: {e}")
+    print(f"Error importing Memory module: {e}")
+
 # Import audio modules for device verification
 try:
     import sounddevice as sd
@@ -124,7 +134,39 @@ class CodaDebugWrapper:
         self.config = ConfigLoader()
         logger.info("Configuration loaded")
 
-        # Initialize conversation history
+        # Initialize memory system
+        if MEMORY_AVAILABLE:
+            logger.info("Initializing memory system...")
+            try:
+                # Check if long-term memory is enabled
+                long_term_enabled = self.config.get("memory.long_term_enabled", True)
+
+                if long_term_enabled:
+                    logger.info("Using enhanced memory manager with long-term memory")
+                    self.memory = EnhancedMemoryManager(self.config.get_all())
+                    self.memory_available = True
+                    self.using_long_term_memory = True
+                else:
+                    logger.info("Using standard short-term memory manager")
+                    max_turns = self.config.get("memory.max_turns", 20)
+                    self.memory = MemoryManager(max_turns=max_turns)
+                    self.memory_available = True
+                    self.using_long_term_memory = False
+
+                logger.info("Memory system initialized successfully")
+            except Exception as e:
+                logger.error(f"Error initializing memory system: {e}")
+                self.memory = None
+                self.memory_available = False
+                self.using_long_term_memory = False
+                print("\n[WARNING] Memory system initialization failed - using simple conversation history")
+        else:
+            logger.warning("Memory module not available. Using simple conversation history.")
+            self.memory = None
+            self.memory_available = False
+            self.using_long_term_memory = False
+
+        # Initialize conversation history (used as fallback if memory system is not available)
         self.conversation_history: MessageList = []
 
         # Load system prompt
@@ -132,7 +174,13 @@ class CodaDebugWrapper:
         self.system_prompt = self._load_system_prompt(system_prompt_file)
         logger.info(f"System prompt loaded from {system_prompt_file}")
 
-        # Add system message to conversation history
+        # Add system message to memory and conversation history
+        if self.memory_available and self.memory is not None:
+            # Add to memory system
+            self.memory.add_turn("system", self.system_prompt)
+            logger.info("Added system prompt to memory system")
+
+        # Add to conversation history
         self.conversation_history.append({"role": "system", "content": self.system_prompt})
 
         # Initialize LLM module
@@ -266,7 +314,13 @@ class CodaDebugWrapper:
         if not text.strip():
             return {"response": "", "error": "Empty input", "timings": {}}
 
-        # Add user message to conversation history
+        # Add user message to memory or conversation history
+        if self.memory_available and self.memory is not None:
+            # Add to memory system
+            self.memory.add_turn("user", text)
+            logger.info("Added user message to memory system")
+
+        # Always add to conversation history for LLM context
         self.conversation_history.append({"role": "user", "content": text})
 
         # Generate response from LLM
@@ -274,13 +328,40 @@ class CodaDebugWrapper:
             # Timing information
             timings = {}
 
+            # Retrieve relevant memories if using long-term memory
+            memories = []
+            if self.memory_available and self.memory is not None and self.using_long_term_memory:
+                try:
+                    # Get relevant memories
+                    memories = self.get_relevant_memories(text, limit=3)
+                    if memories:
+                        logger.info(f"Found {len(memories)} relevant memories for context")
+                        print(f"\n[MEMORY] Found {len(memories)} relevant memories for context")
+                except Exception as e:
+                    logger.error(f"Error retrieving memories: {e}")
+
+            # Create a copy of the conversation history for the LLM
+            messages_for_llm = list(self.conversation_history)
+
+            # Add memories to the context if available
+            if memories:
+                # Insert memories after the system message
+                memory_content = "\n\nRelevant information from your memory:\n"
+                for i, memory in enumerate(memories):
+                    memory_text = memory.get('content', '') if isinstance(memory, dict) else str(memory)
+                    memory_content += f"Memory {i+1}: {memory_text}\n"
+
+                # Add as a system message after the main system prompt
+                messages_for_llm.insert(1, {"role": "system", "content": memory_content})
+                logger.info("Added memories to LLM context")
+
             # Start LLM generation
             logger.info(f"Sending to LLM: {text[:50]}{'...' if len(text) > 50 else ''}")
             print(f"\n[LLM] Processing: {text[:50]}{'...' if len(text) > 50 else ''}")
 
             llm_start = time.time()
             response_obj = self.llm.chat(
-                messages=self.conversation_history,
+                messages=messages_for_llm,
                 temperature=temperature,
                 max_tokens=max_tokens,
                 stream=False  # Ensure we're not using streaming mode
@@ -343,7 +424,26 @@ class CodaDebugWrapper:
             logger.info(f"LLM response received in {timings['llm_time']:.2f} seconds")
             print(f"[LLM] Response received in {timings['llm_time']:.2f} seconds")
 
-            # Add assistant message to conversation history
+            # Add assistant message to memory or conversation history
+            if self.memory_available and self.memory is not None:
+                # Add to memory system
+                self.memory.add_turn("assistant", response)
+                logger.info("Added assistant response to memory system")
+
+                # If using enhanced memory manager, persist to long-term memory
+                if self.using_long_term_memory and hasattr(self.memory, 'persist_short_term_memory'):
+                    # Check if it's time to persist based on turn count
+                    turns_since_persist = self.memory.short_term.turn_count - getattr(self.memory, 'turn_count_at_last_persist', 0)
+                    persist_interval = self.config.get("memory.persist_interval", 5)
+
+                    if turns_since_persist >= persist_interval:
+                        try:
+                            stored_count = self.memory.persist_short_term_memory()
+                            logger.info(f"Persisted {stored_count} memories to long-term storage")
+                        except Exception as e:
+                            logger.error(f"Error persisting memories: {e}")
+
+            # Always add to conversation history for LLM context
             self.conversation_history.append({"role": "assistant", "content": response})
 
             # Limit conversation history to last 10 messages (plus system prompt)
@@ -502,7 +602,93 @@ class CodaDebugWrapper:
 
     def clear_conversation(self) -> None:
         """Clear the conversation history except for the system prompt."""
+        # Clear the conversation history
         self.conversation_history = [self.conversation_history[0]]
+
+        # Clear the memory if available
+        if self.memory_available and self.memory is not None:
+            try:
+                # For short-term memory manager
+                if hasattr(self.memory, 'reset'):
+                    self.memory.reset()
+                    logger.info("Reset short-term memory")
+                # For enhanced memory manager
+                elif hasattr(self.memory, 'short_term') and hasattr(self.memory.short_term, 'reset'):
+                    self.memory.short_term.reset()
+                    logger.info("Reset short-term memory in enhanced memory manager")
+
+                # Re-add system prompt to memory
+                if hasattr(self.memory, 'add_turn'):
+                    self.memory.add_turn("system", self.system_prompt)
+                    logger.info("Added system prompt to memory after reset")
+            except Exception as e:
+                logger.error(f"Error clearing memory: {e}")
+                print(f"\n[WARNING] Error clearing memory: {e}")
+
+    def get_relevant_memories(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """
+        Retrieve relevant memories for the given query.
+
+        Args:
+            query: The query to search for relevant memories
+            limit: Maximum number of memories to retrieve
+
+        Returns:
+            List of relevant memories
+        """
+        if not self.memory_available or self.memory is None or not self.using_long_term_memory:
+            logger.warning("Long-term memory not available for retrieval")
+            return []
+
+        try:
+            # Check if the memory has the search_memories method (EnhancedMemoryManager)
+            if hasattr(self.memory, 'search_memories'):
+                memories = self.memory.search_memories(query, limit=limit)
+                logger.info(f"Retrieved {len(memories)} relevant memories from long-term storage")
+                return memories
+            # Check if the memory has a long_term attribute with search_memories method
+            elif hasattr(self.memory, 'long_term') and hasattr(self.memory.long_term, 'search'):
+                memories = self.memory.long_term.search(query, limit=limit)
+                logger.info(f"Retrieved {len(memories)} relevant memories from long-term storage")
+                return memories
+            else:
+                logger.warning("Memory system does not support memory retrieval")
+                return []
+        except Exception as e:
+            logger.error(f"Error retrieving memories: {e}")
+            return []
+
+    def close(self) -> None:
+        """Close and clean up resources."""
+        # Close memory system if available
+        if self.memory_available and self.memory is not None:
+            try:
+                # For enhanced memory manager
+                if self.using_long_term_memory and hasattr(self.memory, 'close'):
+                    logger.info("Closing enhanced memory manager")
+                    self.memory.close()
+                    logger.info("Enhanced memory manager closed")
+                # For standard memory manager
+                elif hasattr(self.memory, 'export'):
+                    # Export memory to file
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    export_dir = self.config.get("memory.export_dir", "data/memory")
+                    os.makedirs(export_dir, exist_ok=True)
+                    export_path = f"{export_dir}/session_{timestamp}.json"
+                    self.memory.export(export_path)
+                    logger.info(f"Exported memory to {export_path}")
+            except Exception as e:
+                logger.error(f"Error closing memory: {e}")
+                print(f"\n[WARNING] Error closing memory: {e}")
+
+        # Close STT if available
+        if self.stt_available and self.stt is not None:
+            try:
+                self.stt.close()
+                logger.info("STT resources released")
+            except Exception as e:
+                logger.error(f"Error closing STT: {e}")
+                print(f"\n[WARNING] Error closing STT: {e}")
 
 def create_gui():
     """Create the PySimpleGUI interface."""
@@ -562,6 +748,7 @@ def create_gui():
             sg.Button('Clear Log', key='-CLEAR_LOG-', size=(10, 1)),
             sg.Button('Save Conversation', key='-SAVE-', size=(15, 1)),
             sg.Button('Clear Conversation', key='-CLEAR_CONV-', size=(15, 1)),
+            sg.Button('View Memories', key='-VIEW_MEMORIES-', size=(15, 1)),
             sg.Checkbox('Show Timing', key='-SHOW_TIMING-', default=True)
         ],
 
@@ -825,6 +1012,50 @@ def main():
                 coda.clear_conversation()
                 log_message(window, "Conversation history cleared")
 
+        # View Memories
+        elif event == '-VIEW_MEMORIES-':
+            if coda and coda.memory_available and coda.using_long_term_memory:
+                try:
+                    # Get the last user input or a default query
+                    last_user_input = ""
+                    for msg in reversed(coda.conversation_history):
+                        if msg.get("role") == "user":
+                            last_user_input = msg.get("content", "")
+                            break
+
+                    query = last_user_input if last_user_input else "Show me relevant memories"
+
+                    # Get memories
+                    memories = coda.get_relevant_memories(query, limit=10)
+
+                    if memories:
+                        # Format memories for display
+                        memory_text = "=== Memories from Long-Term Storage ===\n\n"
+                        for i, memory in enumerate(memories):
+                            # Extract content and metadata
+                            content = memory.get('content', '') if isinstance(memory, dict) else str(memory)
+                            metadata = memory.get('metadata', {}) if isinstance(memory, dict) else {}
+                            timestamp = metadata.get('timestamp', 'Unknown time')
+                            source_type = metadata.get('source_type', 'Unknown source')
+
+                            memory_text += f"Memory {i+1}:\n"
+                            memory_text += f"Content: {content}\n"
+                            memory_text += f"Type: {source_type}\n"
+                            memory_text += f"Timestamp: {timestamp}\n\n"
+
+                        # Show in a popup
+                        sg.popup_scrolled(memory_text, title="Long-Term Memories", size=(80, 20))
+                        log_message(window, f"Displayed {len(memories)} memories from long-term storage")
+                    else:
+                        sg.popup_ok("No memories found in long-term storage.", title="Long-Term Memories")
+                        log_message(window, "No memories found in long-term storage")
+                except Exception as e:
+                    sg.popup_error(f"Error retrieving memories: {e}", title="Memory Error")
+                    log_message(window, f"Error retrieving memories: {e}", "ERROR")
+            else:
+                sg.popup_ok("Long-term memory is not available.", title="Memory Not Available")
+                log_message(window, "Long-term memory is not available", "WARNING")
+
         # Switch TTS Engine
         elif event == '-SWITCH_TTS-':
             if coda:
@@ -972,12 +1203,23 @@ def main():
                 else:
                     log_message(window, "Error saving conversation", "ERROR")
 
+    # Close resources
+    if coda:
+        try:
+            log_message(window, "Closing Coda resources...")
+            coda.close()
+            log_message(window, "Coda resources closed successfully")
+        except Exception as e:
+            log_message(window, f"Error closing Coda resources: {e}", "ERROR")
+
     # Close the window
     window.close()
 
 if __name__ == "__main__":
     # Create data directories
     os.makedirs("data/conversations", exist_ok=True)
+    os.makedirs("data/memory", exist_ok=True)
+    os.makedirs("data/memory/long_term", exist_ok=True)
 
     # Run the GUI
     main()

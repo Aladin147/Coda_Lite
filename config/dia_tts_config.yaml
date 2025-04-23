@@ -1,0 +1,50 @@
+# Dia TTS Configuration
+
+# Model settings
+model:
+  name: "Dia-1.6B"
+  provider: "nari-labs"
+  pretrained_model_name_or_path: "nari-labs/Dia-1.6B"
+  version: "0.1.0"
+
+# Generation settings
+generation:
+  temperature: 1.3
+  top_p: 0.95
+  cfg_scale: 3.0
+  use_torch_compile: true
+
+# Device settings
+device:
+  use_gpu: true
+  force_cpu: false
+  gpu_memory_threshold_mb: 8000  # Minimum recommended GPU memory in MB
+
+# Voice cloning settings
+voice_cloning:
+  enabled: false
+  audio_prompt_path: null
+  # Example paths for predefined voices
+  predefined_voices:
+    male_1: "voices/male_1.wav"
+    female_1: "voices/female_1.wav"
+    child_1: "voices/child_1.wav"
+
+# Audio settings
+audio:
+  sample_rate: 44100
+  output_format: "wav"
+  normalize_audio: true
+
+# Performance settings
+performance:
+  batch_size: 1
+  num_workers: 4
+  prefetch_factor: 2
+  pin_memory: true
+
+# Logging settings
+logging:
+  level: "INFO"
+  log_gpu_memory: true
+  log_generation_time: true

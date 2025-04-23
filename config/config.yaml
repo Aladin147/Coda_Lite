@@ -25,6 +25,10 @@ tts:
 
   # Dia TTS specific settings
   audio_prompt_path: null  # Path to audio file for voice cloning with Dia TTS
+  temperature: 1.3        # Temperature for sampling (higher = more random, lower = more deterministic)
+  top_p: 0.95             # Top-p sampling parameter (0-1)
+  cfg_scale: 3.0          # Classifier-free guidance scale (higher = more adherence to the prompt)
+  use_torch_compile: true  # Whether to use torch.compile for faster inference
 
 # Audio settings
 audio:

@@ -8,8 +8,7 @@ import tempfile
 import logging
 import time
 import numpy as np
-from typing import Optional, Union, List
-from pathlib import Path
+from typing import Optional, Union, List, Dict, Any
 
 # Set up logging
 logger = logging.getLogger("coda.tts")
@@ -50,6 +49,10 @@ class DiaTTS(BaseTTS):
         voice: Optional[str] = None,
         speed: float = 1.0,
         audio_prompt_path: Optional[str] = None,
+        temperature: float = 1.3,
+        top_p: float = 0.95,
+        cfg_scale: float = 3.0,
+        use_torch_compile: bool = True,
         **kwargs
     ):
         """
@@ -60,6 +63,10 @@ class DiaTTS(BaseTTS):
             voice (str, optional): Voice to use (not directly supported by Dia, but can be used with audio_prompt_path)
             speed (float): Speed factor for speech (not directly supported by Dia)
             audio_prompt_path (str, optional): Path to an audio file to use as a prompt for voice cloning
+            temperature (float): Temperature for sampling (higher = more random, lower = more deterministic)
+            top_p (float): Top-p sampling parameter (0-1)
+            cfg_scale (float): Classifier-free guidance scale (higher = more adherence to the prompt)
+            use_torch_compile (bool): Whether to use torch.compile for faster inference
             **kwargs: Additional arguments
         """
         super().__init__()
@@ -77,6 +84,10 @@ class DiaTTS(BaseTTS):
         self.voice = voice
         self.speed = speed
         self.audio_prompt_path = audio_prompt_path
+        self.temperature = temperature
+        self.top_p = top_p
+        self.cfg_scale = cfg_scale
+        self.use_torch_compile = use_torch_compile
         self.model = None
 
         # Initialize the model
@@ -102,6 +113,12 @@ class DiaTTS(BaseTTS):
                 self.device = "cpu"
 
             logger.info(f"Initializing Dia TTS on {device}")
+            # Clear CUDA cache before loading model
+            if device == "cuda" and cuda_available:
+                torch.cuda.empty_cache()
+                torch.cuda.synchronize()
+                logger.info(f"GPU memory before model load: {torch.cuda.memory_allocated() / 1024**2:.2f} MB / {torch.cuda.memory_reserved() / 1024**2:.2f} MB")
+
             # Explicitly set the device when initializing the model
             torch_device = torch.device(device)
             self.model = Dia.from_pretrained("nari-labs/Dia-1.6B", device=torch_device)
@@ -109,15 +126,30 @@ class DiaTTS(BaseTTS):
             # Explicitly ensure all model components are on the correct device
             if device == "cuda" and cuda_available:
                 logger.info("Explicitly moving all model components to GPU...")
+
                 # Move the main model to GPU
                 if hasattr(self.model, 'model'):
                     self.model.model = self.model.model.to(torch_device)
                     logger.info("- Main model moved to GPU")
 
+                    # Verify main model is on GPU
+                    try:
+                        main_model_device = next(self.model.model.parameters()).device
+                        logger.info(f"- Main model device verified: {main_model_device}")
+                    except StopIteration:
+                        logger.warning("- Could not verify main model device - no parameters")
+
                 # Move the DAC model (vocoder) to GPU
                 if hasattr(self.model, 'dac_model') and self.model.dac_model is not None:
                     self.model.dac_model = self.model.dac_model.to(torch_device)
                     logger.info("- DAC model (vocoder) moved to GPU")
+
+                    # Verify DAC model is on GPU
+                    try:
+                        dac_model_device = next(self.model.dac_model.parameters()).device
+                        logger.info(f"- DAC model device verified: {dac_model_device}")
+                    except StopIteration:
+                        logger.warning("- Could not verify DAC model device - no parameters")
 
                 # Move encoder to GPU if it exists
                 if hasattr(self.model.model, 'encoder'):
@@ -133,6 +165,9 @@ class DiaTTS(BaseTTS):
                 if hasattr(self.model, 'device'):
                     self.model.device = torch_device
                     logger.info("- Model device attribute set to GPU")
+
+                # Synchronize CUDA to ensure all operations are complete
+                torch.cuda.synchronize()
 
                 # Log GPU memory usage after loading
                 logger.info(f"GPU memory allocated: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
@@ -213,8 +248,12 @@ class DiaTTS(BaseTTS):
             # Generate speech
             logger.info(f"Generating speech on {self.device}")
 
-            # Log GPU memory usage before generation
+            # Optimize GPU memory and performance before generation
             if self.device == "cuda" and torch.cuda.is_available():
+                # Clear CUDA cache
+                torch.cuda.empty_cache()
+                torch.cuda.synchronize()
+
                 logger.info(f"GPU memory before generation: {torch.cuda.memory_allocated() / 1024**2:.2f} MB / {torch.cuda.memory_reserved() / 1024**2:.2f} MB")
 
                 # Double-check that all components are on GPU before generation
@@ -222,25 +261,46 @@ class DiaTTS(BaseTTS):
 
                 # Check and move main model to GPU
                 if hasattr(self.model, 'model'):
-                    if getattr(self.model.model, 'device', None) != torch_device:
+                    # Check if model is on GPU by checking a parameter
+                    try:
+                        param_device = next(self.model.model.parameters()).device
+                        if param_device != torch_device:
+                            logger.warning(f"Main model on {param_device}, moving it to {torch_device}...")
+                            self.model.model = self.model.model.to(torch_device)
+                    except (StopIteration, AttributeError):
                         logger.warning("Main model not on GPU, moving it now...")
                         self.model.model = self.model.model.to(torch_device)
 
                 # Check and move DAC model to GPU
                 if hasattr(self.model, 'dac_model') and self.model.dac_model is not None:
-                    if getattr(self.model.dac_model, 'device', None) != torch_device:
+                    try:
+                        param_device = next(self.model.dac_model.parameters()).device
+                        if param_device != torch_device:
+                            logger.warning(f"DAC model on {param_device}, moving it to {torch_device}...")
+                            self.model.dac_model = self.model.dac_model.to(torch_device)
+                    except (StopIteration, AttributeError):
                         logger.warning("DAC model not on GPU, moving it now...")
                         self.model.dac_model = self.model.dac_model.to(torch_device)
 
                 # Check and move encoder to GPU
                 if hasattr(self.model.model, 'encoder'):
-                    if getattr(self.model.model.encoder, 'device', None) != torch_device:
+                    try:
+                        param_device = next(self.model.model.encoder.parameters()).device
+                        if param_device != torch_device:
+                            logger.warning(f"Encoder on {param_device}, moving it to {torch_device}...")
+                            self.model.model.encoder = self.model.model.encoder.to(torch_device)
+                    except (StopIteration, AttributeError):
                         logger.warning("Encoder not on GPU, moving it now...")
                         self.model.model.encoder = self.model.model.encoder.to(torch_device)
 
                 # Check and move decoder to GPU
                 if hasattr(self.model.model, 'decoder'):
-                    if getattr(self.model.model.decoder, 'device', None) != torch_device:
+                    try:
+                        param_device = next(self.model.model.decoder.parameters()).device
+                        if param_device != torch_device:
+                            logger.warning(f"Decoder on {param_device}, moving it to {torch_device}...")
+                            self.model.model.decoder = self.model.model.decoder.to(torch_device)
+                    except (StopIteration, AttributeError):
                         logger.warning("Decoder not on GPU, moving it now...")
                         self.model.model.decoder = self.model.model.decoder.to(torch_device)
 
@@ -248,31 +308,56 @@ class DiaTTS(BaseTTS):
                 if hasattr(self.model, 'device'):
                     self.model.device = torch_device
 
+                # Synchronize CUDA to ensure all operations are complete
+                torch.cuda.synchronize()
+
             # Start timing
             start_time = time.time()
 
             # Generate with appropriate parameters
             try:
-                # First try with torch.compile for better performance
-                audio = self.model.generate(
-                    text,
-                    audio_prompt_path=self.audio_prompt_path,
-                    use_torch_compile=True,  # Try to enable torch.compile
-                    temperature=1.0,         # Default temperature
-                    top_p=0.95,              # Default top_p
-                    cfg_scale=3.0            # Default cfg_scale
-                )
+                # First try with torch.compile for better performance if enabled
+                if self.use_torch_compile:
+                    logger.info("Attempting generation with torch.compile enabled...")
+                    audio = self.model.generate(
+                        text,
+                        audio_prompt_path=self.audio_prompt_path,
+                        use_torch_compile=True,
+                        temperature=self.temperature,
+                        top_p=self.top_p,
+                        cfg_scale=self.cfg_scale
+                    )
+                else:
+                    logger.info("torch.compile disabled, using eager mode...")
+                    audio = self.model.generate(
+                        text,
+                        audio_prompt_path=self.audio_prompt_path,
+                        use_torch_compile=False,
+                        temperature=self.temperature,
+                        top_p=self.top_p,
+                        cfg_scale=self.cfg_scale
+                    )
             except Exception as e:
-                logger.warning(f"Error with torch.compile, falling back to eager mode: {e}")
-                # Fall back to eager mode if torch.compile fails
-                audio = self.model.generate(
-                    text,
-                    audio_prompt_path=self.audio_prompt_path,
-                    use_torch_compile=False,  # Disable torch.compile
-                    temperature=1.0,          # Default temperature
-                    top_p=0.95,               # Default top_p
-                    cfg_scale=3.0             # Default cfg_scale
-                )
+                logger.warning(f"Error with generation, falling back to eager mode: {e}")
+                # Fall back to eager mode if generation fails
+                try:
+                    # Clear CUDA cache before retrying
+                    if self.device == "cuda" and torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                        torch.cuda.synchronize()
+
+                    logger.info("Retrying with eager mode (torch.compile disabled)...")
+                    audio = self.model.generate(
+                        text,
+                        audio_prompt_path=self.audio_prompt_path,
+                        use_torch_compile=False,  # Disable torch.compile
+                        temperature=self.temperature,
+                        top_p=self.top_p,
+                        cfg_scale=self.cfg_scale
+                    )
+                except Exception as e2:
+                    logger.error(f"Error in fallback generation: {e2}")
+                    raise
 
             # End timing
             end_time = time.time()

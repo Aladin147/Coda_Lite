@@ -74,7 +74,7 @@ start_time = time.time()
 audio = model.generate(
     text,
     use_torch_compile=True,  # Enable torch.compile
-    temperature=1.0,         # Default temperature
+    temperature=1.3,         # Default temperature from official repo
     top_p=0.95,              # Default top_p
     cfg_scale=3.0            # Default cfg_scale
 )

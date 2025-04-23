@@ -30,20 +30,28 @@ def list_voices_example():
     print(f"Available languages: {languages}")
     print("Note: Dia TTS currently only supports English.")
 
-def synthesize_example(text, output_path=None, audio_prompt_path=None):
+def synthesize_example(text, output_path=None, audio_prompt_path=None, use_gpu=False, temperature=1.3, top_p=0.95, cfg_scale=3.0):
     """Example of synthesizing speech with Dia TTS."""
     print(f"\n=== Synthesizing with Dia TTS ===")
     print(f"Text: '{text}'")
-    
+
     if audio_prompt_path:
         print(f"Using voice from: {audio_prompt_path}")
 
     # Initialize the TTS module using the factory function
+    device = "cuda" if use_gpu else "cpu"
+    print(f"Using device: {device}")
+
     tts = create_tts(
         engine="dia",
-        device="cpu",
-        audio_prompt_path=audio_prompt_path
+        device=device,
+        audio_prompt_path=audio_prompt_path,
+        temperature=temperature,
+        top_p=top_p,
+        cfg_scale=cfg_scale
     )
+
+    print(f"Generation parameters: temperature={temperature}, top_p={top_p}, cfg_scale={cfg_scale}")
 
     # Synthesize speech
     if output_path:
@@ -55,10 +63,10 @@ def synthesize_example(text, output_path=None, audio_prompt_path=None):
         tts.speak(text)
         print("Speech synthesized and played")
 
-def dialogue_example(output_path=None, audio_prompt_path=None):
+def dialogue_example(output_path=None, audio_prompt_path=None, use_gpu=False, temperature=1.3, top_p=0.95, cfg_scale=3.0):
     """Example of synthesizing dialogue with Dia TTS."""
     print("\n=== Synthesizing Dialogue with Dia TTS ===")
-    
+
     # Create a dialogue script
     dialogue = """
     [S1] Hello, how are you today?
@@ -68,14 +76,22 @@ def dialogue_example(output_path=None, audio_prompt_path=None):
     [S1] I can definitely tell. The voices sound very realistic. (laughs)
     [S2] Yes, and it can even handle non-verbal elements like laughter and pauses naturally.
     """
-    
+
     # Initialize the TTS module
+    device = "cuda" if use_gpu else "cpu"
+    print(f"Using device: {device}")
+
     tts = create_tts(
         engine="dia",
-        device="cpu",
-        audio_prompt_path=audio_prompt_path
+        device=device,
+        audio_prompt_path=audio_prompt_path,
+        temperature=temperature,
+        top_p=top_p,
+        cfg_scale=cfg_scale
     )
-    
+
+    print(f"Generation parameters: temperature={temperature}, top_p={top_p}, cfg_scale={cfg_scale}")
+
     # Synthesize the dialogue
     if output_path:
         result_path = tts.synthesize(dialogue, output_path)
@@ -91,6 +107,10 @@ def main():
     parser.add_argument("--output", type=str, help="Output file path")
     parser.add_argument("--prompt", type=str, help="Audio prompt file path for voice cloning")
     parser.add_argument("--dialogue", action="store_true", help="Generate a dialogue example")
+    parser.add_argument("--gpu", action="store_true", help="Use GPU for inference")
+    parser.add_argument("--temperature", type=float, default=1.3, help="Temperature for sampling (default: 1.3)")
+    parser.add_argument("--top-p", type=float, dest="top_p", default=0.95, help="Top-p sampling parameter (default: 0.95)")
+    parser.add_argument("--cfg-scale", type=float, dest="cfg_scale", default=3.0, help="Classifier-free guidance scale (default: 3.0)")
     args = parser.parse_args()
 
     # Configure logging
@@ -101,13 +121,36 @@ def main():
 
     # Synthesize speech
     if args.dialogue:
-        dialogue_example(args.output, args.prompt)
+        dialogue_example(
+            output_path=args.output,
+            audio_prompt_path=args.prompt,
+            use_gpu=args.gpu,
+            temperature=args.temperature,
+            top_p=args.top_p,
+            cfg_scale=args.cfg_scale
+        )
     elif args.text:
-        synthesize_example(args.text, args.output, args.prompt)
+        synthesize_example(
+            text=args.text,
+            output_path=args.output,
+            audio_prompt_path=args.prompt,
+            use_gpu=args.gpu,
+            temperature=args.temperature,
+            top_p=args.top_p,
+            cfg_scale=args.cfg_scale
+        )
     else:
         # Default example
         text = "Hello, I am Coda Lite, your local voice assistant. How can I help you today?"
-        synthesize_example(text, args.output, args.prompt)
+        synthesize_example(
+            text=text,
+            output_path=args.output,
+            audio_prompt_path=args.prompt,
+            use_gpu=args.gpu,
+            temperature=args.temperature,
+            top_p=args.top_p,
+            cfg_scale=args.cfg_scale
+        )
 
 if __name__ == "__main__":
     main()

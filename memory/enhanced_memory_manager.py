@@ -367,6 +367,19 @@ class EnhancedMemoryManager:
 
         return preferences
 
+    def search_memories(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """
+        Search for relevant memories based on a query.
+
+        Args:
+            query: The search query
+            limit: Maximum number of results to return
+
+        Returns:
+            List of memory dictionaries
+        """
+        return self.long_term.retrieve_memories(query, limit=limit)
+
     def _extract_and_update_topics(self, text: str) -> List[str]:
         """
         Extract topics from text and update recent topics.

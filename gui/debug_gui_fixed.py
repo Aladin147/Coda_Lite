@@ -646,9 +646,9 @@ class CodaDebugWrapper:
                 memories = self.memory.search_memories(query, limit=limit)
                 logger.info(f"Retrieved {len(memories)} relevant memories from long-term storage")
                 return memories
-            # Check if the memory has a long_term attribute with search_memories method
-            elif hasattr(self.memory, 'long_term') and hasattr(self.memory.long_term, 'search'):
-                memories = self.memory.long_term.search(query, limit=limit)
+            # Check if the memory has a long_term attribute with retrieve_memories method
+            elif hasattr(self.memory, 'long_term') and hasattr(self.memory.long_term, 'retrieve_memories'):
+                memories = self.memory.long_term.retrieve_memories(query, limit=limit)
                 logger.info(f"Retrieved {len(memories)} relevant memories from long-term storage")
                 return memories
             else:

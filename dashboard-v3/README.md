@@ -1,54 +1,95 @@
-# React + TypeScript + Vite
+# Coda Dashboard v3
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern dashboard for interacting with Coda, built with React, TypeScript, and Tailwind CSS.
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+This dashboard provides a user interface for interacting with Coda, a conversational AI assistant. It communicates with the Coda backend using WebSockets and provides various features for monitoring and controlling Coda.
 
-## Expanding the ESLint configuration
+## Features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- Real-time communication with Coda via WebSockets
+- Voice controls for starting and stopping speech recognition
+- Text input for sending messages directly
+- Conversation view for displaying the chat history
+- Performance monitoring for tracking latency and resource usage
+- Memory viewer for exploring Coda's memory
+- Avatar component that reflects Coda's current state and emotion
+- WebSocket debugger for monitoring communication
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## Getting Started
+
+### Prerequisites
+
+- Node.js 16+
+- npm or yarn
+- Coda backend running on localhost:8765
+
+### Installation
+
+1. Clone the repository
+2. Navigate to the dashboard-v3 directory
+3. Install dependencies:
+
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Running the Dashboard
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+1. Start the Coda backend:
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+```bash
+cd /path/to/coda
+python main_websocket.py
 ```
+
+2. Start the dashboard:
+
+```bash
+npm run dev
+```
+
+3. Open your browser and navigate to [http://localhost:5173](http://localhost:5173)
+
+## Architecture
+
+The dashboard is built with the following technologies:
+
+- **React**: UI library
+- **TypeScript**: Type-safe JavaScript
+- **Tailwind CSS**: Utility-first CSS framework
+- **Vite**: Build tool and development server
+
+### Key Components
+
+- **WebSocketClient**: Handles communication with the Coda backend
+- **Avatar**: Displays Coda's current state and emotion
+- **ConversationView**: Shows the chat history
+- **PerformanceMonitor**: Displays latency and resource usage metrics
+- **MemoryViewer**: Shows Coda's memory contents
+- **VoiceControls**: Provides buttons for controlling speech recognition
+- **TextInput**: Allows sending text messages directly
+- **WebSocketDebugger**: Monitors WebSocket communication
+
+## Documentation
+
+- [WebSocket Implementation](./docs/WEBSOCKET_IMPLEMENTATION.md): Details on the WebSocket communication
+- [Changelog](./docs/CHANGELOG.md): History of changes to the dashboard
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Dashboard can't connect to Coda**
+   - Ensure the Coda backend is running
+   - Verify the WebSocket server is running on port 8765
+   - Check for network issues or firewall restrictions
+
+2. **Voice controls not working**
+   - Ensure your browser has permission to access the microphone
+   - Check that the Coda backend has STT capabilities enabled
+
+3. **Performance metrics not updating**
+   - Verify that the Coda backend is sending system_metrics events
+   - Check the WebSocket connection is established

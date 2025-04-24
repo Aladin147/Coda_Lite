@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useWebSocket } from '../services/WebSocketProvider';
 import { CodaEvent } from '../types/events';
 
 interface WebSocketDebuggerProps {
   maxEvents?: number;
+  events?: any[];
 }
 
 /**
@@ -16,10 +16,8 @@ interface WebSocketDebuggerProps {
  * - Manual reconnect button
  * - Event filtering options
  */
-const WebSocketDebugger: React.FC<WebSocketDebuggerProps> = ({ maxEvents = 100 }) => {
-  const { service } = useWebSocket();
-  const [isConnected, setIsConnected] = useState(service?.getConnectionStatus() || false);
-  const [events, setEvents] = useState<CodaEvent[]>([]);
+const WebSocketDebugger: React.FC<WebSocketDebuggerProps> = ({ maxEvents = 100, events = [] }) => {
+  const [isConnected, setIsConnected] = useState(false);
   const [filter, setFilter] = useState('');
   const [autoScroll, setAutoScroll] = useState(true);
   const [eventCounts, setEventCounts] = useState<Record<string, number>>({});
@@ -27,40 +25,35 @@ const WebSocketDebugger: React.FC<WebSocketDebuggerProps> = ({ maxEvents = 100 }
   const [showRawJson, setShowRawJson] = useState(false);
   const eventsEndRef = useRef<HTMLDivElement>(null);
 
-  // Update connection status when it changes
+  // Update connection status based on window.wsClient
   useEffect(() => {
-    const handleConnect = () => setIsConnected(true);
-    const handleDisconnect = () => setIsConnected(false);
+    const checkConnection = () => {
+      const isConnected = !!(window as any).wsClient?.isConnected();
+      setIsConnected(isConnected);
+    };
 
-    service.addObserver({
-      onConnect: handleConnect,
-      onDisconnect: handleDisconnect,
-      onEvent: (event: CodaEvent) => {
-        setEvents(prev => {
-          const newEvents = [...prev, event].slice(-maxEvents);
-          return newEvents;
-        });
+    // Check connection status initially
+    checkConnection();
 
-        setEventCounts(prev => {
-          const type = event.type;
-          return {
-            ...prev,
-            [type]: (prev[type] || 0) + 1
-          };
-        });
-      },
-      onError: (error: Error) => {
-        console.error('WebSocket error:', error);
-      }
-    });
+    // Set up interval to check connection status
+    const interval = setInterval(checkConnection, 1000);
 
     return () => {
-      service.removeObserver({
-        onConnect: handleConnect,
-        onDisconnect: handleDisconnect
-      });
+      clearInterval(interval);
     };
-  }, [service, maxEvents]);
+  }, []);
+
+  // Update event counts when events change
+  useEffect(() => {
+    const counts: Record<string, number> = {};
+
+    events.forEach(event => {
+      const type = event.type;
+      counts[type] = (counts[type] || 0) + 1;
+    });
+
+    setEventCounts(counts);
+  }, [events]);
 
   // Auto-scroll to bottom when new events arrive
   useEffect(() => {
@@ -87,25 +80,53 @@ const WebSocketDebugger: React.FC<WebSocketDebuggerProps> = ({ maxEvents = 100 }
 
   // Handle manual reconnect
   const handleReconnect = () => {
-    if (!service) return;
+    if (!(window as any).wsClient) return;
 
-    service.disconnect();
+    (window as any).wsClient.disconnect();
     setTimeout(() => {
-      service.connect();
+      (window as any).wsClient.connect();
     }, 500);
   };
 
   // Clear events
   const handleClearEvents = () => {
-    setEvents([]);
+    // We can't clear events directly since they're passed as props
+    // But we can clear the event counts display
     setEventCounts({});
   };
 
   // Send a test message
   const handleSendTestMessage = () => {
-    if (!service) return;
+    if (!(window as any).wsClient || !(window as any).wsClient.isConnected()) return;
 
-    service.send('test_message', { timestamp: new Date().toISOString() });
+    const message = {
+      type: 'test_message',
+      data: { timestamp: new Date().toISOString() },
+      timestamp: new Date().toISOString()
+    };
+
+    try {
+      (window as any).wsClient.socket.send(JSON.stringify(message));
+    } catch (error) {
+      console.error('Error sending test message:', error);
+    }
+  };
+
+  // Send a test text input message
+  const handleSendTextInputTest = () => {
+    if (!(window as any).wsClient || !(window as any).wsClient.isConnected()) return;
+
+    const message = {
+      type: 'text_input',
+      data: { text: 'Hello from WebSocket debugger!' },
+      timestamp: new Date().toISOString()
+    };
+
+    try {
+      (window as any).wsClient.socket.send(JSON.stringify(message));
+    } catch (error) {
+      console.error('Error sending text input test:', error);
+    }
   };
 
   // Format timestamp
@@ -136,6 +157,18 @@ const WebSocketDebugger: React.FC<WebSocketDebuggerProps> = ({ maxEvents = 100 }
               <span>Status:</span>
               <span className={isConnected ? 'text-green-500' : 'text-red-500'}>
                 {isConnected ? 'Connected' : 'Disconnected'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Connection:</span>
+              <span className="text-gray-300">
+                {(window as any).wsClient ?
+                  ((window as any).wsClient.socket ?
+                    ((window as any).wsClient.socket.readyState === WebSocket.OPEN ? 'Open' :
+                     (window as any).wsClient.socket.readyState === WebSocket.CONNECTING ? 'Connecting' :
+                     (window as any).wsClient.socket.readyState === WebSocket.CLOSING ? 'Closing' : 'Closed')
+                    : 'No Socket')
+                  : 'Not Initialized'}
               </span>
             </div>
             <div className="flex justify-between">
@@ -204,6 +237,14 @@ const WebSocketDebugger: React.FC<WebSocketDebuggerProps> = ({ maxEvents = 100 }
                 className="flex-1 px-3 py-1 bg-green-600 hover:bg-green-700 rounded-md transition-colors"
               >
                 Test Message
+              </button>
+            </div>
+            <div className="flex space-x-2 mt-2">
+              <button
+                onClick={handleSendTextInputTest}
+                className="flex-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+              >
+                Test Text Input
               </button>
             </div>
           </div>

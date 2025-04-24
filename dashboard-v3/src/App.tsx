@@ -1,5 +1,4 @@
-import { useCallback, useState } from 'react';
-import { WebSocketProvider, useWebSocket } from './services/WebSocketProvider';
+import { useCallback, useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import Avatar from './components/Avatar';
 import ConversationView from './components/ConversationView';
@@ -9,42 +8,158 @@ import VoiceControls from './components/VoiceControls';
 import TextInput from './components/TextInput';
 import ConnectionStatus from './components/ConnectionStatus';
 import WebSocketDebugger from './components/WebSocketDebugger';
-import { useConnectionStore } from './store/connectionStore';
-import { useEventStore } from './store/eventStore';
+import WebSocketClient from './WebSocketClient';
 
 function App() {
-  return (
-    <WebSocketProvider>
-      <AppContent />
-    </WebSocketProvider>
-  );
-}
-
-// Inner component that uses the WebSocket context
-function AppContent() {
-  // Get the WebSocket service
-  const { service: webSocketService } = useWebSocket();
-
-  // State for showing/hiding the WebSocket debugger
+  // State for the application
+  const [connected, setConnected] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const [showDebugger, setShowDebugger] = useState(false);
+  const [events, setEvents] = useState<any[]>([]);
+  const [performanceMetrics, setPerformanceMetrics] = useState({
+    stt: 0,
+    llm: 0,
+    tts: 0,
+    total: 0,
+    stt_audio: 0,
+    tts_audio: 0,
+    tool_seconds: 0,
+    memory_seconds: 0
+  });
+  const [systemMetrics, setSystemMetrics] = useState({
+    memory_mb: 0,
+    cpu_percent: 0,
+    gpu_vram_mb: 0
+  });
+  const [memories, setMemories] = useState<any[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [mode, setMode] = useState<'idle' | 'listening' | 'thinking' | 'speaking' | 'error'>('idle');
+  const [emotion, setEmotion] = useState<'neutral' | 'playful' | 'supportive' | 'concerned' | 'witty' | 'focused'>('neutral');
 
-  // Get state from stores
-  const { connected, reconnecting, reconnectAttempts } = useConnectionStore();
-  const {
-    performanceMetrics,
-    systemMetrics,
-    memories,
-    messages,
-    mode,
-    emotion
-  } = useEventStore();
+  // Initialize WebSocket connection
+  useEffect(() => {
+    console.log('Initializing WebSocket connection');
+    const client = new WebSocketClient('ws://localhost:8765');
 
-  // Function to send messages to the WebSocket server - memoized to prevent infinite re-renders
-  const sendMessage = useCallback((type: string, data: any) => {
-    if (!webSocketService) return;
+    client.onConnect = () => {
+      console.log('Connected to WebSocket server');
+      setConnected(true);
+      setReconnecting(false);
+      setReconnectAttempts(0);
+    };
 
-    webSocketService.send(type, data);
-  }, [webSocketService]);
+    client.onDisconnect = () => {
+      console.log('Disconnected from WebSocket server');
+      setConnected(false);
+    };
+
+    client.onEvent = (event) => {
+      console.log('Received event:', event);
+
+      // Add event to events list
+      const newEvent = {
+        type: event.type,
+        data: event.data,
+        timestamp: event.timestamp
+      };
+
+      setEvents(prevEvents => [newEvent, ...prevEvents].slice(0, 100));
+
+      // Process different event types
+      switch (event.type) {
+        case 'latency_trace':
+          setPerformanceMetrics({
+            stt: event.data.stt_seconds || 0,
+            llm: event.data.llm_seconds || 0,
+            tts: event.data.tts_seconds || 0,
+            total: event.data.total_seconds || 0,
+            stt_audio: event.data.stt_audio_duration || 0,
+            tts_audio: event.data.tts_audio_duration || 0,
+            tool_seconds: event.data.tool_seconds || 0,
+            memory_seconds: event.data.memory_seconds || 0
+          });
+          break;
+        case 'system_metrics':
+          setSystemMetrics({
+            memory_mb: event.data.memory_mb || 0,
+            cpu_percent: event.data.cpu_percent || 0,
+            gpu_vram_mb: event.data.gpu_vram_mb || 0
+          });
+          break;
+        case 'memory_store':
+          setMemories(prev => {
+            const newMemories = [...prev];
+            const existingIndex = newMemories.findIndex(m => m.memory_id === event.data.memory_id);
+
+            if (existingIndex >= 0) {
+              newMemories[existingIndex] = event.data;
+            } else {
+              newMemories.push(event.data);
+            }
+
+            return newMemories.slice(0, 100);
+          });
+          break;
+        case 'conversation_message':
+          setMessages(prev => {
+            const newMessages = [...prev];
+            const existingIndex = newMessages.findIndex(m => m.message_id === event.data.message_id);
+
+            if (existingIndex >= 0) {
+              newMessages[existingIndex] = event.data;
+            } else {
+              newMessages.push(event.data);
+            }
+
+            return newMessages.slice(0, 100);
+          });
+          break;
+        case 'mode_change':
+          setMode(event.data.mode);
+          break;
+        case 'emotion_change':
+          setEmotion(event.data.emotion);
+          break;
+      }
+    };
+
+    // Connect to the WebSocket server
+    client.connect();
+
+    // Clean up on unmount
+    return () => {
+      client.disconnect();
+    };
+  }, []);
+
+  // Function to send messages to the WebSocket server
+  const sendMessage = useCallback((type: string, data: any = {}) => {
+    // Check if the WebSocket client exists and is connected
+    if (!(window as any).wsClient) {
+      console.error('WebSocket client not initialized');
+      return;
+    }
+
+    // Send the message if connected
+    if ((window as any).wsClient.isConnected()) {
+      const message = {
+        type,
+        data,
+        timestamp: new Date().toISOString()
+      };
+
+      try {
+        console.log('Sending message:', message);
+        (window as any).wsClient.socket.send(JSON.stringify(message));
+        console.log('Message sent successfully');
+      } catch (error) {
+        console.error('Error sending message:', error);
+      }
+    } else {
+      console.error('WebSocket not connected');
+    }
+  }, []);
 
   // Toggle WebSocket debugger
   const toggleDebugger = useCallback(() => {
@@ -68,9 +183,9 @@ function AppContent() {
 
   // Handler for text input
   const handleSendTextMessage = useCallback((text: string) => {
-    sendMessage('text_input', {
-      text: text
-    });
+    console.log('Sending text message:', text);
+    sendMessage('text_input', { text });
+    console.log('Text message sent');
   }, [sendMessage]);
 
   return (
@@ -143,11 +258,11 @@ function AppContent() {
           <ConversationView messages={messages} />
 
           {/* WebSocket Debugger (conditionally rendered) */}
-          {showDebugger && (
+          {showDebugger ? (
             <div className="mt-6">
-              <WebSocketDebugger maxEvents={100} />
+              <WebSocketDebugger events={events} />
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </Layout>

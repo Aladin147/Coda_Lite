@@ -32,36 +32,53 @@ export class WebSocketService {
    * Connect to the WebSocket server
    */
   public connect(): void {
-    if (this.socket || this.isConnecting) return;
-    
+    if (this.socket || this.isConnecting) {
+      console.log('WebSocket already connected or connecting');
+      return;
+    }
+
     this.isConnecting = true;
-    
+    console.log(`Connecting to WebSocket at ${this.url}`);
+
     try {
+      // Create a new WebSocket connection with proper protocol
       this.socket = new WebSocket(this.url);
-      
+
+      console.log('WebSocket object created, waiting for connection...');
+
       this.socket.onopen = () => {
+        console.log('WebSocket connection established successfully');
         this.reconnectAttempts = 0;
         this.isConnecting = false;
         this.isReconnecting = false;
         this.notifyObservers('onConnect');
+
+        // Send a ping message to test the connection
+        this.send('ping', { timestamp: new Date().toISOString() });
       };
-      
-      this.socket.onclose = () => {
+
+      this.socket.onclose = (event) => {
+        console.log(`WebSocket connection closed: ${event.code} ${event.reason}`);
         this.socket = null;
         this.isConnecting = false;
         this.notifyObservers('onDisconnect');
         this.attemptReconnect();
       };
-      
+
       this.socket.onerror = (error) => {
-        this.notifyObservers('onError', new Error('WebSocket error'));
+        console.error('WebSocket error:', error);
+        this.notifyObservers('onError', new Error('WebSocket connection error'));
       };
-      
+
       this.socket.onmessage = (event) => {
         try {
+          console.log('WebSocket message received:', event.data);
           const data = JSON.parse(event.data);
+          console.log('Parsed WebSocket message:', data);
           this.notifyObservers('onEvent', data);
         } catch (error) {
+          console.error('Failed to parse WebSocket message:', error);
+          console.error('Raw message data:', event.data);
           this.notifyObservers('onError', new Error('Failed to parse WebSocket message'));
         }
       };
@@ -80,7 +97,7 @@ export class WebSocketService {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
     }
-    
+
     if (this.socket) {
       this.socket.close();
       this.socket = null;
@@ -89,16 +106,44 @@ export class WebSocketService {
 
   /**
    * Send a message to the WebSocket server
+   * @param type The message type or a complete message object
+   * @param data Optional data to include in the message
    */
-  public send(message: any): void {
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      this.notifyObservers('onError', new Error('WebSocket is not connected'));
+  public send(type: string | any, data?: any): void {
+    if (!this.socket) {
+      console.error('Cannot send message: WebSocket not initialized', type, data);
+      this.notifyObservers('onError', new Error('WebSocket is not initialized'));
       return;
     }
-    
+
+    if (this.socket.readyState !== WebSocket.OPEN) {
+      console.error('Cannot send message: WebSocket not connected (state:', this.socket.readyState, ')', type, data);
+      this.notifyObservers('onError', new Error(`WebSocket is not connected (state: ${this.socket.readyState})`));
+      return;
+    }
+
     try {
-      this.socket.send(JSON.stringify(message));
+      let message: any;
+
+      // Check if the first parameter is a string (type) or a complete message object
+      if (typeof type === 'string') {
+        // Format the message with type and data
+        message = {
+          type,
+          data: data || {},
+          timestamp: new Date().toISOString()
+        };
+      } else {
+        // The first parameter is already a complete message object
+        message = type;
+      }
+
+      const messageStr = JSON.stringify(message);
+      console.log('Sending WebSocket message:', messageStr);
+      this.socket.send(messageStr);
+      console.log('Message sent successfully');
     } catch (error) {
+      console.error('Error sending message:', error);
       this.notifyObservers('onError', error instanceof Error ? error : new Error('Failed to send message'));
     }
   }
@@ -125,6 +170,39 @@ export class WebSocketService {
   }
 
   /**
+   * Get the connection status
+   */
+  public getConnectionStatus(): boolean {
+    return this.isConnected();
+  }
+
+  /**
+   * Get detailed connection information for debugging
+   */
+  public getConnectionInfo(): { connected: boolean; state: number; stateDesc: string } {
+    if (!this.socket) {
+      return {
+        connected: false,
+        state: -1,
+        stateDesc: 'Not initialized'
+      };
+    }
+
+    const stateMap = {
+      [WebSocket.CONNECTING]: 'Connecting',
+      [WebSocket.OPEN]: 'Open',
+      [WebSocket.CLOSING]: 'Closing',
+      [WebSocket.CLOSED]: 'Closed'
+    };
+
+    return {
+      connected: this.socket.readyState === WebSocket.OPEN,
+      state: this.socket.readyState,
+      stateDesc: stateMap[this.socket.readyState] || 'Unknown'
+    };
+  }
+
+  /**
    * Check if the WebSocket is reconnecting
    */
   public isReconnectingStatus(): boolean {
@@ -147,19 +225,19 @@ export class WebSocketService {
       this.isReconnecting = false;
       return;
     }
-    
+
     this.reconnectAttempts++;
     this.isReconnecting = true;
-    
+
     // Notify observers that we're reconnecting
     this.observers.forEach(observer => {
       if (observer.onReconnecting) {
         observer.onReconnecting(this.reconnectAttempts);
       }
     });
-    
+
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-    
+
     this.reconnectTimeout = window.setTimeout(() => {
       this.connect();
     }, delay);

@@ -104,6 +104,16 @@ We've completed a comprehensive audit of the dashboard and created a detailed tr
 
 See [Dashboard Transformation Plan](docs/dashboard_transformation_plan.md) and [WebSocket Dashboard Documentation](docs/WEBSOCKET_DASHBOARD.md) for more details.
 
+**Known Issues:**
+
+We are currently experiencing some challenges with the dashboard implementation:
+
+- React errors with "Maximum update depth exceeded" in the Avatar component
+- WebSocket connection issues between the dashboard and the Coda backend
+- Memory system initialization issues
+
+For a detailed list of known issues and attempted fixes, see [Known Issues](docs/KNOWN_ISSUES.md).
+
 ## 🔜 Future: `v0.2.0` - Beta Release
 
 > Feature-complete with stability improvements:

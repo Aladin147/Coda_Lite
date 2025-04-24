@@ -12,6 +12,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
+## [0.1.1-memory-fixes] - 2025-04-26
+
+### Added
+- Comprehensive memory system diagnostic tools
+- Enhanced topic extraction for better memory organization
+- Improved importance scoring for personal information
+- Memory persistence verification tools
+- Memory system documentation with detailed fixes
+
+### Changed
+- Reduced memory persistence interval for more frequent saving
+- Enhanced memory retrieval with lower similarity threshold
+- Improved memory formatting with topic-based grouping
+- Updated memory integration in the LLM context
+- Enhanced vector database persistence with better error handling
+
+### Fixed
+- Fixed memory persistence issues causing memory loss
+- Fixed memory retrieval with more relevant results
+- Fixed memory encoding for better topic extraction
+- Fixed vector database issues with inconsistent persistence
+- Fixed memory integration for better context generation
+
 ## [0.1.1-dashboard-update] - 2025-04-25
 
 ### Added

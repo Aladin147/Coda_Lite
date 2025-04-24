@@ -18,8 +18,8 @@ llm:
 # Speech-to-Text settings
 stt:
   model_size: "base"  # Options: tiny, base, small, medium, large-v3
-  device: "cuda"  # Options: cpu, cuda - Using GPU for better performance
-  compute_type: "float16"  # Options: float32, float16, int8 - float16 is good for GPU
+  device: "cpu"  # Options: cpu, cuda - Using CPU for now until CUDA issues are resolved
+  compute_type: "float32"  # Options: float32, float16, int8 - float32 is better for CPU
   language: null  # Language code (null for auto-detection)
   vad_filter: true  # Whether to use Voice Activity Detection to filter out silence
 
@@ -76,7 +76,7 @@ memory:
 
   # Memory persistence settings
   auto_persist: true  # Automatically persist short-term memory to long-term
-  persist_interval: 5  # Number of turns between persistence operations
+  persist_interval: 1  # Number of turns between persistence operations (more aggressive)
 
 # Personality settings
 personality:

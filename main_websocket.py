@@ -74,6 +74,7 @@ from stt import WebSocketWhisperSTT
 from llm import WebSocketOllamaLLM
 from tts.factory import get_tts_instance
 from memory import WebSocketEnhancedMemoryManager, MemoryManager
+from memory.memory_fixes import apply_memory_fixes
 from websocket import CodaWebSocketServer, CodaWebSocketIntegration
 from websocket.perf_integration import WebSocketPerfIntegration
 
@@ -970,6 +971,11 @@ async def main_async():
 
     # Load configuration
     config = ConfigLoader()
+
+    # Apply memory system fixes
+    logger.info("Applying memory system fixes...")
+    fix_results = apply_memory_fixes()
+    logger.info(f"Memory system fixes applied: {fix_results}")
 
     try:
         # Initialize WebSocket server

@@ -188,10 +188,13 @@ Coda Lite features a sophisticated memory system with both short-term and long-t
 - **Semantic Search**: Retrieves relevant memories based on semantic similarity
 - **Time-Based Decay**: Applies recency bias to prioritize newer memories
 - **Importance Scoring**: Assigns higher importance to facts, preferences, and key information
+- **Enhanced Persistence**: Ensures memories are reliably saved across sessions
+- **Optimized Retrieval**: Retrieves the most relevant memories with adaptive thresholds
+- **Topic Grouping**: Organizes memories by topic for better context integration
 
 The memory system enables Coda to remember user preferences, important facts, and previous conversations, creating a more personalized and contextually aware experience.
 
-See [Memory System Documentation](docs/LONG_TERM_MEMORY.md) for more details.
+See [Memory System Documentation](docs/LONG_TERM_MEMORY.md) and [Memory System Fixes](docs/MEMORY_SYSTEM_FIXES.md) for more details.
 
 ---
 

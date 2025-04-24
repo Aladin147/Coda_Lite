@@ -1,8 +1,33 @@
-import React, { useMemo } from 'react';
-import { useCodaMode } from '../store/selectors';
+import React, { useMemo, useRef, useEffect } from 'react';
+import { useCodaMode, useEvents } from '../store/selectors';
 
 const Avatar: React.FC = () => {
-  const { mode, emotionContext } = useCodaMode();
+  const { mode, emotionContext, setMode } = useCodaMode();
+  const { events } = useEvents();
+  const lastEventTypeRef = useRef<string | null>(null);
+
+  // Process TTS events to update speaking state
+  useEffect(() => {
+    if (!events || events.length === 0) return;
+
+    // Find the latest TTS-related event
+    const latestEvent = events.find(event =>
+      ['tts_start', 'tts_result', 'tts_error'].includes(event.type)
+    );
+
+    // If no TTS event found or it's the same as the last one we processed, do nothing
+    if (!latestEvent || latestEvent.type === lastEventTypeRef.current) return;
+
+    // Update our ref to track the last event type we processed
+    lastEventTypeRef.current = latestEvent.type;
+
+    // Update mode based on TTS events
+    if (latestEvent.type === 'tts_start') {
+      setMode('speaking');
+    } else if (latestEvent.type === 'tts_result' || latestEvent.type === 'tts_error') {
+      setMode('idle');
+    }
+  }, [events, setMode]);
 
   // Use useMemo to calculate avatar classes only when dependencies change
   const avatarClasses = useMemo(() => {

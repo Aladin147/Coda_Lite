@@ -62,6 +62,26 @@ You cannot access a WebSocket server directly with a browser. You need a WebSock
 ### Current Status
 This is expected behavior as WebSocket servers require a WebSocket client to connect, not a direct HTTP request. The dashboard should be using a proper WebSocket client implementation to connect to the server.
 
+### WebSocket Server Event Loop Issues
+
+The WebSocket server is generating warnings about missing event loops:
+
+```
+WARNING:coda.websocket:No event loop in current thread, event system_metrics dropped
+```
+
+This indicates that the WebSocket server is trying to send system metrics events, but there's no asyncio event loop in the thread where this is happening. This is causing the system metrics events to be dropped, which could affect the dashboard's ability to display performance information.
+
+#### Potential Causes:
+1. The system metrics are being generated in a thread that doesn't have an asyncio event loop
+2. The WebSocket server's event loop architecture may have threading issues
+3. There might be a mismatch between the threading model used for metrics collection and the one used for WebSocket communication
+
+#### Potential Solutions:
+1. Ensure all threads that need to send events have access to an event loop
+2. Use a queue-based approach to transfer events from non-event-loop threads to the main event loop
+3. Refactor the metrics collection to run in the same thread as the WebSocket server's event loop
+
 ## Memory System Issues
 
 ### Issue Description

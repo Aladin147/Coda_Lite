@@ -53,13 +53,17 @@ function ConsolidatedDashboard({
             connected={connected}
             performanceMetrics={performanceMetrics}
             systemMetrics={systemMetrics}
+            events={events || []}
           />
         </div>
         <div className="grid-item memory-section">
           <div className="section-header">
             <h3 className="section-title">Memory</h3>
           </div>
-          <MemoryViewer memories={(memories || []).slice(0, 5)} />
+          <MemoryViewer
+            memories={(memories || []).slice(0, 5)}
+            events={events || []}
+          />
         </div>
 
         {/* Row 3: Conversation and Tools */}

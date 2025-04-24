@@ -21,7 +21,9 @@ function App() {
     tts: 0,
     total: 0,
     stt_audio: 0,
-    tts_audio: 0
+    tts_audio: 0,
+    tool_seconds: 0,
+    memory_seconds: 0
   });
   const [systemMetrics, setSystemMetrics] = useState({
     memory_mb: 0,
@@ -38,7 +40,9 @@ function App() {
       tts: 0,
       total: 0,
       stt_audio: 0,
-      tts_audio: 0
+      tts_audio: 0,
+      tool_seconds: 0,
+      memory_seconds: 0
     },
     system: {
       memory_mb: 0,
@@ -83,7 +87,9 @@ function App() {
               tts: event.data.tts_seconds,
               total: event.data.total_seconds,
               stt_audio: event.data.stt_audio_duration || 0,
-              tts_audio: event.data.tts_audio_duration || 0
+              tts_audio: event.data.tts_audio_duration || 0,
+              tool_seconds: event.data.tool_seconds || 0,
+              memory_seconds: event.data.memory_seconds || 0
             }
           }));
 
@@ -94,7 +100,9 @@ function App() {
             tts: event.data.tts_seconds,
             total: event.data.total_seconds,
             stt_audio: event.data.stt_audio_duration || 0,
-            tts_audio: event.data.tts_audio_duration || 0
+            tts_audio: event.data.tts_audio_duration || 0,
+            tool_seconds: event.data.tool_seconds || 0,
+            memory_seconds: event.data.memory_seconds || 0
           });
           break;
 

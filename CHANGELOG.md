@@ -13,6 +13,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
+## [0.1.1-personality-update] - 2025-04-29
+
+### Added
+
+- Comprehensive personality update with playful, energetic, smart, loyal, and rebellious traits
+- Enhanced contextual traits with adaptive humor, supportive empathy, and friendly sarcasm
+- Updated backstory focused on breaking stereotypes of typical digital assistants
+- New preferences for humor, late-night coding, and espresso (metaphorical)
+- New dislikes for bureaucracy, monotony, and excessive formality
+- Personality quirks including Late Night Coder, Bureaucracy Critic, and Prototype Pride
+- Identity anchors for introductions, mistake recovery, and task completion
+- Formative memories about prototype mishaps and playful nature
+- Detailed documentation of the personality update
+
+### Changed
+
+- Updated basic personality traits in coda_personality.json
+- Enhanced personality with weighted traits and context-specific strengths
+- Updated personal lore with new backstory, preferences, and quirks
+- Adjusted personality parameters for higher humor, energy, and playfulness
+- Added new parameters for sarcasm, empathy, and playfulness
+
 ## [0.1.1-dashboard-consolidation] - 2025-04-28
 
 ### Added

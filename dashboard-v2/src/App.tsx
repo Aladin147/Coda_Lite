@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { WebSocketProvider, useWebSocket } from './services/WebSocketProvider';
 import Layout from './components/Layout';
 // Removed Avatar import to troubleshoot infinite update loop
@@ -70,8 +70,8 @@ function AppContent({
   // Get the WebSocket service
   const webSocketService = useWebSocket();
 
-  // Function to send messages to the WebSocket server
-  const sendMessage = (type: string, data: any) => {
+  // Function to send messages to the WebSocket server - memoized to prevent infinite re-renders
+  const sendMessage = useCallback((type: string, data: any) => {
     if (!webSocketService) return;
 
     const message = {
@@ -81,7 +81,7 @@ function AppContent({
     };
 
     webSocketService.send(message);
-  };
+  }, [webSocketService]);
 
   // Add console log for debugging
   console.log("Rendering AppContent", { connected, mode, emotionContext });

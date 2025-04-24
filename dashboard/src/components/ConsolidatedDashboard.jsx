@@ -6,6 +6,7 @@ import ToolDisplay from './ToolDisplay';
 import EventLog from './EventLog';
 import VoiceControls from './VoiceControls';
 import Avatar from './Avatar';
+import MemoryDebugPanel from './MemoryDebugPanel';
 import '../styles/ConsolidatedDashboard.css';
 
 /**
@@ -27,6 +28,7 @@ function ConsolidatedDashboard({
   sendMessage
 }) {
   const [showEventLog, setShowEventLog] = useState(true);
+  const [showMemoryDebug, setShowMemoryDebug] = useState(false);
   return (
     <div className="consolidated-dashboard">
       <div className="dashboard-grid">
@@ -59,11 +61,24 @@ function ConsolidatedDashboard({
         <div className="grid-item memory-section">
           <div className="section-header">
             <h3 className="section-title">Memory</h3>
+            <button
+              className="toggle-button"
+              onClick={() => setShowMemoryDebug(!showMemoryDebug)}
+            >
+              {showMemoryDebug ? 'Basic View' : 'Debug View'}
+            </button>
           </div>
-          <MemoryViewer
-            memories={(memories || []).slice(0, 5)}
-            events={events || []}
-          />
+          {showMemoryDebug ? (
+            <MemoryDebugPanel
+              events={events || []}
+              sendMessage={sendMessage}
+            />
+          ) : (
+            <MemoryViewer
+              memories={(memories || []).slice(0, 5)}
+              events={events || []}
+            />
+          )}
         </div>
 
         {/* Row 3: Conversation and Tools */}

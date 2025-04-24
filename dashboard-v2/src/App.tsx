@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { WebSocketProvider, useWebSocket } from './services/WebSocketProvider';
 import Layout from './components/Layout';
-import Avatar from './components/Avatar';
+// Removed Avatar import to troubleshoot infinite update loop
 import ConversationView from './components/ConversationView';
 import PerformanceMonitor from './components/PerformanceMonitor';
 import MemoryViewer from './components/MemoryViewer';
@@ -102,7 +102,20 @@ function AppContent({
                   <span className="text-sm">{connected ? 'Connected' : 'Disconnected'}</span>
                 </div>
               </div>
-              <Avatar />
+              {/* Removed Avatar component to troubleshoot infinite update loop */}
+              <div className="flex flex-col items-center">
+                <div className="bg-blue-500 rounded-full w-24 h-24 flex items-center justify-center text-white">
+                  <span className="text-4xl">C</span>
+                </div>
+                <div className="mt-4 text-center">
+                  <div className="font-semibold">
+                    Mode: <span className="font-normal">{mode}</span>
+                  </div>
+                  <div className="font-semibold">
+                    Emotion: <span className="font-normal">{emotionContext}</span>
+                  </div>
+                </div>
+              </div>
 
               {showDebugPanel && (
                 <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">

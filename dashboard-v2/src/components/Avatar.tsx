@@ -1,33 +1,39 @@
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { useCodaMode, useEvents } from '../store/selectors';
 
 const Avatar: React.FC = () => {
-  const { mode, emotionContext, setMode } = useCodaMode();
+  const { mode, emotionContext } = useCodaMode();
   const { events } = useEvents();
-  const lastEventTypeRef = useRef<string | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const lastHandledType = useRef<string | null>(null);
 
   // Process TTS events to update speaking state
   useEffect(() => {
     if (!events || events.length === 0) return;
 
     // Find the latest TTS-related event
-    const latestEvent = events.find(event =>
-      ['tts_start', 'tts_result', 'tts_error'].includes(event.type)
+    const latest = events.find(e =>
+      e.type === 'tts_start' ||
+      e.type === 'tts_result' ||
+      e.type === 'tts_error'
     );
 
-    // If no TTS event found or it's the same as the last one we processed, do nothing
-    if (!latestEvent || latestEvent.type === lastEventTypeRef.current) return;
+    // If no TTS event found, do nothing
+    if (!latest) return;
+
+    // If this event type is the same as the last one we processed, do nothing
+    if (lastHandledType.current === latest.type) return;
 
     // Update our ref to track the last event type we processed
-    lastEventTypeRef.current = latestEvent.type;
+    lastHandledType.current = latest.type;
 
-    // Update mode based on TTS events
-    if (latestEvent.type === 'tts_start') {
-      setMode('speaking');
-    } else if (latestEvent.type === 'tts_result' || latestEvent.type === 'tts_error') {
-      setMode('idle');
+    // Update speaking state based on TTS events
+    if (latest.type === 'tts_start') {
+      setIsSpeaking(true);
+    } else {
+      setIsSpeaking(false);
     }
-  }, [events, setMode]);
+  }, [events]);
 
   // Use useMemo to calculate avatar classes only when dependencies change
   const avatarClasses = useMemo(() => {
@@ -66,7 +72,7 @@ const Avatar: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center">
-      <div className={avatarClasses}>
+      <div className={`${avatarClasses} ${isSpeaking ? 'talking' : ''}`}>
         <span className="text-4xl">C</span>
       </div>
       <div className="mt-4 text-center">
@@ -75,6 +81,9 @@ const Avatar: React.FC = () => {
         </div>
         <div className="font-semibold">
           Emotion: <span className="font-normal">{emotionContext}</span>
+        </div>
+        <div className="font-semibold">
+          Status: <span className="font-normal">{isSpeaking ? 'Speaking' : 'Idle'}</span>
         </div>
       </div>
     </div>

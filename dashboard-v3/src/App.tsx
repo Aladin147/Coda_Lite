@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { WebSocketProvider, useWebSocket } from './services/WebSocketProvider';
 import Layout from './components/Layout';
 import Avatar from './components/Avatar';
@@ -8,6 +8,7 @@ import MemoryViewer from './components/MemoryViewer';
 import VoiceControls from './components/VoiceControls';
 import TextInput from './components/TextInput';
 import ConnectionStatus from './components/ConnectionStatus';
+import WebSocketDebugger from './components/WebSocketDebugger';
 import { useConnectionStore } from './store/connectionStore';
 import { useEventStore } from './store/eventStore';
 
@@ -22,7 +23,10 @@ function App() {
 // Inner component that uses the WebSocket context
 function AppContent() {
   // Get the WebSocket service
-  const webSocketService = useWebSocket();
+  const { service: webSocketService } = useWebSocket();
+
+  // State for showing/hiding the WebSocket debugger
+  const [showDebugger, setShowDebugger] = useState(false);
 
   // Get state from stores
   const { connected, reconnecting, reconnectAttempts } = useConnectionStore();
@@ -39,14 +43,13 @@ function AppContent() {
   const sendMessage = useCallback((type: string, data: any) => {
     if (!webSocketService) return;
 
-    const message = {
-      type,
-      data,
-      timestamp: new Date().toISOString()
-    };
-
-    webSocketService.send(message);
+    webSocketService.send(type, data);
   }, [webSocketService]);
+
+  // Toggle WebSocket debugger
+  const toggleDebugger = useCallback(() => {
+    setShowDebugger(prev => !prev);
+  }, []);
 
   // Handlers for voice controls
   const handleStartListening = useCallback(() => {
@@ -124,6 +127,13 @@ function AppContent() {
                     <p className="text-xs mt-1 text-gray-400">
                       Built with React, Tailwind CSS, and WebSockets
                     </p>
+
+                    <button
+                      onClick={toggleDebugger}
+                      className="mt-4 px-3 py-1 bg-primary-600 hover:bg-primary-700 rounded-md transition-colors text-sm w-full"
+                    >
+                      {showDebugger ? 'Hide WebSocket Debugger' : 'Show WebSocket Debugger'}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -131,6 +141,13 @@ function AppContent() {
           </div>
 
           <ConversationView messages={messages} />
+
+          {/* WebSocket Debugger (conditionally rendered) */}
+          {showDebugger && (
+            <div className="mt-6">
+              <WebSocketDebugger maxEvents={100} />
+            </div>
+          )}
         </div>
       </div>
     </Layout>

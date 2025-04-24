@@ -245,6 +245,29 @@ class CodaWebSocketServer:
 
         logger.debug(f"Broadcast event {event_type} to {len(self.clients)} clients")
 
+    async def push_event_async(self, event_type: str, data: Dict[str, Any],
+                           high_priority: bool = False):
+        """
+        Push an event to all connected clients (async version).
+
+        This is the async version of push_event that can be awaited.
+
+        Args:
+            event_type: The type of event
+            data: The event data
+            high_priority: Whether this is a high-priority event (for replay buffer)
+        """
+        if not self.running:
+            logger.debug(f"Event {event_type} dropped (server not running)")
+            return
+
+        if not self.clients:
+            logger.debug(f"Event {event_type} dropped (no clients connected)")
+            return
+
+        # Broadcast the event
+        await self.broadcast_event(event_type, data, high_priority)
+
     def push_event(self, event_type: str, data: Dict[str, Any],
                   high_priority: bool = False):
         """

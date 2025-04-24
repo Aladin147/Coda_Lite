@@ -244,9 +244,9 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
         Returns:
             List of messages for context
         """
-        # Get the enhanced context
+        # Get the enhanced context - parent method uses user_input parameter name
         context = super().get_enhanced_context(
-            query=query,
+            user_input=query,
             max_tokens=max_tokens,
             include_system=include_system
         )

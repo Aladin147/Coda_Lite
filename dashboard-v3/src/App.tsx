@@ -6,6 +6,7 @@ import ConversationView from './components/ConversationView';
 import PerformanceMonitor from './components/PerformanceMonitor';
 import MemoryViewer from './components/MemoryViewer';
 import VoiceControls from './components/VoiceControls';
+import TextInput from './components/TextInput';
 import ConnectionStatus from './components/ConnectionStatus';
 import { useConnectionStore } from './store/connectionStore';
 import { useEventStore } from './store/eventStore';
@@ -62,6 +63,13 @@ function AppContent() {
     });
   }, [sendMessage]);
 
+  // Handler for text input
+  const handleSendTextMessage = useCallback((text: string) => {
+    sendMessage('text_input', {
+      text: text
+    });
+  }, [sendMessage]);
+
   return (
     <Layout>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -85,6 +93,11 @@ function AppContent() {
             onStartListening={handleStartListening}
             onStopListening={handleStopListening}
             onRunDemo={handleRunDemo}
+          />
+
+          <TextInput
+            connected={connected}
+            onSendMessage={handleSendTextMessage}
           />
         </div>
 

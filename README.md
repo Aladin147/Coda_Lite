@@ -73,6 +73,9 @@ This project is the **first step** in building an open, modular, transparent AI 
 - Responsive design for different screen sizes ✅
 - Event queue system for non-blocking event handling ✅
 - Accurate performance metrics with component-specific timing ✅
+- Enhanced memory tracking for TTS modules ✅
+- Improved performance metrics separating processing from speaking time ✅
+- Comprehensive testing for the full pipeline ✅
 
 **Dashboard Features:**
 
@@ -88,7 +91,18 @@ This project is the **first step** in building an open, modular, transparent AI 
 - Theme toggle for light/dark mode
 - Text input option alongside voice input
 
-See [WebSocket Dashboard Documentation](docs/WEBSOCKET_DASHBOARD.md) for more details.
+**Dashboard 2.0 Transformation Plan:**
+
+We've completed a comprehensive audit of the dashboard and created a detailed transformation plan for Dashboard 2.0. The plan includes:
+
+- Layered architecture with clear separation of concerns
+- Global state management with Zustand or Redux Toolkit
+- WebSocket service module for improved communication
+- Expressive avatar with emotional states
+- Responsive layout with Tailwind CSS
+- Comprehensive testing infrastructure
+
+See [Dashboard Transformation Plan](docs/dashboard_transformation_plan.md) and [WebSocket Dashboard Documentation](docs/WEBSOCKET_DASHBOARD.md) for more details.
 
 ## 🔜 Future: `v0.2.0` - Beta Release
 

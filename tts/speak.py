@@ -51,6 +51,15 @@ class BaseTTS(abc.ABC):
         """
         pass
 
+    def stop(self) -> None:
+        """
+        Stop any ongoing speech playback.
+
+        This method should be implemented by subclasses to stop
+        any ongoing audio playback immediately.
+        """
+        pass
+
     def get_available_voices(self) -> List[str]:
         """
         Get list of available voices.

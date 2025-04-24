@@ -400,15 +400,17 @@ class PerfTracker:
         if memory_seconds > 0:
             total_seconds += memory_seconds
 
-        # Create trace
+        # Create trace with clear separation between processing and audio times
         trace = {
             "timestamp": time.time(),
-            "stt_seconds": stt_seconds,
+            "stt_seconds": stt_seconds,  # Processing time only
             "llm_seconds": llm_seconds,
-            "tts_seconds": tts_seconds,
-            "total_seconds": total_seconds,
-            "tts_audio_duration": tts_audio_duration,
-            "stt_audio_duration": stt_audio_duration
+            "tts_seconds": tts_seconds,  # Synthesis time only (not playback)
+            "total_processing_seconds": total_seconds,  # Total processing time
+            "total_seconds": total_seconds,  # Keep for backward compatibility
+            "tts_audio_duration": tts_audio_duration,  # Actual audio playback duration
+            "stt_audio_duration": stt_audio_duration,  # Actual audio recording duration
+            "total_interaction_seconds": total_seconds + tts_audio_duration + stt_audio_duration  # Total time including audio
         }
 
         # Add optional components

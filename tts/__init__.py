@@ -5,19 +5,11 @@ Provides a common interface for different TTS implementations.
 
 from tts.speak import BaseTTS
 
-# Import CSM TTS (MeloTTS)
-try:
-    from tts.csm_tts import CSMTTS
-    CSM_AVAILABLE = True
-except ImportError:
-    CSM_AVAILABLE = False
+# Disable CSM TTS to avoid MeCab dependency issues
+CSM_AVAILABLE = False
 
-# Import Dia TTS
-try:
-    from tts.dia_tts import DiaTTS
-    DIA_AVAILABLE = True
-except ImportError:
-    DIA_AVAILABLE = False
+# Disable Dia TTS for now
+DIA_AVAILABLE = False
 
 # Import ElevenLabs TTS
 try:
@@ -61,4 +53,4 @@ def create_tts(engine="csm", **kwargs):
     else:
         raise NotImplementedError(f"Unknown TTS engine: {engine}. Currently supported engines: 'csm', 'dia', 'elevenlabs'")
 
-__all__ = ["BaseTTS", "create_tts", "CSMTTS", "DiaTTS", "ElevenLabsTTS", "WebSocketElevenLabsTTS"]
+__all__ = ["BaseTTS", "create_tts", "ElevenLabsTTS", "WebSocketElevenLabsTTS"]

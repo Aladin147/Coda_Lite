@@ -12,24 +12,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Wake word detection (planned)
 - Additional language support (planned)
 - Voice quality improvements (planned)
-- TTS cut-off when PTT button is pressed (1-second delay) (planned)
-- Continuous recording while PTT button is held (planned)
-- Comprehensive testing coverage for core features (planned)
+
+## [0.1.1-dashboard-transformation] - 2025-04-24
+
+### Added
+
+- Comprehensive dashboard audit and transformation plan
+- Enhanced memory tracking for TTS modules
+- Improved performance metrics separating processing from speaking time
+- TTS cut-off when PTT button is pressed (1-second delay)
+- Continuous recording while PTT button is held
+- Comprehensive testing for the full pipeline
+- Mock tests for WebSocket pipeline
+- Detailed dashboard transformation plan document
 
 ### Changed
 
-- Improved performance metrics to show real data (planned)
-- Optimized module initialization with lazy loading (planned)
-- Enhanced WebSocket event handling for better performance (planned)
+- Updated TTS factory with memory usage tracking
+- Improved performance metrics to show real data
+- Optimized module initialization with lazy loading
+- Enhanced WebSocket event handling for better performance
+- Updated README with dashboard transformation plan
 
 ### Fixed
 
-- UI not displaying information correctly (planned)
-- Dark mode as default theme (planned)
-- Text visibility in conversation bubbles in dark mode (planned)
-- Animation from push-to-talk button for better performance (planned)
-- Performance bottlenecks in event processing (planned)
-- Initialization of unused TTS modules (planned)
+- Performance bottlenecks in event processing
+- Initialization of unused TTS modules
+- Memory leaks in TTS module unloading
 
 ## [0.1.1-personality-update] - 2025-04-29
 

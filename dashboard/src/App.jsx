@@ -53,6 +53,7 @@ function App() {
   });
 
   useEffect(() => {
+    // Always connect to port 8765 where the WebSocket server is running
     const client = new WebSocketClient('ws://localhost:8765');
 
     client.onConnect = () => {
@@ -98,9 +99,12 @@ function App() {
             stt: event.data.stt_seconds,
             llm: event.data.llm_seconds,
             tts: event.data.tts_seconds,
-            total: event.data.total_seconds,
+            total: event.data.total_seconds, // For backward compatibility
+            total_processing_seconds: event.data.total_processing_seconds || event.data.total_seconds,
             stt_audio: event.data.stt_audio_duration || 0,
             tts_audio: event.data.tts_audio_duration || 0,
+            total_interaction_seconds: event.data.total_interaction_seconds ||
+              (event.data.total_seconds + (event.data.stt_audio_duration || 0) + (event.data.tts_audio_duration || 0)),
             tool_seconds: event.data.tool_seconds || 0,
             memory_seconds: event.data.memory_seconds || 0
           });

@@ -43,9 +43,10 @@
 
 .message.assistant {
   align-self: flex-start;
-  background-color: #f1f3f5;
+  background-color: var(--card-background);
   border: 1px solid var(--border-color);
   border-bottom-left-radius: 0;
+  color: var(--text-color); /* Ensure text is visible in dark mode */
 }
 
 .message-header {

@@ -754,7 +754,10 @@ class CodaAssistant:
                         # Start listening in a separate thread
                         threading.Thread(
                             target=self.handle_push_to_talk,
-                            args=(message_data.get("duration", 5),),
+                            kwargs={
+                                "duration": message_data.get("duration", 5),
+                                "continuous": message_data.get("continuous", False)
+                            },
                             daemon=True
                         ).start()
 
@@ -769,6 +772,17 @@ class CodaAssistant:
                             logger.info("Set stop_listening flag to True")
                         except Exception as e:
                             logger.error(f"Error stopping STT: {e}", exc_info=True)
+
+                elif message_type == "tts_stop":
+                    # Stop text-to-speech playback
+                    logger.info("Stopping TTS playback")
+                    # Signal to stop TTS playback
+                    if hasattr(self.tts, "stop") and callable(self.tts.stop):
+                        try:
+                            self.tts.stop()
+                            logger.info("TTS playback stopped")
+                        except Exception as e:
+                            logger.error(f"Error stopping TTS: {e}", exc_info=True)
 
                 elif message_type == "demo_flow":
                     # Run a demo flow
@@ -810,8 +824,14 @@ class CodaAssistant:
         # Replace the push_event method with our custom handler
         self.ws.server.push_event = push_event_with_handler
 
-    def handle_push_to_talk(self, duration=5):
-        """Handle push-to-talk mode."""
+    def handle_push_to_talk(self, duration=5, continuous=False):
+        """
+        Handle push-to-talk mode.
+
+        Args:
+            duration: Duration to listen in seconds (used only if continuous=False)
+            continuous: Whether to listen continuously until explicitly stopped
+        """
         try:
             # Reset the stop listening flag
             if hasattr(self.stt, "_stop_listening"):
@@ -820,19 +840,39 @@ class CodaAssistant:
             # Mark the start of STT processing
             self.perf.mark_component("stt", "listen", start=True)
 
-            # Listen for speech
-            logger.info(f"Listening for {duration} seconds...")
-            result = self.stt.listen(duration=duration)
+            if continuous:
+                # Define a callback to handle transcriptions
+                def handle_transcription_callback(text):
+                    if text and text.strip():
+                        logger.info(f"Continuous transcription: {text}")
+                        self.handle_transcription(text)
+
+                # Define a stop callback to check if we should stop listening
+                def should_stop_callback():
+                    return getattr(self.stt, "_stop_listening", False)
+
+                # Listen continuously until stopped
+                logger.info("Listening continuously until stopped...")
+                self.stt.listen_continuous(
+                    callback=handle_transcription_callback,
+                    stop_callback=should_stop_callback,
+                    silence_threshold=0.1,
+                    silence_duration=1.0  # Shorter silence duration for more responsive experience
+                )
+            else:
+                # Listen for a fixed duration
+                logger.info(f"Listening for {duration} seconds...")
+                result = self.stt.listen(duration=duration)
+
+                # Process the transcription if we got a result
+                if result and result.strip():
+                    logger.info(f"Transcription: {result}")
+                    self.handle_transcription(result)
+                else:
+                    logger.info("No transcription result")
 
             # Mark the end of STT processing
             self.perf.mark_component("stt", "listen", start=False)
-
-            # Process the transcription if we got a result
-            if result and result.strip():
-                logger.info(f"Transcription: {result}")
-                self.handle_transcription(result)
-            else:
-                logger.info("No transcription result")
 
         except Exception as e:
             logger.error(f"Error in push-to-talk: {e}", exc_info=True)

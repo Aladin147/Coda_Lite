@@ -35,8 +35,14 @@ function Dashboard({ connected, performanceMetrics, systemMetrics, events }) {
 
   // Calculate the real total conversation time (including speaking and thinking)
   const calculateTotalTime = () => {
+    // If we have the new total_interaction_seconds metric, use it
+    if (performanceMetrics.total_interaction_seconds !== undefined) {
+      return performanceMetrics.total_interaction_seconds;
+    }
+
+    // Otherwise, fall back to the old calculation
     // Processing time (excluding audio playback/recording)
-    const processingTime = performanceMetrics.total;
+    const processingTime = performanceMetrics.total_processing_seconds || performanceMetrics.total;
 
     // Audio durations
     const userSpeakingTime = performanceMetrics.stt_audio;
@@ -89,7 +95,7 @@ function Dashboard({ connected, performanceMetrics, systemMetrics, events }) {
           )}
           <div className="metric total-metric">
             <span className="metric-label">Total Processing</span>
-            <span className="metric-value">{formatTime(performanceMetrics.total)}</span>
+            <span className="metric-value">{formatTime(performanceMetrics.total_processing_seconds || performanceMetrics.total)}</span>
           </div>
         </div>
 

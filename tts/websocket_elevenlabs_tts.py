@@ -337,6 +337,24 @@ class WebSocketElevenLabsTTS(ElevenLabsTTS):
 
         return self.voice_id
 
+    def stop(self) -> None:
+        """
+        Stop any ongoing speech playback and send a WebSocket event.
+        """
+        logger.info("Stopping WebSocketElevenLabsTTS playback")
+
+        # Send a WebSocket event to notify clients
+        try:
+            if hasattr(self, 'ws'):
+                self.ws.tts_stop(reason="user_interrupt")
+        except Exception as e:
+            logger.warning(f"Error sending TTS stop event: {e}")
+
+        # Call the parent class's stop method
+        super().stop()
+
+        logger.info("WebSocketElevenLabsTTS playback stopped")
+
     def unload(self) -> None:
         """
         Unload the TTS engine and free resources.

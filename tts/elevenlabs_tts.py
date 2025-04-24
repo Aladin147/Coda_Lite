@@ -217,16 +217,33 @@ class ElevenLabsTTS(BaseTTS):
             if isinstance(audio, str):
                 # Load audio file
                 data, samplerate = sf.read(audio)
-                sd.play(data, samplerate)
+                self._current_player = sd.play(data, samplerate)
                 sd.wait()  # Wait until audio is finished playing
             elif isinstance(audio, np.ndarray):
                 # Play audio array
-                sd.play(audio, 44100)  # Assuming 44.1kHz sample rate
+                self._current_player = sd.play(audio, 44100)  # Assuming 44.1kHz sample rate
                 sd.wait()  # Wait until audio is finished playing
             else:
                 logger.error(f"Unsupported audio type: {type(audio)}")
         except Exception as e:
             logger.error(f"Error playing audio: {e}")
+
+    def stop(self) -> None:
+        """
+        Stop any ongoing speech playback.
+        """
+        try:
+            import sounddevice as sd
+
+            # Stop any ongoing playback
+            if hasattr(self, "_current_player") and self._current_player is not None:
+                logger.info("Stopping ongoing speech playback")
+                sd.stop()
+                self._current_player = None
+            else:
+                logger.info("No ongoing speech playback to stop")
+        except Exception as e:
+            logger.error(f"Error stopping speech playback: {e}")
 
     def get_available_voices(self) -> List[Dict[str, Any]]:
         """

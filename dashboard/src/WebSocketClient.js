@@ -8,7 +8,8 @@ class WebSocketClient {
    * @param {string} url - The WebSocket server URL
    */
   constructor(url) {
-    this.url = url;
+    // Ensure we're always connecting to port 8765 regardless of what port the dashboard is running on
+    this.url = 'ws://localhost:8765';
     this.socket = null;
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;

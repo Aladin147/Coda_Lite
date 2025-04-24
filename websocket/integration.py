@@ -470,6 +470,26 @@ class CodaWebSocketIntegration:
 
         logger.debug(f"TTS status: {status}")
 
+    def tts_stop(self, reason: Optional[str] = "user_interrupt") -> None:
+        """
+        Signal to stop TTS playback.
+
+        Args:
+            reason: The reason for stopping TTS playback
+        """
+        self.perf_tracker.mark("tts_stop")
+
+        # Send TTS stop event
+        self.event_queue.put((
+            EventType.TTS_STOP,
+            {
+                "reason": reason
+            },
+            True  # high_priority
+        ))
+
+        logger.debug(f"TTS stopped: {reason}")
+
     # Memory integration methods
 
     def memory_store(self, content: str, memory_type: str, importance: float, memory_id: str) -> None:
@@ -721,17 +741,22 @@ class CodaWebSocketIntegration:
         stt_audio_duration = self.perf_tracker.markers.get("stt_audio_duration", 0)
         tts_audio_duration = self.perf_tracker.markers.get("tts_audio_duration", 0)
 
-        # Send latency trace event
+        # Calculate total interaction time (processing + audio)
+        total_interaction_seconds = total_seconds + stt_audio_duration + tts_audio_duration
+
+        # Send latency trace event with clear separation between processing and audio times
         self.event_queue.put((
             EventType.LATENCY_TRACE,
             {
-                "stt_seconds": stt_seconds,
+                "stt_seconds": stt_seconds,  # Processing time only
                 "llm_seconds": llm_seconds,
-                "tts_seconds": tts_seconds,
-                "total_seconds": total_seconds,
+                "tts_seconds": tts_seconds,  # Synthesis time only (not playback)
+                "total_processing_seconds": total_seconds,  # Total processing time
+                "total_seconds": total_seconds,  # Keep for backward compatibility
                 "tool_seconds": tool_seconds if tool_seconds > 0 else None,
-                "stt_audio_duration": stt_audio_duration,
-                "tts_audio_duration": tts_audio_duration
+                "stt_audio_duration": stt_audio_duration,  # Actual audio recording duration
+                "tts_audio_duration": tts_audio_duration,  # Actual audio playback duration
+                "total_interaction_seconds": total_interaction_seconds  # Total time including audio
             },
             False
         ))

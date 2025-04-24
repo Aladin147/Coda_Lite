@@ -49,8 +49,15 @@ function VoiceControls({ sendMessage, connected }) {
 
     if (!connected) return;
 
-    setIsPushingToTalk(true);
-    sendMessage('stt_start', { mode: 'push_to_talk' });
+    // First, stop any ongoing TTS playback with a 1-second delay
+    setTimeout(() => {
+      // Stop TTS playback
+      sendMessage('tts_stop', {});
+
+      // Then start listening
+      setIsPushingToTalk(true);
+      sendMessage('stt_start', { mode: 'push_to_talk', continuous: true });
+    }, 1000);
   };
 
   const handleStopListening = (event) => {

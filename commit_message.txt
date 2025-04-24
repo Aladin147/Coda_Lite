@@ -1,0 +1,16 @@
+feat(dashboard): Complete dashboard audit and transformation plan
+
+- Add comprehensive dashboard audit and transformation plan document
+- Enhance TTS factory with memory tracking
+- Improve performance metrics to separate processing from speaking time
+- Add TTS cut-off when PTT button is pressed (1-second delay)
+- Implement continuous recording while PTT button is held
+- Create comprehensive tests for the full pipeline
+- Update README and CHANGELOG with dashboard transformation plan
+- Add project status document
+
+This commit completes the analysis phase for the dashboard transformation
+and sets up the foundation for implementing Dashboard 2.0 with a layered
+architecture, global state management, and improved UI/UX.
+
+Resolves #42

@@ -58,6 +58,15 @@ def get_tts_instance(
     if _tts_instance is not None:
         logger.info(f"Cleaning up existing {_current_tts_type} TTS instance")
         try:
+            # Log memory usage before cleanup
+            try:
+                import psutil
+                process = psutil.Process()
+                memory_before = process.memory_info().rss / (1024 * 1024)
+                logger.info(f"Memory usage before TTS cleanup: {memory_before:.2f} MB")
+            except ImportError:
+                memory_before = None
+
             # Call unload if available
             if hasattr(_tts_instance, "unload"):
                 _tts_instance.unload()
@@ -67,6 +76,16 @@ def get_tts_instance(
 
             # Force garbage collection
             gc.collect()
+
+            # Log memory usage after cleanup
+            try:
+                if memory_before is not None:
+                    memory_after = process.memory_info().rss / (1024 * 1024)
+                    memory_freed = memory_before - memory_after
+                    logger.info(f"Memory usage after TTS cleanup: {memory_after:.2f} MB (freed {memory_freed:.2f} MB)")
+            except Exception:
+                pass
+
         except Exception as e:
             logger.warning(f"Error cleaning up TTS instance: {e}")
 
@@ -170,6 +189,15 @@ def unload_current_tts() -> None:
     if _tts_instance is not None:
         logger.info(f"Unloading {_current_tts_type} TTS instance")
         try:
+            # Log memory usage before unload
+            try:
+                import psutil
+                process = psutil.Process()
+                memory_before = process.memory_info().rss / (1024 * 1024)
+                logger.info(f"Memory usage before TTS unload: {memory_before:.2f} MB")
+            except ImportError:
+                memory_before = None
+
             # Call unload if available
             if hasattr(_tts_instance, "unload"):
                 _tts_instance.unload()
@@ -179,6 +207,16 @@ def unload_current_tts() -> None:
 
             # Force garbage collection
             gc.collect()
+
+            # Log memory usage after unload
+            try:
+                if memory_before is not None:
+                    memory_after = process.memory_info().rss / (1024 * 1024)
+                    memory_freed = memory_before - memory_after
+                    logger.info(f"Memory usage after TTS unload: {memory_after:.2f} MB (freed {memory_freed:.2f} MB)")
+            except Exception:
+                pass
+
         except Exception as e:
             logger.warning(f"Error unloading TTS instance: {e}")
 

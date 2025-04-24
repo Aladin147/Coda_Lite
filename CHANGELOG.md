@@ -12,6 +12,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Wake word detection (planned)
 - Additional language support (planned)
 - Voice quality improvements (planned)
+- TTS cut-off when PTT button is pressed (1-second delay) (planned)
+- Continuous recording while PTT button is held (planned)
+- Comprehensive testing coverage for core features (planned)
+
+### Changed
+
+- Improved performance metrics to show real data (planned)
+- Optimized module initialization with lazy loading (planned)
+- Enhanced WebSocket event handling for better performance (planned)
+
+### Fixed
+
+- UI not displaying information correctly (planned)
+- Dark mode as default theme (planned)
+- Text visibility in conversation bubbles in dark mode (planned)
+- Animation from push-to-talk button for better performance (planned)
+- Performance bottlenecks in event processing (planned)
+- Initialization of unused TTS modules (planned)
 
 ## [0.1.1-personality-update] - 2025-04-29
 

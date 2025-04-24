@@ -51,6 +51,16 @@
   background-color: var(--primary-color-hover);
 }
 
+.toggle-button.active {
+  background-color: var(--primary-color-dark);
+  font-weight: 600;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .hidden {
   display: none;
 }

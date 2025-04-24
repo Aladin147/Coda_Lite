@@ -7,6 +7,8 @@ import EventLog from './EventLog';
 import VoiceControls from './VoiceControls';
 import Avatar from './Avatar';
 import MemoryDebugPanel from './MemoryDebugPanel';
+import EventInspector from './EventInspector';
+import PerformanceVisualizer from './PerformanceVisualizer';
 import '../styles/ConsolidatedDashboard.css';
 
 /**
@@ -29,6 +31,8 @@ function ConsolidatedDashboard({
 }) {
   const [showEventLog, setShowEventLog] = useState(true);
   const [showMemoryDebug, setShowMemoryDebug] = useState(false);
+  const [eventView, setEventView] = useState('log'); // 'log' or 'inspector'
+  const [performanceView, setPerformanceView] = useState('metrics'); // 'metrics' or 'visualizer'
   return (
     <div className="consolidated-dashboard">
       <div className="dashboard-grid">
@@ -50,13 +54,25 @@ function ConsolidatedDashboard({
         <div className="grid-item performance-section">
           <div className="section-header">
             <h3 className="section-title">Performance Metrics</h3>
+            <button
+              className="toggle-button"
+              onClick={() => setPerformanceView(performanceView === 'metrics' ? 'visualizer' : 'metrics')}
+            >
+              {performanceView === 'metrics' ? 'Show Trends' : 'Show Metrics'}
+            </button>
           </div>
-          <Dashboard
-            connected={connected}
-            performanceMetrics={performanceMetrics}
-            systemMetrics={systemMetrics}
-            events={events || []}
-          />
+          {performanceView === 'metrics' ? (
+            <Dashboard
+              connected={connected}
+              performanceMetrics={performanceMetrics}
+              systemMetrics={systemMetrics}
+              events={events || []}
+            />
+          ) : (
+            <PerformanceVisualizer
+              events={events || []}
+            />
+          )}
         </div>
         <div className="grid-item memory-section">
           <div className="section-header">
@@ -93,14 +109,32 @@ function ConsolidatedDashboard({
         <div className={`grid-item events-section ${showEventLog ? '' : 'hidden'}`}>
           <div className="section-header">
             <h3 className="section-title">Recent Events</h3>
-            <button
-              className="toggle-button"
-              onClick={() => setShowEventLog(!showEventLog)}
-            >
-              {showEventLog ? 'Hide' : 'Show'}
-            </button>
+            <div className="button-group">
+              <button
+                className={`toggle-button ${eventView === 'log' ? 'active' : ''}`}
+                onClick={() => setEventView('log')}
+              >
+                Log
+              </button>
+              <button
+                className={`toggle-button ${eventView === 'inspector' ? 'active' : ''}`}
+                onClick={() => setEventView('inspector')}
+              >
+                Inspector
+              </button>
+              <button
+                className="toggle-button"
+                onClick={() => setShowEventLog(!showEventLog)}
+              >
+                {showEventLog ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </div>
-          <EventLog events={(events || []).slice(0, 10)} />
+          {eventView === 'log' ? (
+            <EventLog events={(events || []).slice(0, 10)} />
+          ) : (
+            <EventInspector events={events || []} />
+          )}
         </div>
       </div>
     </div>

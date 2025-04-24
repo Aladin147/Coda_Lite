@@ -1,7 +1,7 @@
 import React from 'react';
 import ThemeToggle from './ThemeToggle';
 
-function Header({ connected, activeTab, onTabChange }) {
+function Header({ connected }) {
   return (
     <header className="header">
       <div className="header-title">
@@ -13,33 +13,6 @@ function Header({ connected, activeTab, onTabChange }) {
       </div>
 
       <div className="header-controls">
-        <div className="tabs">
-          <div
-            className={`tab ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => onTabChange('dashboard')}
-          >
-            Dashboard
-          </div>
-          <div
-            className={`tab ${activeTab === 'events' ? 'active' : ''}`}
-            onClick={() => onTabChange('events')}
-          >
-            Events
-          </div>
-          <div
-            className={`tab ${activeTab === 'performance' ? 'active' : ''}`}
-            onClick={() => onTabChange('performance')}
-          >
-            Performance
-          </div>
-          <div
-            className={`tab ${activeTab === 'memory' ? 'active' : ''}`}
-            onClick={() => onTabChange('memory')}
-          >
-            Memory
-          </div>
-        </div>
-
         <ThemeToggle />
       </div>
     </header>

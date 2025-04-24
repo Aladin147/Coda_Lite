@@ -10,6 +10,7 @@ import ToolDisplay from './components/ToolDisplay';
 import ConversationView from './components/ConversationView';
 import VoiceControls from './components/VoiceControls';
 import SystemInfo from './components/SystemInfo';
+import ConsolidatedDashboard from './components/ConsolidatedDashboard';
 
 function App() {
   const [connected, setConnected] = useState(false);
@@ -28,7 +29,24 @@ function App() {
     gpu_vram_mb: 0
   });
   const [memories, setMemories] = useState([]);
-  const [activeTab, setActiveTab] = useState('dashboard');
+
+  // Store for accumulating data between TTS end events
+  const [currentMetrics, setCurrentMetrics] = useState({
+    performance: {
+      stt: 0,
+      llm: 0,
+      tts: 0,
+      total: 0,
+      stt_audio: 0,
+      tts_audio: 0
+    },
+    system: {
+      memory_mb: 0,
+      cpu_percent: 0,
+      gpu_vram_mb: 0
+    },
+    memories: []
+  });
 
   useEffect(() => {
     const client = new WebSocketClient('ws://localhost:8765');
@@ -45,11 +63,31 @@ function App() {
 
     client.onEvent = (event) => {
       // Add event to events list
-      setEvents(prevEvents => [event, ...prevEvents].slice(0, 100));
+      const newEvent = {
+        type: event.type,
+        data: event.data,
+        timestamp: event.timestamp
+      };
 
-      // Process specific event types
+      setEvents(prevEvents => [newEvent, ...prevEvents].slice(0, 100));
+
+      // Process specific event types for data storage
       switch (event.type) {
         case 'latency_trace':
+          // Store metrics for later update
+          setCurrentMetrics(prev => ({
+            ...prev,
+            performance: {
+              stt: event.data.stt_seconds,
+              llm: event.data.llm_seconds,
+              tts: event.data.tts_seconds,
+              total: event.data.total_seconds,
+              stt_audio: event.data.stt_audio_duration || 0,
+              tts_audio: event.data.tts_audio_duration || 0
+            }
+          }));
+
+          // Also update immediately for real-time feedback
           setPerformanceMetrics({
             stt: event.data.stt_seconds,
             llm: event.data.llm_seconds,
@@ -61,6 +99,17 @@ function App() {
           break;
 
         case 'system_metrics':
+          // Store metrics for later update
+          setCurrentMetrics(prev => ({
+            ...prev,
+            system: {
+              memory_mb: event.data.memory_mb,
+              cpu_percent: event.data.cpu_percent,
+              gpu_vram_mb: event.data.gpu_vram_mb || 0
+            }
+          }));
+
+          // Also update immediately for real-time feedback
           setSystemMetrics({
             memory_mb: event.data.memory_mb,
             cpu_percent: event.data.cpu_percent,
@@ -69,16 +118,30 @@ function App() {
           break;
 
         case 'memory_store':
-          setMemories(prevMemories => [
-            {
-              id: event.data.memory_id,
-              content: event.data.content_preview,
-              type: event.data.memory_type,
-              importance: event.data.importance,
-              timestamp: event.timestamp
-            },
-            ...prevMemories
-          ].slice(0, 50));
+          const newMemory = {
+            id: event.data.memory_id,
+            content: event.data.content_preview,
+            type: event.data.memory_type,
+            importance: event.data.importance,
+            timestamp: event.timestamp
+          };
+
+          // Store for later update
+          setCurrentMetrics(prev => ({
+            ...prev,
+            memories: [newMemory, ...prev.memories].slice(0, 50)
+          }));
+
+          // Also update immediately for real-time feedback
+          setMemories(prevMemories => [newMemory, ...prevMemories].slice(0, 50));
+          break;
+
+        case 'tts_end':
+          // Comprehensive update of all metrics at once
+          console.log('TTS end event received - updating all dashboard components');
+
+          // We already have the latest metrics from the individual events
+          // This is where we would do any additional processing if needed
           break;
       }
     };
@@ -117,54 +180,23 @@ function App() {
     }
   };
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return (
-          <div className="dashboard-layout">
-            <div className="dashboard-main">
-              <div className="dashboard-top">
-                <Avatar events={events} />
-                <VoiceControls sendMessage={sendMessage} connected={connected} />
-              </div>
-              <Dashboard
-                connected={connected}
-                performanceMetrics={performanceMetrics}
-                systemMetrics={systemMetrics}
-              />
-            </div>
-            <div className="dashboard-side">
-              <ConversationView events={events} />
-              <ToolDisplay events={events} />
-            </div>
-          </div>
-        );
-      case 'events':
-        return <EventLog events={events} />;
-      case 'performance':
-        return <PerformanceMonitor
-          performanceMetrics={performanceMetrics}
-          systemMetrics={systemMetrics}
-        />;
-      case 'memory':
-        return <MemoryViewer memories={memories} />;
-      default:
-        return <Dashboard />;
-    }
-  };
-
   return (
     <div className="app">
       <Header
         connected={connected}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
       />
       <main className="content">
-        {renderContent()}
+        <ConsolidatedDashboard
+          connected={connected}
+          events={events}
+          performanceMetrics={performanceMetrics}
+          systemMetrics={systemMetrics}
+          memories={memories}
+          sendMessage={sendMessage}
+        />
       </main>
       <footer className="app-footer">
-        <SystemInfo events={events} />
+        <SystemInfo events={events || []} />
       </footer>
     </div>
   );

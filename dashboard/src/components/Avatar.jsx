@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import '../styles/Avatar.css';
 
 /**
@@ -8,13 +8,22 @@ import '../styles/Avatar.css';
  */
 function Avatar({ events }) {
   const [isSpeaking, setIsSpeaking] = useState(false);
-  
+  const lastEventTypeRef = useRef(null);
+
   useEffect(() => {
     if (!events || events.length === 0) return;
-    
-    // Get the latest event
-    const latestEvent = events[0];
-    
+
+    // Find the latest TTS-related event
+    const latestEvent = events.find(e =>
+      ['tts_start', 'tts_result', 'tts_error'].includes(e.type)
+    );
+
+    // If no TTS event found or it's the same as the last one we processed, do nothing
+    if (!latestEvent || latestEvent.type === lastEventTypeRef.current) return;
+
+    // Update our ref to track the last event type we processed
+    lastEventTypeRef.current = latestEvent.type;
+
     // Update speaking state based on TTS events
     if (latestEvent.type === 'tts_start') {
       setIsSpeaking(true);
@@ -22,7 +31,7 @@ function Avatar({ events }) {
       setIsSpeaking(false);
     }
   }, [events]);
-  
+
   return (
     <div className="avatar-container">
       <div className={`avatar ${isSpeaking ? 'speaking' : ''}`}>
@@ -33,7 +42,7 @@ function Avatar({ events }) {
             <circle cx="50" cy="50" r="25" fill="#3a86ff" />
           </svg>
         </div>
-        
+
         {isSpeaking && (
           <div className="pulse-rings">
             <div className="ring ring-1"></div>

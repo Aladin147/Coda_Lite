@@ -289,16 +289,26 @@ class CodaWebSocketServer:
             logger.debug(f"Event {event_type} dropped (no clients connected)")
             return
 
-        # Get the event loop
+        # Get the event loop in a thread-safe way
         try:
-            loop = asyncio.get_event_loop()
+            # Try to get the current event loop
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                # If there's no event loop in this thread, create a new one
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
+            # Use call_soon_threadsafe to safely schedule the event from any thread
             if loop.is_running():
-                # Schedule the broadcast
-                asyncio.create_task(self.broadcast_event(event_type, data, high_priority))
+                loop.call_soon_threadsafe(
+                    lambda: asyncio.create_task(self.broadcast_event(event_type, data, high_priority))
+                )
             else:
+                # If the loop isn't running, we can't do much except log it
                 logger.warning(f"Event loop not running, event {event_type} dropped")
-        except RuntimeError:
-            logger.warning(f"No event loop in current thread, event {event_type} dropped")
+        except Exception as e:
+            logger.warning(f"Error dispatching event {event_type}: {e}")
 
     def register_connect_handler(self, handler: Callable[[str], None]):
         """

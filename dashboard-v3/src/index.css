@@ -11,7 +11,7 @@
 
 /* Default to dark mode */
 html {
-  @apply dark;
+  color-scheme: dark;
 }
 
 body {

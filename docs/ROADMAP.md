@@ -58,13 +58,16 @@ This roadmap outlines the planned development path for Coda Lite, from initial p
 - ✅ TTS factory with ElevenLabs integration
 - ✅ Modular architecture
 
-### v0.1.1 - Dashboard Integration 🔄
+### v0.1.1 - Dashboard Integration ✅
 
-- 🔄 React-based Tauri dashboard
-- 🔄 Real-time visualization
-- 🔄 Performance monitoring
-- 🔄 Memory inspection
-- 🔄 Tool usage tracking
+- ✅ React-based dashboard with WebSocket integration
+- ✅ Consolidated single-page view with all critical metrics
+- ✅ Real-time visualization of system events
+- ✅ Advanced performance monitoring and visualization
+- ✅ Memory inspection and debugging tools
+- ✅ Tool usage tracking and display
+- ✅ Event filtering and inspection
+- ✅ Dark mode by default with responsive design
 
 ### v0.2.0 - Beta Release ⏳
 

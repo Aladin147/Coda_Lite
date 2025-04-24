@@ -39,6 +39,8 @@ class CodaWebSocketServer:
         self.replay_buffer: List[Dict[str, Any]] = []
         self.max_replay_events = 50
         self.running = False
+        self.event_loop = None
+        self.server_loop = None
 
         # Event handlers
         self.on_connect_handlers: List[Callable[[str], None]] = []
@@ -58,11 +60,17 @@ class CodaWebSocketServer:
             async def handler(websocket):
                 await self._handle_client(websocket, "/")
 
+            # Store the current event loop for use in thread-safe operations
+            self.event_loop = asyncio.get_event_loop()
+
             self.server = await websockets.serve(
                 handler,
                 self.host,
                 self.port
             )
+
+            # Store a reference to the server's event loop
+            self.server_loop = self.event_loop
 
             logger.info(f"WebSocket server started at ws://{self.host}:{self.port}")
         except Exception as e:
@@ -291,7 +299,7 @@ class CodaWebSocketServer:
 
         # Get the event loop in a thread-safe way
         try:
-            # Try to get the current event loop
+            # Create a dedicated event loop for this thread if needed
             try:
                 loop = asyncio.get_event_loop()
             except RuntimeError:
@@ -299,14 +307,20 @@ class CodaWebSocketServer:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
 
-            # Use call_soon_threadsafe to safely schedule the event from any thread
-            if loop.is_running():
-                loop.call_soon_threadsafe(
-                    lambda: asyncio.create_task(self.broadcast_event(event_type, data, high_priority))
-                )
-            else:
-                # If the loop isn't running, we can't do much except log it
-                logger.warning(f"Event loop not running, event {event_type} dropped")
+            # Create a future to hold the result
+            future = asyncio.run_coroutine_threadsafe(
+                self.broadcast_event(event_type, data, high_priority),
+                self.server_loop
+            )
+
+            # We don't need to wait for the result, but we can log any exceptions
+            def log_exception(fut):
+                try:
+                    fut.result()
+                except Exception as e:
+                    logger.error(f"Error in broadcast_event: {e}")
+
+            future.add_done_callback(log_exception)
         except Exception as e:
             logger.warning(f"Error dispatching event {event_type}: {e}")
 

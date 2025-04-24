@@ -18,7 +18,9 @@ function App() {
     stt: 0,
     llm: 0,
     tts: 0,
-    total: 0
+    total: 0,
+    stt_audio: 0,
+    tts_audio: 0
   });
   const [systemMetrics, setSystemMetrics] = useState({
     memory_mb: 0,
@@ -52,7 +54,9 @@ function App() {
             stt: event.data.stt_seconds,
             llm: event.data.llm_seconds,
             tts: event.data.tts_seconds,
-            total: event.data.total_seconds
+            total: event.data.total_seconds,
+            stt_audio: event.data.stt_audio_duration || 0,
+            tts_audio: event.data.tts_audio_duration || 0
           });
           break;
 

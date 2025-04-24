@@ -26,9 +26,23 @@ import threading
 import random
 import re
 import asyncio
+import ctypes
 from datetime import datetime
 from typing import List, Dict
 from queue import Queue
+
+# Add cuDNN directory to the DLL search path
+cudnn_path = r"C:\Program Files\NVIDIA\CUDNN\v9.8\bin\11.8"
+if os.path.exists(cudnn_path):
+    os.environ["PATH"] = cudnn_path + os.pathsep + os.environ["PATH"]
+    # Also add it to the DLL search path using ctypes
+    try:
+        ctypes.windll.kernel32.SetDllDirectoryW(cudnn_path)
+        logging.info(f"Added cuDNN directory to DLL search path: {cudnn_path}")
+    except Exception as e:
+        logging.error(f"Error setting DLL directory: {e}")
+else:
+    logging.warning(f"cuDNN directory not found: {cudnn_path}")
 
 from version import __version__, __version_name__, get_full_version_string
 
@@ -163,11 +177,17 @@ class CodaAssistant:
 
         # Initialize STT module with WebSocket integration
         logger.info("Initializing Speech-to-Text module with WebSocket integration...")
+
+        # Get audio device configuration
+        input_device = config.get("audio.input_device", None)
+        if input_device is not None:
+            logger.info(f"Using configured input device: {input_device}")
+
         self.stt = WebSocketWhisperSTT(
             websocket_integration=self.ws,
             model_size=config.get("stt.model_size", "base"),
-            device=config.get("stt.device", "cuda"),
-            compute_type=config.get("stt.compute_type", "float16"),
+            device=config.get("stt.device", "cpu"),  # Use CPU to avoid CUDA issues
+            compute_type=config.get("stt.compute_type", "float32"),  # Use float32 for CPU
             language=config.get("stt.language", "en"),
             vad_filter=True
         )
@@ -639,8 +659,8 @@ class CodaAssistant:
             logger.info("Queued response for TTS")
 
             # Check if we should request feedback
-            if self.feedback_manager and self.feedback_manager.should_request_feedback():
-                logger.info("Requesting feedback")
+            if self.feedback_manager:
+                logger.info("Checking if feedback should be requested")
                 feedback_request = self.feedback_manager.generate_feedback_request()
                 if feedback_request:
                     # Queue the feedback request for TTS
@@ -742,7 +762,12 @@ class CodaAssistant:
                     logger.info("Stopping STT")
                     # Signal to stop listening (implementation depends on your STT module)
                     if hasattr(self.stt, "stop_listening") and callable(self.stt.stop_listening):
-                        self.stt.stop_listening()
+                        try:
+                            # Only stop the current listening session, don't exit the application
+                            self.stt._stop_listening = True
+                            logger.info("Set stop_listening flag to True")
+                        except Exception as e:
+                            logger.error(f"Error stopping STT: {e}", exc_info=True)
 
                 elif message_type == "demo_flow":
                     # Run a demo flow
@@ -751,6 +776,18 @@ class CodaAssistant:
                         target=self.run_demo_flow,
                         daemon=True
                     ).start()
+
+                elif message_type == "text_input":
+                    # Process text input directly
+                    text = message_data.get("text", "").strip()
+                    if text:
+                        logger.info(f"Received text input: {text}")
+                        # Process the text input in a separate thread
+                        threading.Thread(
+                            target=self.handle_transcription,
+                            args=(text,),
+                            daemon=True
+                        ).start()
 
             except Exception as e:
                 logger.error(f"Error handling client message: {e}", exc_info=True)
@@ -775,6 +812,10 @@ class CodaAssistant:
     def handle_push_to_talk(self, duration=5):
         """Handle push-to-talk mode."""
         try:
+            # Reset the stop listening flag
+            if hasattr(self.stt, "_stop_listening"):
+                self.stt._stop_listening = False
+
             # Mark the start of STT processing
             self.perf.mark_component("stt", "listen", start=True)
 
@@ -795,6 +836,11 @@ class CodaAssistant:
         except Exception as e:
             logger.error(f"Error in push-to-talk: {e}", exc_info=True)
             self.perf.mark_component("stt", "listen", start=False)
+
+        finally:
+            # Make sure the stop listening flag is reset
+            if hasattr(self.stt, "_stop_listening"):
+                self.stt._stop_listening = False
 
     def run_demo_flow(self):
         """Run a demo flow with a predefined input."""
@@ -830,13 +876,14 @@ class CodaAssistant:
         self.response_queue.put(welcome_message)
 
         try:
-            # Start continuous listening
-            self.stt.listen_continuous(
-                callback=self.handle_transcription,
-                stop_callback=self.should_stop,
-                silence_threshold=0.1,
-                silence_duration=1.0
-            )
+            # In WebSocket mode, we don't start continuous listening by default
+            # Instead, we wait for push-to-talk or other commands from the dashboard
+            logger.info("Waiting for WebSocket commands (push-to-talk, etc.)")
+
+            # Keep the main thread alive
+            while self.running:
+                time.sleep(0.5)
+
         except KeyboardInterrupt:
             logger.info("Keyboard interrupt received, stopping conversation loop")
         except Exception as e:

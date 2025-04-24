@@ -6,35 +6,36 @@ import '../styles/ThemeToggle.css';
  */
 function ThemeToggle() {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  
-  // Initialize theme from localStorage or system preference
+
+  // Initialize theme from localStorage or default to dark mode
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
       setIsDarkMode(savedTheme === 'dark');
       document.documentElement.setAttribute('data-theme', savedTheme);
     } else {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setIsDarkMode(prefersDark);
-      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+      // Default to dark mode
+      setIsDarkMode(true);
+      document.documentElement.setAttribute('data-theme', 'dark');
+      localStorage.setItem('theme', 'dark');
     }
   }, []);
-  
+
   // Update theme when isDarkMode changes
   useEffect(() => {
     const theme = isDarkMode ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }, [isDarkMode]);
-  
+
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
   };
-  
+
   return (
     <div className="theme-toggle">
-      <button 
-        className="theme-toggle-button" 
+      <button
+        className="theme-toggle-button"
         onClick={toggleTheme}
         aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
       >

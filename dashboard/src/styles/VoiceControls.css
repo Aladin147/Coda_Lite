@@ -6,8 +6,23 @@
   background: var(--card-background);
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  position: relative; /* For positioning the fixed button */
+  min-height: 200px; /* Ensure there's enough space */
 }
 
+.input-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Placeholder for the push-to-talk button to maintain layout */
+.push-to-talk-placeholder {
+  height: 56px; /* Same height as the button */
+  margin-bottom: 12px;
+}
+
+/* Fixed position push-to-talk button */
 .push-to-talk-btn {
   background-color: var(--primary-color);
   color: white;
@@ -19,7 +34,12 @@
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  position: relative;
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  z-index: 1000;
   overflow: hidden;
 }
 
@@ -66,6 +86,16 @@
 .push-to-talk-btn.active {
   background-color: var(--success-color);
   animation: pulse-button 1.5s infinite;
+  touch-action: none; /* Prevent scrolling on touch devices */
+  user-select: none; /* Prevent text selection */
+}
+
+/* Add a class to the body when PTT is active to prevent scrolling */
+body.ptt-active {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
 }
 
 @keyframes pulse-button {
@@ -98,6 +128,81 @@
 
 .demo-btn:active:not(.disabled) {
   transform: translateY(0);
+}
+
+.text-input-toggle {
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.text-input-toggle:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.text-input-toggle:active {
+  transform: translateY(0);
+}
+
+.text-input-toggle.active {
+  background-color: var(--success-color);
+}
+
+.text-input-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.text-input-form input {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: var(--input-background);
+  color: var(--text-primary);
+}
+
+.text-input-form input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(42, 117, 232, 0.2);
+}
+
+.text-input-form input.disabled {
+  background-color: var(--disabled-background);
+  cursor: not-allowed;
+}
+
+.text-input-form button {
+  padding: 12px 16px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.text-input-form button:hover:not(.disabled) {
+  background-color: #2a75e8;
+}
+
+.text-input-form button:active:not(.disabled) {
+  transform: scale(0.98);
+}
+
+.text-input-form button.disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 
 .push-to-talk-btn.disabled,

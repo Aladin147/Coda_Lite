@@ -76,6 +76,15 @@ class WebSocketWhisperSTT(WhisperSTT):
             # Signal start of transcription
             self.ws.stt_start(mode="file")
 
+            # Start timing for the entire process
+            import time
+            start_time = time.time()
+
+            # Mark the start of actual processing (not including listening time)
+            if hasattr(self.ws, 'perf'):
+                self.ws.perf.mark_component("stt", "process", start=True)
+            process_start_time = time.time()
+
             # Transcribe the audio
             segments, info = self.model.transcribe(
                 audio_path,
@@ -95,8 +104,29 @@ class WebSocketWhisperSTT(WhisperSTT):
 
             result = result.strip()
 
+            # Mark the end of actual processing
+            process_end_time = time.time()
+            if hasattr(self.ws, 'perf'):
+                self.ws.perf.mark_component("stt", "process", start=False)
+                # Store the processing time for accurate metrics
+                process_duration = process_end_time - process_start_time
+                self.ws.perf.mark("stt_process_duration")
+                self.ws.perf.markers["stt_process_duration"] = process_duration
+
+            # Calculate audio duration if available
+            if isinstance(audio_path, np.ndarray) and hasattr(self.ws, 'perf'):
+                # Estimate audio duration based on array length and sample rate
+                # Assuming audio_path is normalized to [-1, 1] and sample rate is 16000 Hz
+                audio_duration = len(audio_path) / 16000  # in seconds
+                self.ws.perf.markers["stt_audio_duration"] = audio_duration
+
             # Send final result
-            self.ws.stt_result(result, info.avg_logprob if hasattr(info, 'avg_logprob') else 0.0, info.language)
+            self.ws.stt_result(
+                result,
+                info.avg_logprob if hasattr(info, 'avg_logprob') else 0.0,
+                info.language,
+                duration=process_end_time - process_start_time
+            )
 
             logger.info(f"Transcription completed: {result[:50]}{'...' if len(result) > 50 else ''}")
             return result
@@ -119,21 +149,28 @@ class WebSocketWhisperSTT(WhisperSTT):
         Returns:
             str: Transcribed text
         """
+        # If we're already listening, ignore this request
+        if self._is_listening:
+            logger.warning("Already in a listening session, ignoring duplicate request")
+            return ""
+
         logger.info(f"Listening for speech for {duration} seconds...")
 
         try:
-            # Reset the stop listening flag
+            # Set the listening flags
+            self._is_listening = True
             self._stop_listening = False
 
             # Signal start of listening
             self.ws.stt_start(mode="push_to_talk")
 
-            # Open audio stream
+            # Open audio stream with the selected input device
             stream = self.audio.open(
                 format=self.format,
                 channels=self.channels,
                 rate=self.rate,
                 input=True,
+                input_device_index=self.input_device_index,
                 frames_per_buffer=self.chunk
             )
 
@@ -158,8 +195,9 @@ class WebSocketWhisperSTT(WhisperSTT):
             stream.stop_stream()
             stream.close()
 
-            # Reset the stop listening flag
+            # Reset the flags
             self._stop_listening = False
+            self._is_listening = False
 
             # If we have no frames, return empty string
             if not frames:
@@ -178,10 +216,14 @@ class WebSocketWhisperSTT(WhisperSTT):
             # Send error event
             self.ws.stt_error(str(e))
 
+            # Reset the listening flag
+            self._is_listening = False
+
             return ""
 
-    # Flag to control push-to-talk listening
+    # Flags to control push-to-talk listening
     _stop_listening = False
+    _is_listening = False  # Track if we're currently in a listening session
 
     def stop_listening(self):
         """
@@ -190,6 +232,9 @@ class WebSocketWhisperSTT(WhisperSTT):
         """
         logger.info("Stopping listening session")
         self._stop_listening = True
+
+        # Don't do anything else here that might cause the application to exit
+        # Just set the flag and let the listening loop handle it
 
     def listen_continuous(self, callback=None, stop_callback=None, silence_threshold=0.1, silence_duration=2.0):
         """
@@ -204,18 +249,28 @@ class WebSocketWhisperSTT(WhisperSTT):
         Returns:
             None
         """
+        # If we're already listening, ignore this request
+        if self._is_listening:
+            logger.warning("Already in a listening session, ignoring duplicate request")
+            return
+
         logger.info("Starting continuous listening")
+
+        # Set the listening flags
+        self._is_listening = True
+        self._stop_listening = False
 
         # Signal start of continuous listening
         self.ws.stt_start(mode="continuous")
 
         try:
-            # Open audio stream
+            # Open audio stream with the selected input device
             stream = self.audio.open(
                 format=self.format,
                 channels=self.channels,
                 rate=self.rate,
                 input=True,
+                input_device_index=self.input_device_index,
                 frames_per_buffer=self.chunk
             )
 
@@ -228,16 +283,14 @@ class WebSocketWhisperSTT(WhisperSTT):
             silent_threshold = silence_threshold
             silent_frames_threshold = int(silence_duration * self.rate / self.chunk)
 
-            # Reset the stop listening flag
-            self._stop_listening = False
-
             # Listen continuously
             while True:
                 # Check if we should stop
                 if (stop_callback and stop_callback()) or self._stop_listening:
                     logger.info("Stop condition met, stopping continuous listening")
-                    # Reset the flag
+                    # Reset the flags
                     self._stop_listening = False
+                    self._is_listening = False
                     break
 
                 # Read audio data
@@ -290,6 +343,10 @@ class WebSocketWhisperSTT(WhisperSTT):
 
             # Send error event
             self.ws.stt_error(str(e))
+
+            # Reset the listening flags
+            self._stop_listening = False
+            self._is_listening = False
 
             # Close the stream if it's open
             try:

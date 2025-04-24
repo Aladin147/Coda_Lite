@@ -1,19 +1,5 @@
-:root {
-  --primary-color: #3a86ff;
-  --secondary-color: #8338ec;
-  --success-color: #06d6a0;
-  --warning-color: #ffbe0b;
-  --danger-color: #ef476f;
-  --background-color: #f8f9fa;
-  --card-background: #ffffff;
-  --text-color: #212529;
-  --text-secondary: #6c757d;
-  --border-color: #dee2e6;
-  --shadow-color: rgba(0, 0, 0, 0.1);
-  --transition-speed: 0.3s;
-}
-
-[data-theme='dark'] {
+/* Dark theme is now the default */
+:root, [data-theme='dark'] {
   --primary-color: #4d9aff;
   --secondary-color: #9d5cff;
   --success-color: #10e3b0;
@@ -25,6 +11,28 @@
   --text-secondary: #adb5bd;
   --border-color: #2d2d2d;
   --shadow-color: rgba(0, 0, 0, 0.3);
+  --transition-speed: 0.3s;
+  --input-background: #2d2d2d;
+  --disabled-background: #3d3d3d;
+  --accent-color: #9d5cff; /* Added missing accent color */
+}
+
+/* Light theme is now optional */
+[data-theme='light'] {
+  --primary-color: #3a86ff;
+  --secondary-color: #8338ec;
+  --success-color: #06d6a0;
+  --warning-color: #ffbe0b;
+  --danger-color: #ef476f;
+  --background-color: #f8f9fa;
+  --card-background: #ffffff;
+  --text-color: #212529;
+  --text-secondary: #6c757d;
+  --border-color: #dee2e6;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --input-background: #f8f9fa;
+  --disabled-background: #e9ecef;
+  --accent-color: #8338ec; /* Added missing accent color */
 }
 
 * {
@@ -190,10 +198,39 @@ body {
   align-items: center;
 }
 
+.metrics-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.metrics-section {
+  flex: 1;
+  min-width: 200px;
+}
+
+.metrics-section h4 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .metric {
   display: flex;
   justify-content: space-between;
   margin-bottom: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.total-metric {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-color);
+  font-weight: 600;
 }
 
 .metric-label {

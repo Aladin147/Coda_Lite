@@ -7,7 +7,9 @@ This module provides integration between Coda's core components and the WebSocke
 import asyncio
 import logging
 import time
-from typing import Dict, Any, Optional, List
+import threading
+import queue
+from typing import Dict, Any, Optional, List, Tuple
 
 from .server import CodaWebSocketServer
 from .events import EventType
@@ -37,7 +39,44 @@ class CodaWebSocketIntegration:
         self.session_id = None
         self.conversation_turn_count = 0
 
+        # Event queue for handling events from non-async threads
+        self.event_queue = queue.Queue()
+        self.event_thread = threading.Thread(target=self._process_event_queue, daemon=True)
+        self.event_thread.start()
+
         logger.info("WebSocket integration initialized")
+
+    def _process_event_queue(self):
+        """Process events from the event queue."""
+        while True:
+            try:
+                # Get the next event from the queue
+                event_type, data, high_priority = self.event_queue.get()
+
+                # Try to get the current event loop
+                try:
+                    loop = asyncio.get_event_loop()
+                except RuntimeError:
+                    # No event loop in this thread, create a new one
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+
+                # Create a task to push the event
+                async def push_event():
+                    await self.server.push_event_async(event_type, data, high_priority)
+
+                # Run the task
+                try:
+                    loop.run_until_complete(push_event())
+                except Exception as e:
+                    logger.error(f"Error pushing event: {e}", exc_info=True)
+
+                # Mark the task as done
+                self.event_queue.task_done()
+
+            except Exception as e:
+                logger.error(f"Error processing event queue: {e}", exc_info=True)
+                time.sleep(0.1)  # Avoid tight loop if there's an error
 
     def start_session(self) -> str:
         """
@@ -52,12 +91,13 @@ class CodaWebSocketIntegration:
         self.conversation_turn_count = 0
 
         # Send conversation start event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.CONVERSATION_START,
             {
                 "session_id": self.session_id
-            }
-        )
+            },
+            False
+        ))
 
         logger.info(f"Started session {self.session_id}")
         return self.session_id
@@ -69,14 +109,15 @@ class CodaWebSocketIntegration:
             return
 
         # Send conversation end event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.CONVERSATION_END,
             {
                 "session_id": self.session_id,
                 "duration_seconds": time.time() - self.perf_tracker.session_start_time,
                 "turns_count": self.conversation_turn_count
-            }
-        )
+            },
+            False
+        ))
 
         logger.info(f"Ended session {self.session_id}")
         self.session_id = None
@@ -96,14 +137,15 @@ class CodaWebSocketIntegration:
         self.conversation_turn_count += 1
 
         # Send conversation turn event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.CONVERSATION_TURN,
             {
                 "role": role,
                 "content": content,
                 "turn_id": self.conversation_turn_count
-            }
-        )
+            },
+            False
+        ))
 
         logger.debug(f"Added conversation turn: {role}")
 
@@ -119,12 +161,13 @@ class CodaWebSocketIntegration:
         self.perf_tracker.mark("stt_start")
 
         # Send STT start event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.STT_START,
             {
                 "mode": mode
-            }
-        )
+            },
+            False
+        ))
 
         logger.debug(f"STT started in {mode} mode")
 
@@ -137,17 +180,18 @@ class CodaWebSocketIntegration:
             confidence: The confidence score (0.0 to 1.0)
         """
         # Send STT interim event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.STT_INTERIM,
             {
                 "text": text,
                 "confidence": confidence
-            }
-        )
+            },
+            False
+        ))
 
         logger.debug(f"STT interim result: {text[:30]}...")
 
-    def stt_result(self, text: str, confidence: float = 0.0, language: Optional[str] = None) -> None:
+    def stt_result(self, text: str, confidence: float = 0.0, language: Optional[str] = None, duration: Optional[float] = None) -> None:
         """
         Send the final STT result.
 
@@ -155,20 +199,30 @@ class CodaWebSocketIntegration:
             text: The transcribed text
             confidence: The confidence score (0.0 to 1.0)
             language: The detected language
+            duration: Optional processing duration in seconds (if not provided, calculated from markers)
         """
         self.perf_tracker.mark("stt_end")
-        duration = self.perf_tracker.get_duration("stt_start", "stt_end")
+
+        # Use provided duration if available, otherwise calculate from markers
+        if duration is None:
+            # Try to get the processing duration first (more accurate)
+            if "stt_process_duration" in self.perf_tracker.markers:
+                duration = self.perf_tracker.markers["stt_process_duration"]
+            else:
+                # Fall back to total duration including listening time
+                duration = self.perf_tracker.get_duration("stt_start", "stt_end")
 
         # Send STT result event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.STT_RESULT,
             {
                 "text": text,
                 "confidence": confidence,
                 "duration_seconds": duration,
                 "language": language
-            }
-        )
+            },
+            False
+        ))
 
         logger.debug(f"STT result: {text[:30]}... ({duration:.2f}s)")
 
@@ -186,13 +240,14 @@ class CodaWebSocketIntegration:
         self.perf_tracker.mark("stt_error")
 
         # Send STT error event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.STT_ERROR,
             {
                 "message": message,
                 "details": details
-            }
-        )
+            },
+            False
+        ))
 
         logger.error(f"STT error: {message}")
 
@@ -210,14 +265,15 @@ class CodaWebSocketIntegration:
         self.perf_tracker.mark("llm_start")
 
         # Send LLM start event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.LLM_START,
             {
                 "model": model,
                 "prompt_tokens": prompt_tokens,
                 "system_prompt_preview": system_prompt_preview
-            }
-        )
+            },
+            False
+        ))
 
         logger.debug(f"LLM started with model {model}")
 
@@ -230,13 +286,14 @@ class CodaWebSocketIntegration:
             token_index: The token index
         """
         # Send LLM token event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.LLM_TOKEN,
             {
                 "token": token,
                 "token_index": token_index
-            }
-        )
+            },
+            False
+        ))
 
         logger.debug(f"LLM token {token_index}: {token}")
 
@@ -253,15 +310,16 @@ class CodaWebSocketIntegration:
         duration = self.perf_tracker.get_duration("llm_start", "llm_end")
 
         # Send LLM result event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.LLM_RESULT,
             {
                 "text": text,
                 "total_tokens": total_tokens,
                 "duration_seconds": duration,
                 "has_tool_calls": has_tool_calls
-            }
-        )
+            },
+            False
+        ))
 
         logger.debug(f"LLM result: {text[:30]}... ({duration:.2f}s)")
 
@@ -279,13 +337,14 @@ class CodaWebSocketIntegration:
         self.perf_tracker.mark("llm_error")
 
         # Send LLM error event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.LLM_ERROR,
             {
                 "message": message,
                 "details": details
-            }
-        )
+            },
+            False
+        ))
 
         logger.error(f"LLM error: {message}")
 
@@ -303,14 +362,15 @@ class CodaWebSocketIntegration:
         self.perf_tracker.mark("tts_start")
 
         # Send TTS start event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.TTS_START,
             {
                 "text": text,
                 "voice": voice,
                 "provider": provider
-            }
-        )
+            },
+            False
+        ))
 
         logger.debug(f"TTS started with voice {voice} ({provider})")
 
@@ -322,12 +382,13 @@ class CodaWebSocketIntegration:
             percent_complete: The percentage complete (0.0 to 100.0)
         """
         # Send TTS progress event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.TTS_PROGRESS,
             {
                 "percent_complete": percent_complete
-            }
-        )
+            },
+            False
+        ))
 
         logger.debug(f"TTS progress: {percent_complete:.1f}%")
 
@@ -340,17 +401,24 @@ class CodaWebSocketIntegration:
             char_count: The number of characters in the input text
         """
         self.perf_tracker.mark("tts_end")
-        duration = self.perf_tracker.get_duration("tts_start", "tts_end")
+
+        # Try to get the synthesis duration first (more accurate)
+        if "tts_synthesis_duration" in self.perf_tracker.markers:
+            duration = self.perf_tracker.markers["tts_synthesis_duration"]
+        else:
+            # Fall back to total duration including playback time
+            duration = self.perf_tracker.get_duration("tts_start", "tts_end")
 
         # Send TTS result event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.TTS_RESULT,
             {
                 "duration_seconds": duration,
                 "audio_duration_seconds": audio_duration_seconds,
                 "char_count": char_count
-            }
-        )
+            },
+            False
+        ))
 
         logger.debug(f"TTS result: {audio_duration_seconds:.2f}s audio ({duration:.2f}s processing)")
 
@@ -368,13 +436,14 @@ class CodaWebSocketIntegration:
         self.perf_tracker.mark("tts_error")
 
         # Send TTS error event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.TTS_ERROR,
             {
                 "message": message,
                 "details": details
-            }
-        )
+            },
+            False
+        ))
 
         logger.error(f"TTS error: {message}")
 
@@ -390,13 +459,14 @@ class CodaWebSocketIntegration:
             details: Additional status details
         """
         # Send TTS status event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.TTS_STATUS,
             {
                 "status": status,
                 "details": details
-            }
-        )
+            },
+            False
+        ))
 
         logger.debug(f"TTS status: {status}")
 
@@ -416,7 +486,7 @@ class CodaWebSocketIntegration:
         content_preview = content[:100] + "..." if len(content) > 100 else content
 
         # Send memory store event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.MEMORY_STORE,
             {
                 "content_preview": content_preview,
@@ -424,8 +494,8 @@ class CodaWebSocketIntegration:
                 "importance": importance,
                 "memory_id": memory_id
             },
-            high_priority=True
-        )
+            True  # high_priority
+        ))
 
         logger.debug(f"Memory stored: {content_preview[:30]}...")
 
@@ -444,14 +514,15 @@ class CodaWebSocketIntegration:
             top_result_preview = content[:100] + "..." if len(content) > 100 else content
 
         # Send memory retrieve event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.MEMORY_RETRIEVE,
             {
                 "query": query,
                 "results_count": len(results),
                 "top_result_preview": top_result_preview
-            }
-        )
+            },
+            False
+        ))
 
         logger.debug(f"Memory retrieved: {len(results)} results for query '{query}'")
 
@@ -466,15 +537,16 @@ class CodaWebSocketIntegration:
             new_value: The new value
         """
         # Send memory update event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.MEMORY_UPDATE,
             {
                 "memory_id": memory_id,
                 "field": field,
                 "old_value": old_value,
                 "new_value": new_value
-            }
-        )
+            },
+            False
+        ))
 
         logger.debug(f"Memory updated: {memory_id} {field}")
 
@@ -491,13 +563,14 @@ class CodaWebSocketIntegration:
         self.perf_tracker.mark("tool_start")
 
         # Send tool call event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.TOOL_CALL,
             {
                 "tool_name": tool_name,
                 "parameters": parameters
-            }
-        )
+            },
+            False
+        ))
 
         logger.debug(f"Tool call: {tool_name}")
 
@@ -517,14 +590,15 @@ class CodaWebSocketIntegration:
         result_preview = result_str[:100] + "..." if len(result_str) > 100 else result_str
 
         # Send tool result event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.TOOL_RESULT,
             {
                 "tool_name": tool_name,
                 "result_preview": result_preview,
                 "duration_seconds": duration
-            }
-        )
+            },
+            False
+        ))
 
         logger.debug(f"Tool result: {tool_name} ({duration:.2f}s)")
 
@@ -540,14 +614,15 @@ class CodaWebSocketIntegration:
         self.perf_tracker.mark("tool_error")
 
         # Send tool error event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.TOOL_ERROR,
             {
                 "tool_name": tool_name,
                 "message": message,
                 "details": details
-            }
-        )
+            },
+            False
+        ))
 
         logger.error(f"Tool error: {tool_name} - {message}")
 
@@ -561,11 +636,11 @@ class CodaWebSocketIntegration:
             info: The system information
         """
         # Send system info event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.SYSTEM_INFO,
             info,
-            high_priority=True
-        )
+            True  # high_priority
+        ))
 
         logger.debug("System info sent")
 
@@ -579,15 +654,15 @@ class CodaWebSocketIntegration:
             details: Additional error details
         """
         # Send system error event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.SYSTEM_ERROR,
             {
                 "level": level,
                 "message": message,
                 "details": details
             },
-            high_priority=True
-        )
+            True  # high_priority
+        ))
 
         logger.error(f"System error ({level}): {message}")
 
@@ -604,15 +679,16 @@ class CodaWebSocketIntegration:
             uptime_seconds: System uptime in seconds
         """
         # Send system metrics event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.SYSTEM_METRICS,
             {
                 "memory_mb": memory_mb,
                 "cpu_percent": cpu_percent,
                 "gpu_vram_mb": gpu_vram_mb,
                 "uptime_seconds": uptime_seconds or time.time() - self.perf_tracker.session_start_time
-            }
-        )
+            },
+            False
+        ))
 
         logger.debug(f"System metrics sent: {memory_mb:.1f}MB, {cpu_percent:.1f}% CPU")
 
@@ -620,26 +696,45 @@ class CodaWebSocketIntegration:
 
     def _send_latency_trace(self) -> None:
         """Send a latency trace event with timing information."""
-        stt_seconds = self.perf_tracker.get_duration("stt_start", "stt_end")
+        # Get processing times (excluding audio recording/playback)
+        # Try to use component-specific markers first, then fall back to standard markers
+        if "stt_process_duration" in self.perf_tracker.markers:
+            stt_seconds = self.perf_tracker.markers["stt_process_duration"]
+        else:
+            stt_seconds = self.perf_tracker.get_duration("stt_start", "stt_end")
+
         llm_seconds = self.perf_tracker.get_duration("llm_start", "llm_end")
-        tts_seconds = self.perf_tracker.get_duration("tts_start", "tts_end")
+
+        if "tts_synthesis_duration" in self.perf_tracker.markers:
+            tts_seconds = self.perf_tracker.markers["tts_synthesis_duration"]
+        else:
+            tts_seconds = self.perf_tracker.get_duration("tts_start", "tts_end")
+
         tool_seconds = self.perf_tracker.get_duration("tool_start", "tool_end")
 
+        # Calculate total processing time (excluding audio playback/recording)
         total_seconds = stt_seconds + llm_seconds + tts_seconds
         if tool_seconds > 0:
             total_seconds += tool_seconds
 
+        # Get audio durations if available
+        stt_audio_duration = self.perf_tracker.markers.get("stt_audio_duration", 0)
+        tts_audio_duration = self.perf_tracker.markers.get("tts_audio_duration", 0)
+
         # Send latency trace event
-        self.server.push_event(
+        self.event_queue.put((
             EventType.LATENCY_TRACE,
             {
                 "stt_seconds": stt_seconds,
                 "llm_seconds": llm_seconds,
                 "tts_seconds": tts_seconds,
                 "total_seconds": total_seconds,
-                "tool_seconds": tool_seconds if tool_seconds > 0 else None
-            }
-        )
+                "tool_seconds": tool_seconds if tool_seconds > 0 else None,
+                "stt_audio_duration": stt_audio_duration,
+                "tts_audio_duration": tts_audio_duration
+            },
+            False
+        ))
 
         logger.debug(f"Latency trace: STT={stt_seconds:.2f}s, LLM={llm_seconds:.2f}s, TTS={tts_seconds:.2f}s, Total={total_seconds:.2f}s")
 
@@ -671,6 +766,21 @@ class PerfTracker:
         self.markers[name] = current_time
         return current_time
 
+    def mark_component(self, component: str, operation: str, start: bool = True) -> float:
+        """
+        Mark a component-specific operation start or end.
+
+        Args:
+            component: The component name (e.g., "stt", "llm", "tts")
+            operation: The operation name (e.g., "process", "generate", "synthesize")
+            start: True if this is the start of the operation, False if it's the end
+
+        Returns:
+            The current time
+        """
+        marker_name = f"{component}.{operation}.{'start' if start else 'end'}"
+        return self.mark(marker_name)
+
     def get_duration(self, start_marker: str, end_marker: str) -> float:
         """
         Get the duration between two markers.
@@ -686,6 +796,21 @@ class PerfTracker:
             return 0.0
 
         return self.markers[end_marker] - self.markers[start_marker]
+
+    def get_component_duration(self, component: str, operation: str) -> float:
+        """
+        Get the duration of a component-specific operation.
+
+        Args:
+            component: The component name (e.g., "stt", "llm", "tts")
+            operation: The operation name (e.g., "process", "generate", "synthesize")
+
+        Returns:
+            The duration in seconds, or 0 if either marker is missing
+        """
+        start_marker = f"{component}.{operation}.start"
+        end_marker = f"{component}.{operation}.end"
+        return self.get_duration(start_marker, end_marker)
 
     def reset(self) -> None:
         """Reset all markers."""

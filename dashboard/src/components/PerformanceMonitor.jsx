@@ -4,7 +4,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 function PerformanceMonitor({ performanceMetrics, systemMetrics }) {
   const [latencyHistory, setLatencyHistory] = useState([]);
   const [systemHistory, setSystemHistory] = useState([]);
-  
+
   useEffect(() => {
     // Add current performance metrics to history
     if (performanceMetrics.total > 0) {
@@ -15,9 +15,11 @@ function PerformanceMonitor({ performanceMetrics, systemMetrics }) {
           stt: performanceMetrics.stt,
           llm: performanceMetrics.llm,
           tts: performanceMetrics.tts,
-          total: performanceMetrics.total
+          total: performanceMetrics.total,
+          stt_audio: performanceMetrics.stt_audio,
+          tts_audio: performanceMetrics.tts_audio
         }];
-        
+
         // Keep only the last 20 data points
         if (newHistory.length > 20) {
           return newHistory.slice(newHistory.length - 20);
@@ -26,7 +28,7 @@ function PerformanceMonitor({ performanceMetrics, systemMetrics }) {
       });
     }
   }, [performanceMetrics]);
-  
+
   useEffect(() => {
     // Add current system metrics to history
     if (systemMetrics.memory_mb > 0) {
@@ -38,7 +40,7 @@ function PerformanceMonitor({ performanceMetrics, systemMetrics }) {
           cpu: systemMetrics.cpu_percent,
           gpu: systemMetrics.gpu_vram_mb
         }];
-        
+
         // Keep only the last 20 data points
         if (newHistory.length > 20) {
           return newHistory.slice(newHistory.length - 20);
@@ -47,7 +49,7 @@ function PerformanceMonitor({ performanceMetrics, systemMetrics }) {
       });
     }
   }, [systemMetrics]);
-  
+
   return (
     <div className="performance-monitor">
       <div className="card">
@@ -62,15 +64,17 @@ function PerformanceMonitor({ performanceMetrics, systemMetrics }) {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="stt" stroke="#8884d8" name="STT" />
-              <Line type="monotone" dataKey="llm" stroke="#82ca9d" name="LLM" />
-              <Line type="monotone" dataKey="tts" stroke="#ffc658" name="TTS" />
-              <Line type="monotone" dataKey="total" stroke="#ff8042" name="Total" />
+              <Line type="monotone" dataKey="stt" stroke="#8884d8" name="STT Processing" />
+              <Line type="monotone" dataKey="llm" stroke="#82ca9d" name="LLM Generation" />
+              <Line type="monotone" dataKey="tts" stroke="#ffc658" name="TTS Synthesis" />
+              <Line type="monotone" dataKey="total" stroke="#ff8042" name="Total Processing" />
+              <Line type="monotone" dataKey="stt_audio" stroke="#b388ff" name="User Speaking" strokeDasharray="5 5" />
+              <Line type="monotone" dataKey="tts_audio" stroke="#ffb74d" name="Coda Speaking" strokeDasharray="5 5" />
             </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
-      
+
       <div className="card">
         <div className="card-title">
           <span>System Metrics</span>

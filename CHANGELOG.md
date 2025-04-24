@@ -12,11 +12,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
+## [0.1.1-dashboard-update] - 2025-04-25
+
+### Added
+- Event queue system for non-blocking event handling
+- Component-specific timing for accurate performance metrics
+- Separation of processing time from audio duration metrics
+- Text input option alongside voice input
+- Fixed position push-to-talk button to prevent scrolling issues
+- Dark mode as default theme
+- Comprehensive WebSocket dashboard documentation
+
+### Changed
+- Improved performance metrics display with separate processing and audio duration sections
+- Enhanced latency trace calculation for more accurate measurements
+- Updated dashboard layout for better usability
+- Improved WebSocket event handling with queue-based approach
+- Updated README with new dashboard features
+
+### Fixed
+- Fixed push-to-talk button scrolling issues
+- Fixed performance metrics calculation to exclude audio playback/recording time
+- Fixed dark mode persistence
+- Fixed feedback manager to work without intent results
+
 ## [0.1.1-dashboard] - 2025-04-23
 
 ### Added
-
-- React-based Tauri dashboard implementation
+- React-based dashboard implementation
 - Real-time visualization of system events
 - Performance monitoring and metrics display
 - Memory inspection and visualization
@@ -30,14 +53,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - WebSocket server compatibility with websockets 15.0.1+
 
 ### Changed
-
 - Updated WebSocket server to be compatible with latest websockets library
 - Improved event handling in WebSocket server
 - Enhanced WebSocket client with global accessibility
 - Updated main README with dashboard information
 
 ### Fixed
-
 - Fixed WebSocket server handler to work with websockets 15.0.1+
 
 ## [0.1.0-dia-tts] - 2025-04-22

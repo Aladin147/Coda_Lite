@@ -91,7 +91,7 @@ class WebSocketElevenLabsTTS(ElevenLabsTTS):
             provider="elevenlabs"
         )
 
-        # Start timing
+        # Start timing for the entire process
         start_time = time.time()
 
         try:
@@ -106,6 +106,11 @@ class WebSocketElevenLabsTTS(ElevenLabsTTS):
             # Track progress
             progress = 0
             self.ws.tts_progress(progress)
+
+            # Mark the start of actual synthesis (API call)
+            if hasattr(self.ws, 'perf'):
+                self.ws.perf.mark_component("tts", "synthesize", start=True)
+            synthesis_start_time = time.time()
 
             # Generate speech
             audio_stream = self.client.text_to_speech.convert_as_stream(
@@ -129,6 +134,15 @@ class WebSocketElevenLabsTTS(ElevenLabsTTS):
                         progress = min(progress + 10, 90)  # Cap at 90% until complete
                         self.ws.tts_progress(progress)
 
+            # Mark the end of actual synthesis (API call)
+            synthesis_end_time = time.time()
+            if hasattr(self.ws, 'perf'):
+                self.ws.perf.mark_component("tts", "synthesize", start=False)
+                # Store the synthesis time for accurate metrics
+                synthesis_duration = synthesis_end_time - synthesis_start_time
+                self.ws.perf.mark("tts_synthesis_duration")
+                self.ws.perf.markers["tts_synthesis_duration"] = synthesis_duration
+
             # Create a temporary file to save the audio
             with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
                 temp_path = temp_file.name
@@ -147,10 +161,14 @@ class WebSocketElevenLabsTTS(ElevenLabsTTS):
             # Clean up the temporary file
             os.unlink(temp_path)
 
-            # Calculate duration
+            # Calculate durations
             end_time = time.time()
             processing_duration = end_time - start_time
             audio_duration = len(audio_array) / 44100  # in seconds
+
+            # Store the audio duration for metrics
+            if hasattr(self.ws, 'perf'):
+                self.ws.perf.markers["tts_audio_duration"] = audio_duration
 
             # Signal TTS completion
             self.ws.tts_result(

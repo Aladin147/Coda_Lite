@@ -12,29 +12,50 @@ function Dashboard({ connected, performanceMetrics, systemMetrics }) {
           <span>{connected ? 'Connected to Coda' : 'Disconnected from Coda'}</span>
         </div>
       </div>
-      
+
       <div className="card">
         <div className="card-title">
           <span>Performance Metrics</span>
         </div>
-        <div className="metric">
-          <span className="metric-label">STT Latency</span>
-          <span className="metric-value">{performanceMetrics.stt.toFixed(2)}s</span>
-        </div>
-        <div className="metric">
-          <span className="metric-label">LLM Latency</span>
-          <span className="metric-value">{performanceMetrics.llm.toFixed(2)}s</span>
-        </div>
-        <div className="metric">
-          <span className="metric-label">TTS Latency</span>
-          <span className="metric-value">{performanceMetrics.tts.toFixed(2)}s</span>
-        </div>
-        <div className="metric">
-          <span className="metric-label">Total Latency</span>
-          <span className="metric-value">{performanceMetrics.total.toFixed(2)}s</span>
+        <div className="metrics-group">
+          <div className="metrics-section">
+            <h4>Processing Time</h4>
+            <div className="metric">
+              <span className="metric-label">STT Processing</span>
+              <span className="metric-value">{performanceMetrics.stt.toFixed(2)}s</span>
+            </div>
+            <div className="metric">
+              <span className="metric-label">LLM Generation</span>
+              <span className="metric-value">{performanceMetrics.llm.toFixed(2)}s</span>
+            </div>
+            <div className="metric">
+              <span className="metric-label">TTS Synthesis</span>
+              <span className="metric-value">{performanceMetrics.tts.toFixed(2)}s</span>
+            </div>
+            <div className="metric total-metric">
+              <span className="metric-label">Total Processing</span>
+              <span className="metric-value">{performanceMetrics.total.toFixed(2)}s</span>
+            </div>
+          </div>
+
+          <div className="metrics-section">
+            <h4>Audio Duration</h4>
+            <div className="metric">
+              <span className="metric-label">User Speaking</span>
+              <span className="metric-value">{performanceMetrics.stt_audio.toFixed(2)}s</span>
+            </div>
+            <div className="metric">
+              <span className="metric-label">Coda Speaking</span>
+              <span className="metric-value">{performanceMetrics.tts_audio.toFixed(2)}s</span>
+            </div>
+            <div className="metric total-metric">
+              <span className="metric-label">Total Conversation</span>
+              <span className="metric-value">{(performanceMetrics.total + performanceMetrics.stt_audio + performanceMetrics.tts_audio).toFixed(2)}s</span>
+            </div>
+          </div>
         </div>
       </div>
-      
+
       <div className="card">
         <div className="card-title">
           <span>System Metrics</span>

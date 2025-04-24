@@ -18,7 +18,15 @@ const VoiceControls: React.FC<VoiceControlsProps> = ({
   // Start listening with memoized callback
   const handleMouseDown = useCallback(() => {
     if (!connected) return;
-    
+
+    console.log(`[VoiceControls] handleMouseDown: Starting listening`, {
+      timestamp: new Date().toISOString(),
+      component: 'VoiceControls',
+      action: 'startListening',
+      isListening: false,
+      stack: new Error().stack
+    });
+
     setIsListening(true);
     onStartListening();
   }, [connected, onStartListening]);
@@ -26,7 +34,15 @@ const VoiceControls: React.FC<VoiceControlsProps> = ({
   // Stop listening with memoized callback
   const handleMouseUp = useCallback(() => {
     if (!connected || !isListening) return;
-    
+
+    console.log(`[VoiceControls] handleMouseUp: Stopping listening`, {
+      timestamp: new Date().toISOString(),
+      component: 'VoiceControls',
+      action: 'stopListening',
+      isListening: true,
+      stack: new Error().stack
+    });
+
     setIsListening(false);
     onStopListening();
   }, [connected, isListening, onStopListening]);
@@ -34,7 +50,15 @@ const VoiceControls: React.FC<VoiceControlsProps> = ({
   // Handle mouse leave with memoized callback
   const handleMouseLeave = useCallback(() => {
     if (!connected || !isListening) return;
-    
+
+    console.log(`[VoiceControls] handleMouseLeave: Stopping listening`, {
+      timestamp: new Date().toISOString(),
+      component: 'VoiceControls',
+      action: 'stopListening',
+      isListening: true,
+      stack: new Error().stack
+    });
+
     setIsListening(false);
     onStopListening();
   }, [connected, isListening, onStopListening]);
@@ -42,7 +66,14 @@ const VoiceControls: React.FC<VoiceControlsProps> = ({
   // Run demo with memoized callback
   const handleRunDemo = useCallback(() => {
     if (!connected) return;
-    
+
+    console.log(`[VoiceControls] handleRunDemo: Running demo`, {
+      timestamp: new Date().toISOString(),
+      component: 'VoiceControls',
+      action: 'runDemo',
+      stack: new Error().stack
+    });
+
     onRunDemo();
   }, [connected, onRunDemo]);
 

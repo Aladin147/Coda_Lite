@@ -16,9 +16,27 @@ const TextInput: React.FC<TextInputProps> = ({ connected, onSendMessage }) => {
   // Handle form submission
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!connected || !inputText.trim()) return;
-    
+
+    if (!connected || !inputText.trim()) {
+      console.log(`[TextInput] handleSubmit: Not sending message`, {
+        timestamp: new Date().toISOString(),
+        component: 'TextInput',
+        action: 'submitForm',
+        connected,
+        hasText: !!inputText.trim(),
+        stack: new Error().stack
+      });
+      return;
+    }
+
+    console.log(`[TextInput] handleSubmit: Sending message`, {
+      timestamp: new Date().toISOString(),
+      component: 'TextInput',
+      action: 'sendMessage',
+      textLength: inputText.trim().length,
+      stack: new Error().stack
+    });
+
     onSendMessage(inputText.trim());
     setInputText('');
   }, [connected, inputText, onSendMessage]);
@@ -26,6 +44,16 @@ const TextInput: React.FC<TextInputProps> = ({ connected, onSendMessage }) => {
   // Handle keyboard shortcut (Ctrl+Enter to submit)
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      console.log(`[TextInput] handleKeyDown: Ctrl+Enter pressed`, {
+        timestamp: new Date().toISOString(),
+        component: 'TextInput',
+        action: 'keyboardShortcut',
+        key: e.key,
+        ctrlKey: e.ctrlKey,
+        metaKey: e.metaKey,
+        stack: new Error().stack
+      });
+
       e.preventDefault();
       handleSubmit(e);
     }
@@ -34,7 +62,7 @@ const TextInput: React.FC<TextInputProps> = ({ connected, onSendMessage }) => {
   return (
     <div className="card p-4">
       <h2 className="text-xl font-bold mb-4">Text Input</h2>
-      
+
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
           <textarea
@@ -49,7 +77,7 @@ const TextInput: React.FC<TextInputProps> = ({ connected, onSendMessage }) => {
             Press Ctrl+Enter to send
           </p>
         </div>
-        
+
         <button
           type="submit"
           className={`w-full py-2 rounded-md transition-colors ${

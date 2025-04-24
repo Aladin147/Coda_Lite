@@ -135,29 +135,27 @@ function App() {
 
   // Function to send messages to the WebSocket server
   const sendMessage = useCallback((type: string, data: any = {}) => {
-    // Check if the WebSocket client exists and is connected
+    // Check if the WebSocket client exists
     if (!(window as any).wsClient) {
       console.error('WebSocket client not initialized');
       return;
     }
 
-    // Send the message if connected
-    if ((window as any).wsClient.isConnected()) {
-      const message = {
+    // Use the instrumented sendMessage method
+    try {
+      const messageId = (window as any).wsClient.sendMessage(type, data);
+      console.log(`App: Message ${messageId} sent via WebSocketClient`);
+
+      // Track the message source for debugging
+      console.log(`App: Message source trace:`, {
+        component: 'App',
+        function: 'sendMessage',
         type,
         data,
-        timestamp: new Date().toISOString()
-      };
-
-      try {
-        console.log('Sending message:', message);
-        (window as any).wsClient.socket.send(JSON.stringify(message));
-        console.log('Message sent successfully');
-      } catch (error) {
-        console.error('Error sending message:', error);
-      }
-    } else {
-      console.error('WebSocket not connected');
+        stack: new Error().stack
+      });
+    } catch (error) {
+      console.error('App: Error sending message:', error);
     }
   }, []);
 

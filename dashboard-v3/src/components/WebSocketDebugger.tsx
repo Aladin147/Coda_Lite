@@ -172,6 +172,18 @@ const WebSocketDebugger: React.FC<WebSocketDebuggerProps> = ({ maxEvents = 100, 
               </span>
             </div>
             <div className="flex justify-between">
+              <span>Client ID:</span>
+              <span className="text-gray-300">
+                {(window as any).wsClient ? (window as any).wsClient.clientId : 'N/A'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Messages Sent:</span>
+              <span className="text-gray-300">
+                {(window as any).wsClient ? (window as any).wsClient.messageCounter : 0}
+              </span>
+            </div>
+            <div className="flex justify-between">
               <span>URL:</span>
               <span className="text-gray-300">ws://localhost:8765</span>
             </div>
@@ -245,6 +257,29 @@ const WebSocketDebugger: React.FC<WebSocketDebuggerProps> = ({ maxEvents = 100, 
                 className="flex-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
               >
                 Test Text Input
+              </button>
+            </div>
+            <div className="flex space-x-2 mt-2">
+              <button
+                onClick={() => {
+                  if ((window as any).wsClient && (window as any).wsClient.sentMessages) {
+                    console.table(
+                      Array.from((window as any).wsClient.sentMessages.entries())
+                        .map(([id, data]) => ({
+                          id,
+                          type: data.message.type,
+                          data: JSON.stringify(data.message.data),
+                          sentAt: new Date(data.sentAt).toLocaleTimeString(),
+                          fingerprint: data.fingerprint
+                        }))
+                    );
+                  } else {
+                    console.log('No message history available');
+                  }
+                }}
+                className="flex-1 px-3 py-1 bg-purple-600 hover:bg-purple-700 rounded-md transition-colors"
+              >
+                Show Message History
               </button>
             </div>
           </div>

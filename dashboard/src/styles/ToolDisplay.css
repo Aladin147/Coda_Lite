@@ -1,15 +1,20 @@
 .tool-display {
-  background: var(--card-background);
-  border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  margin-bottom: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.tool-display-title {
-  margin-bottom: 16px;
-  font-size: 18px;
+.section-header {
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-title {
+  font-size: 1.1rem;
   font-weight: 600;
+  margin: 0;
   color: var(--text-color);
 }
 
@@ -17,22 +22,26 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 400px;
+  flex: 1;
   overflow-y: auto;
 }
 
 .tool-card {
-  background: white;
+  background: var(--card-background);
   border-radius: 6px;
   padding: 12px;
   border-left: 4px solid var(--primary-color);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px var(--shadow-color);
   transition: all 0.2s ease;
 }
 
 .tool-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 3px 6px var(--shadow-color);
+}
+
+.tool-new {
+  animation: highlight-new-tool 3s ease;
 }
 
 .tool-card.pending {
@@ -52,11 +61,14 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 .tool-name {
   font-weight: 600;
   font-size: 14px;
+  margin-right: auto;
 }
 
 .tool-status {
@@ -64,6 +76,15 @@
   padding: 2px 6px;
   border-radius: 4px;
   text-transform: capitalize;
+  margin-right: 4px;
+}
+
+.tool-duration {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 123, 255, 0.1);
+  color: var(--primary-color);
 }
 
 .tool-card.pending .tool-status {
@@ -114,5 +135,28 @@
   padding: 20px;
   text-align: center;
   color: var(--text-secondary);
-  font-style: italic;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.no-tools p {
+  margin: 0.5rem 0;
+}
+
+.no-tools-description {
+  font-size: 0.9rem;
+  max-width: 300px;
+  opacity: 0.8;
+}
+
+@keyframes highlight-new-tool {
+  0% {
+    background-color: var(--primary-color-light);
+  }
+  100% {
+    background-color: var(--card-background);
+  }
 }

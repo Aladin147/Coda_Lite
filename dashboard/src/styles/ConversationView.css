@@ -1,17 +1,20 @@
 .conversation-container {
-  background: var(--card-background);
-  border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-.conversation-title {
-  margin-bottom: 16px;
-  font-size: 18px;
+.section-header {
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-title {
+  font-size: 1.1rem;
   font-weight: 600;
+  margin: 0;
   color: var(--text-color);
 }
 

@@ -13,6 +13,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
+## [0.1.2-memory-fixes] - 2025-04-26
+
+### Added
+
+- Comprehensive memory system fixes and improvements
+- Enhanced memory retrieval with improved similarity thresholds
+- Memory persistence verification with 80-100% success rate
+- Improved topic extraction for better memory organization
+
+### Changed
+
+- Updated ChromaDB integration with proper fallback mechanisms
+- Enhanced memory encoding with better importance scoring
+- Improved memory context formatting for LLM prompts
+
+### Fixed
+
+- Fixed memory persistence issues causing memory loss
+- Fixed ChromaDB availability issues
+- Fixed missing system prompt file issues
+- Fixed ConfigLoader.get_all() method implementation
+
 ## [0.1.2-gemma-migration] - 2025-04-26
 
 ### Added

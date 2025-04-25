@@ -15,6 +15,8 @@ from .long_term import LongTermMemory
 from .encoder import MemoryEncoder
 from .memory_snapshot import MemorySnapshotManager
 from .temporal_weighting import TemporalWeightingSystem
+from .active_recall import ActiveRecallSystem
+from .self_testing import MemorySelfTestingFramework
 
 logger = logging.getLogger("coda.memory.enhanced")
 
@@ -94,6 +96,12 @@ class EnhancedMemoryManager:
         # Initialize temporal weighting system
         self.temporal_weighting = TemporalWeightingSystem(config)
 
+        # Initialize active recall system
+        self.active_recall = ActiveRecallSystem(memory_manager=self, config=config)
+
+        # Initialize self-testing framework
+        self.self_testing = MemorySelfTestingFramework(memory_manager=self, config=config)
+
         # Track recent topics and tools
         self.recent_topics = []
         self.last_tool_used = None
@@ -103,7 +111,7 @@ class EnhancedMemoryManager:
         self.persist_interval = config.get("memory", {}).get("persist_interval", 5)
         self.turn_count_at_last_persist = 0
 
-        logger.info("EnhancedMemoryManager initialized")
+        logger.info("EnhancedMemoryManager initialized with active recall and self-testing")
 
     def add_turn(self, role: str, content: str) -> Dict[str, Any]:
         """
@@ -662,11 +670,27 @@ class EnhancedMemoryManager:
 
         long_term_stats = self.long_term.get_memory_stats()
 
+        # Get active recall stats
+        try:
+            active_recall_stats = self.active_recall.get_memory_health_metrics()
+        except Exception as e:
+            logger.error(f"Error getting active recall stats: {e}")
+            active_recall_stats = {"error": str(e)}
+
+        # Get self-testing stats
+        try:
+            self_testing_stats = self.self_testing.get_metrics()
+        except Exception as e:
+            logger.error(f"Error getting self-testing stats: {e}")
+            self_testing_stats = {"error": str(e)}
+
         return {
             "short_term": short_term_stats,
             "long_term": long_term_stats,
             "recent_topics": self.recent_topics,
-            "last_tool_used": self.last_tool_used
+            "last_tool_used": self.last_tool_used,
+            "active_recall": active_recall_stats,
+            "self_testing": self_testing_stats
         }
 
     def get_day_summary(self) -> str:
@@ -1145,6 +1169,108 @@ class EnhancedMemoryManager:
         except Exception as e:
             logger.error(f"Error applying forgetting mechanism: {e}", exc_info=True)
             return 0
+
+    def get_due_reviews(self, limit: int = 5) -> List[Dict[str, Any]]:
+        """
+        Get memories due for review.
+
+        Args:
+            limit: Maximum number of memories to return
+
+        Returns:
+            List of memories due for review
+        """
+        return self.active_recall.get_due_reviews(limit)
+
+    def generate_review_question(self, memory: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate a review question for a memory.
+
+        Args:
+            memory: The memory to generate a question for
+
+        Returns:
+            Dictionary with question, answer, and metadata
+        """
+        return self.active_recall.generate_review_question(memory)
+
+    def record_review(self, memory_id: str, success: bool) -> None:
+        """
+        Record a memory review result.
+
+        Args:
+            memory_id: The memory ID
+            success: Whether the review was successful
+        """
+        self.active_recall.record_review(memory_id, success)
+
+    def run_memory_maintenance(self) -> Dict[str, Any]:
+        """
+        Run memory maintenance tasks.
+
+        This includes:
+        - Active recall scheduled tasks
+        - Self-testing consistency checks
+        - Memory forgetting mechanism
+
+        Returns:
+            Dictionary with maintenance results
+        """
+        results = {
+            "timestamp": datetime.now().isoformat(),
+            "active_recall": None,
+            "self_testing": None,
+            "forgetting": None
+        }
+
+        # Run active recall tasks
+        try:
+            results["active_recall"] = self.active_recall.run_scheduled_tasks()
+        except Exception as e:
+            logger.error(f"Error running active recall tasks: {e}")
+            results["active_recall"] = {"error": str(e)}
+
+        # Run self-testing tasks
+        try:
+            results["self_testing"] = self.self_testing.run_consistency_check()
+        except Exception as e:
+            logger.error(f"Error running self-testing tasks: {e}")
+            results["self_testing"] = {"error": str(e)}
+
+        # Run forgetting mechanism
+        try:
+            forgotten_count = self.forget_memories()
+            results["forgetting"] = {
+                "forgotten_count": forgotten_count,
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            logger.error(f"Error running forgetting mechanism: {e}")
+            results["forgetting"] = {"error": str(e)}
+
+        return results
+
+    def test_memory_retrieval(self, query: str, expected_memory_ids: List[str]) -> Dict[str, Any]:
+        """
+        Test memory retrieval accuracy.
+
+        Args:
+            query: Query to test
+            expected_memory_ids: List of memory IDs that should be retrieved
+
+        Returns:
+            Dictionary with test results
+        """
+        return self.self_testing.test_memory_retrieval(query, expected_memory_ids)
+
+    def run_retrieval_test_suite(self) -> Dict[str, Any]:
+        """
+        Run a suite of retrieval tests.
+
+        Returns:
+            Dictionary with test results
+        """
+        return self.self_testing.run_retrieval_test_suite()
 
     def close(self) -> None:
         """Close memory manager and save state."""

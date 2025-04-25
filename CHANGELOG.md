@@ -13,6 +13,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
+## [0.1.2-active-recall] - 2025-04-28
+
+### Added
+
+- Active recall system with spaced repetition algorithm
+- Memory self-testing framework for integrity verification
+- Memory review scheduling based on importance
+- Memory reinforcement through successful recall
+- Memory consistency checks and automatic repair
+- Memory retrieval testing and validation
+- WebSocket integration for active recall and self-testing
+- Comprehensive tests for active recall and self-testing
+- Detailed documentation for active recall and self-testing
+
+### Changed
+
+- Enhanced EnhancedMemoryManager with active recall and self-testing
+- Updated WebSocketEnhancedMemoryManager with WebSocket event emission
+- Improved memory health metrics with active recall statistics
+- Enhanced memory maintenance with scheduled tasks
+
+### Fixed
+
+- Improved memory integrity with automatic consistency checks
+- Enhanced memory retrieval accuracy with test suite
+- Fixed memory importance tracking with consistency checks
+
 ## [0.1.2-memory-debug-ui] - 2025-04-27
 
 ### Added

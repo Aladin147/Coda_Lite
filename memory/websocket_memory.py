@@ -5,6 +5,7 @@ Extends EnhancedMemoryManager to emit events via WebSocket.
 
 import logging
 import time
+from datetime import datetime
 from typing import Dict, List, Optional, Any, Union, Tuple
 
 from memory.enhanced_memory_manager import EnhancedMemoryManager
@@ -12,6 +13,8 @@ from memory.short_term import MemoryManager as ShortTermMemory
 from memory.long_term import LongTermMemory
 from memory.encoder import MemoryEncoder
 from memory.memory_debug import MemoryDebugSystem
+from memory.websocket_active_recall import WebSocketEnhancedActiveRecall
+from memory.websocket_self_testing import WebSocketEnhancedSelfTesting
 from websocket.integration import CodaWebSocketIntegration
 
 logger = logging.getLogger("coda.memory.websocket")
@@ -59,6 +62,9 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
                 "min_chunk_length": 50
             }
 
+        # Store WebSocket integration before parent initialization
+        self.ws = websocket_integration
+
         # Initialize parent class
         super().__init__(
             config=config,
@@ -66,12 +72,24 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
             long_term_memory=long_term_memory
         )
 
-        self.ws = websocket_integration
-
         # Initialize memory debug system
         self.debug = MemoryDebugSystem(memory_manager=self, websocket_integration=self.ws)
 
-        logger.info("WebSocketEnhancedMemoryManager initialized with WebSocket integration and debug system")
+        # Replace active recall system with WebSocket-enhanced version
+        self.active_recall = WebSocketEnhancedActiveRecall(
+            memory_manager=self,
+            config=config,
+            websocket_server=self.ws
+        )
+
+        # Replace self-testing framework with WebSocket-enhanced version
+        self.self_testing = WebSocketEnhancedSelfTesting(
+            memory_manager=self,
+            config=config,
+            websocket_server=self.ws
+        )
+
+        logger.info("WebSocketEnhancedMemoryManager initialized with WebSocket integration, debug system, active recall, and self-testing")
 
     def add_turn(self, role: str, content: str) -> None:
         """
@@ -498,9 +516,146 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
                 }
             })
 
-            logger.debug(f"Failed to apply memory snapshot: {snapshot_id}")
+    def get_due_reviews(self, limit: int = 5) -> List[Dict[str, Any]]:
+        """
+        Get memories due for review with WebSocket events.
 
-        return result
+        Args:
+            limit: Maximum number of memories to return
+
+        Returns:
+            List of memories due for review
+        """
+        # The WebSocketEnhancedActiveRecall will emit events
+        return super().get_due_reviews(limit)
+
+    def generate_review_question(self, memory: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate a review question for a memory with WebSocket events.
+
+        Args:
+            memory: The memory to generate a question for
+
+        Returns:
+            Dictionary with question, answer, and metadata
+        """
+        # Generate the question
+        question_data = super().generate_review_question(memory)
+
+        # Emit memory review question event
+        self.ws.emit_event("memory_review_question", {
+            "memory_id": memory.get("id"),
+            "question": question_data.get("question"),
+            "memory_type": question_data.get("memory_type"),
+            "timestamp": datetime.now().isoformat()
+        })
+
+        # Log operation in debug system
+        self.debug.log_operation(
+            operation_type="generate_review_question",
+            details={
+                "memory_id": memory.get("id"),
+                "memory_type": question_data.get("memory_type"),
+                "question": question_data.get("question")
+            }
+        )
+
+        logger.debug(f"Generated review question for memory: {memory.get('id')}")
+
+        return question_data
+
+    def record_review(self, memory_id: str, success: bool) -> None:
+        """
+        Record a memory review result with WebSocket events.
+
+        Args:
+            memory_id: The memory ID
+            success: Whether the review was successful
+        """
+        # The WebSocketEnhancedActiveRecall will emit events
+        super().record_review(memory_id, success)
+
+        # Log operation in debug system
+        self.debug.log_operation(
+            operation_type="record_review",
+            details={
+                "memory_id": memory_id,
+                "success": success
+            }
+        )
+
+        logger.debug(f"Recorded review for memory: {memory_id}, success: {success}")
+
+    def run_memory_maintenance(self) -> Dict[str, Any]:
+        """
+        Run memory maintenance tasks with WebSocket events.
+
+        Returns:
+            Dictionary with maintenance results
+        """
+        # Run maintenance tasks
+        results = super().run_memory_maintenance()
+
+        # Emit memory maintenance event
+        self.ws.emit_event("memory_maintenance", {
+            "active_recall": results.get("active_recall"),
+            "self_testing": results.get("self_testing"),
+            "forgetting": results.get("forgetting"),
+            "timestamp": results.get("timestamp")
+        })
+
+        # Log operation in debug system
+        self.debug.log_operation(
+            operation_type="run_memory_maintenance",
+            details={
+                "active_recall_success": "active_recall" in results and "error" not in results["active_recall"],
+                "self_testing_success": "self_testing" in results and "error" not in results["self_testing"],
+                "forgetting_count": results.get("forgetting", {}).get("forgotten_count", 0)
+            }
+        )
+
+        logger.debug(f"Ran memory maintenance tasks")
+
+        return results
+
+    def test_memory_retrieval(self, query: str, expected_memory_ids: List[str]) -> Dict[str, Any]:
+        """
+        Test memory retrieval accuracy with WebSocket events.
+
+        Args:
+            query: Query to test
+            expected_memory_ids: List of memory IDs that should be retrieved
+
+        Returns:
+            Dictionary with test results
+        """
+        # The WebSocketEnhancedSelfTesting will emit events
+        return super().test_memory_retrieval(query, expected_memory_ids)
+
+    def run_retrieval_test_suite(self) -> Dict[str, Any]:
+        """
+        Run a suite of retrieval tests with WebSocket events.
+
+        Returns:
+            Dictionary with test results
+        """
+        # The WebSocketEnhancedSelfTesting will emit events
+        results = super().run_retrieval_test_suite()
+
+        # Log operation in debug system
+        self.debug.log_operation(
+            operation_type="run_retrieval_test_suite",
+            details={
+                "tests_run": results.get("tests_run", 0),
+                "average_precision": results.get("average_precision", 0),
+                "average_recall": results.get("average_recall", 0),
+                "average_f1": results.get("average_f1", 0)
+            }
+        )
+
+        logger.debug(f"Ran retrieval test suite: {results.get('tests_run', 0)} tests")
+
+        return results
 
     def list_snapshots(self) -> List[Dict[str, Any]]:
         """

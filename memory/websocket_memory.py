@@ -320,3 +320,153 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
         logger.debug(f"Memory stats: {stats}")
 
         return stats
+
+    def create_snapshot(self, snapshot_id: Optional[str] = None) -> str:
+        """
+        Create a snapshot of the current memory state with WebSocket events.
+
+        Args:
+            snapshot_id: Optional ID for the snapshot
+
+        Returns:
+            Snapshot ID
+        """
+        # Create the snapshot
+        snapshot_id = super().create_snapshot(snapshot_id)
+
+        # Get snapshot metadata
+        metadata = self.snapshot_manager.get_snapshot_metadata(snapshot_id)
+
+        # Emit memory snapshot event
+        self.ws.system_info({
+            "memory_snapshot": {
+                "action": "create",
+                "snapshot_id": snapshot_id,
+                "metadata": metadata
+            }
+        })
+
+        logger.debug(f"Created memory snapshot: {snapshot_id}")
+
+        return snapshot_id
+
+    def save_snapshot(self, snapshot_id: Optional[str] = None, filepath: Optional[str] = None) -> str:
+        """
+        Create and save a snapshot to disk with WebSocket events.
+
+        Args:
+            snapshot_id: Optional ID for the snapshot (created if None)
+            filepath: Optional file path (generated if None)
+
+        Returns:
+            Path to the saved snapshot file
+        """
+        # Save the snapshot
+        filepath = super().save_snapshot(snapshot_id, filepath)
+
+        # Emit memory snapshot event
+        self.ws.system_info({
+            "memory_snapshot": {
+                "action": "save",
+                "snapshot_id": snapshot_id,
+                "filepath": filepath
+            }
+        })
+
+        logger.debug(f"Saved memory snapshot to: {filepath}")
+
+        return filepath
+
+    def load_snapshot(self, filepath: str) -> str:
+        """
+        Load a snapshot from disk with WebSocket events.
+
+        Args:
+            filepath: Path to the snapshot file
+
+        Returns:
+            Snapshot ID
+        """
+        # Load the snapshot
+        snapshot_id = super().load_snapshot(filepath)
+
+        # Get snapshot metadata
+        metadata = self.snapshot_manager.get_snapshot_metadata(snapshot_id)
+
+        # Emit memory snapshot event
+        self.ws.system_info({
+            "memory_snapshot": {
+                "action": "load",
+                "snapshot_id": snapshot_id,
+                "filepath": filepath,
+                "metadata": metadata
+            }
+        })
+
+        logger.debug(f"Loaded memory snapshot from: {filepath}")
+
+        return snapshot_id
+
+    def apply_snapshot(self, snapshot_id: str) -> bool:
+        """
+        Apply a snapshot to the memory system with WebSocket events.
+
+        Args:
+            snapshot_id: ID of the snapshot to apply
+
+        Returns:
+            True if successful
+        """
+        # Apply the snapshot
+        result = super().apply_snapshot(snapshot_id)
+
+        if result:
+            # Get snapshot metadata
+            metadata = self.snapshot_manager.get_snapshot_metadata(snapshot_id)
+
+            # Emit memory snapshot event
+            self.ws.system_info({
+                "memory_snapshot": {
+                    "action": "apply",
+                    "snapshot_id": snapshot_id,
+                    "success": True,
+                    "metadata": metadata
+                }
+            })
+
+            logger.debug(f"Applied memory snapshot: {snapshot_id}")
+        else:
+            # Emit memory snapshot event (failure)
+            self.ws.system_info({
+                "memory_snapshot": {
+                    "action": "apply",
+                    "snapshot_id": snapshot_id,
+                    "success": False
+                }
+            })
+
+            logger.debug(f"Failed to apply memory snapshot: {snapshot_id}")
+
+        return result
+
+    def list_snapshots(self) -> List[Dict[str, Any]]:
+        """
+        List all snapshots with metadata and emit WebSocket events.
+
+        Returns:
+            List of snapshot metadata
+        """
+        # Get the snapshots
+        snapshots = super().list_snapshots()
+
+        # Emit memory snapshot event
+        self.ws.system_info({
+            "memory_snapshot": {
+                "action": "list",
+                "snapshots": snapshots
+            }
+        })
+
+        logger.debug(f"Listed {len(snapshots)} memory snapshots")
+
+        return snapshots

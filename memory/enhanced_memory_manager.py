@@ -13,6 +13,7 @@ from typing import List, Dict, Any, Optional, Union, Tuple
 from .short_term import MemoryManager as ShortTermMemory
 from .long_term import LongTermMemory
 from .encoder import MemoryEncoder
+from .memory_snapshot import MemorySnapshotManager
 
 logger = logging.getLogger("coda.memory.enhanced")
 
@@ -77,6 +78,18 @@ class EnhancedMemoryManager:
             min_chunk_length=min_chunk_length
         )
 
+        # Initialize memory snapshot manager
+        snapshot_dir = config.get("memory", {}).get("snapshot_dir", "data/memory/snapshots")
+        auto_snapshot = config.get("memory", {}).get("auto_snapshot", False)
+        snapshot_interval = config.get("memory", {}).get("snapshot_interval", 10)
+
+        self.snapshot_manager = MemorySnapshotManager(
+            memory_manager=self,
+            snapshot_dir=snapshot_dir,
+            auto_snapshot=auto_snapshot,
+            snapshot_interval=snapshot_interval
+        )
+
         # Track recent topics and tools
         self.recent_topics = []
         self.last_tool_used = None
@@ -111,6 +124,10 @@ class EnhancedMemoryManager:
             turns_since_persist = self.short_term.turn_count - self.turn_count_at_last_persist
             if turns_since_persist >= self.persist_interval:
                 self.persist_short_term_memory()
+
+        # Check if we should create an automatic snapshot
+        if role == "assistant":
+            self.snapshot_manager.check_auto_snapshot()
 
         return turn
 
@@ -801,8 +818,88 @@ class EnhancedMemoryManager:
             logger.error(f"Error getting feedback memories: {e}")
             return []
 
+    def create_snapshot(self, snapshot_id: Optional[str] = None) -> str:
+        """
+        Create a snapshot of the current memory state.
+
+        Args:
+            snapshot_id: Optional ID for the snapshot
+
+        Returns:
+            Snapshot ID
+        """
+        return self.snapshot_manager.create_snapshot(snapshot_id)
+
+    def save_snapshot(self, snapshot_id: Optional[str] = None, filepath: Optional[str] = None) -> str:
+        """
+        Create and save a snapshot to disk.
+
+        Args:
+            snapshot_id: Optional ID for the snapshot (created if None)
+            filepath: Optional file path (generated if None)
+
+        Returns:
+            Path to the saved snapshot file
+        """
+        # Create snapshot if ID not provided
+        if snapshot_id is None:
+            snapshot_id = self.snapshot_manager.create_snapshot()
+
+        # Save snapshot
+        return self.snapshot_manager.save_snapshot(snapshot_id, filepath)
+
+    def load_snapshot(self, filepath: str) -> str:
+        """
+        Load a snapshot from disk.
+
+        Args:
+            filepath: Path to the snapshot file
+
+        Returns:
+            Snapshot ID
+        """
+        return self.snapshot_manager.load_snapshot(filepath)
+
+    def apply_snapshot(self, snapshot_id: str) -> bool:
+        """
+        Apply a snapshot to the memory system.
+
+        Args:
+            snapshot_id: ID of the snapshot to apply
+
+        Returns:
+            True if successful
+        """
+        return self.snapshot_manager.apply_snapshot(snapshot_id)
+
+    def list_snapshots(self) -> List[Dict[str, Any]]:
+        """
+        List all snapshots with metadata.
+
+        Returns:
+            List of snapshot metadata
+        """
+        return self.snapshot_manager.list_snapshots()
+
+    def enable_auto_snapshot(self, interval: int = 10) -> None:
+        """
+        Enable automatic snapshots.
+
+        Args:
+            interval: Number of turns between automatic snapshots
+        """
+        self.snapshot_manager.enable_auto_snapshot(interval)
+
+    def disable_auto_snapshot(self) -> None:
+        """Disable automatic snapshots."""
+        self.snapshot_manager.disable_auto_snapshot()
+
     def close(self) -> None:
         """Close memory manager and save state."""
+        # Create final snapshot if auto-snapshot is enabled
+        if self.snapshot_manager.auto_snapshot:
+            self.create_snapshot("final_snapshot")
+
         # Persist any remaining short-term memory
         if self.auto_persist:
             self.persist_short_term_memory()

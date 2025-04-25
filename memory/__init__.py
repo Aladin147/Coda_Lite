@@ -10,5 +10,13 @@ from .long_term import LongTermMemory
 from .encoder import MemoryEncoder
 from .enhanced_memory_manager import EnhancedMemoryManager
 from .websocket_memory import WebSocketEnhancedMemoryManager
+from .memory_snapshot import MemorySnapshotManager
 
-__all__ = ["MemoryManager", "LongTermMemory", "MemoryEncoder", "EnhancedMemoryManager", "WebSocketEnhancedMemoryManager"]
+__all__ = [
+    "MemoryManager",
+    "LongTermMemory",
+    "MemoryEncoder",
+    "EnhancedMemoryManager",
+    "WebSocketEnhancedMemoryManager",
+    "MemorySnapshotManager"
+]

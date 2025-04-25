@@ -13,6 +13,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
+## [0.1.2-memory-snapshots] - 2025-04-26
+
+### Added
+
+- Memory snapshot system for debugging and analysis
+- Automatic snapshot creation at configurable intervals
+- Snapshot saving, loading, and restoration capabilities
+- WebSocket integration for memory snapshot events
+- Comprehensive test suite for memory snapshot functionality
+- Detailed documentation for memory snapshot system
+
+### Changed
+
+- Updated configuration to support memory snapshots
+- Enhanced EnhancedMemoryManager with snapshot capabilities
+- Improved WebSocketEnhancedMemoryManager with snapshot event emission
+
+### Fixed
+
+- Fixed circular import issues in memory module
+- Improved type hints for better code quality
+- Enhanced error handling in memory snapshot operations
+
 ## [0.1.2-memory-fixes] - 2025-04-26
 
 ### Added

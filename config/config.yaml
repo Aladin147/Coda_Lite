@@ -37,6 +37,10 @@ memory:
   min_chunk_length: 50
   persist_interval: 1
   vector_db: chroma
+  # Memory snapshot settings
+  snapshot_dir: data/memory/snapshots
+  auto_snapshot: true
+  snapshot_interval: 10
 personality:
   lore_file: config/personality/personal_lore.json
   use_advanced: true

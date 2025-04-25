@@ -13,6 +13,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
+## [0.1.2-temporal-weighting] - 2025-04-26
+
+### Added
+
+- Temporal weighting system for memory importance decay
+- Memory type-specific decay rates (conversations, facts, preferences)
+- Memory reinforcement mechanism to boost important memories
+- Forgetting mechanism to remove less important memories
+- Recency bias in memory retrieval
+- Comprehensive test suite for temporal weighting
+- Detailed documentation for temporal weighting system
+
+### Changed
+
+- Enhanced memory retrieval with temporal weighting
+- Updated configuration with temporal weighting settings
+- Improved memory importance scoring with time-based decay
+- Enhanced EnhancedMemoryManager with memory reinforcement capabilities
+
+### Fixed
+
+- Fixed memory update and removal operations
+- Improved memory retrieval with better scoring algorithm
+- Enhanced memory pruning with temporal considerations
+
 ## [0.1.2-dashboard-cleanup] - 2025-04-26
 
 ### Added

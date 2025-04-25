@@ -86,8 +86,8 @@ This document tracks the current status of the Coda Lite project, including comp
 - ✅ Added memory debug tools
 - ✅ Comprehensive test suite with 80-100% success rate
 - ✅ Added memory snapshot capabilities
-- ⏳ Add temporal weighting to memories
-- ⏳ Implement memory decay/forgetting
+- ✅ Added temporal weighting to memories
+- ✅ Implemented memory decay/forgetting
 - ⏳ Create memory debug UI
 - ⏳ Add active recall/self-testing features
 - ⏳ Add memory summarization capabilities
@@ -129,10 +129,9 @@ This document tracks the current status of the Coda Lite project, including comp
 
 3. Enhance memory system capabilities:
 
-   - Implement temporal weighting for memories
-   - Add memory decay/forgetting mechanisms
    - Create memory debug UI
    - Add active recall/self-testing features
+   - Add memory summarization capabilities
 
 4. Implement core debugging tools:
 

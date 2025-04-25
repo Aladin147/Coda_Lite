@@ -14,6 +14,7 @@ from .short_term import MemoryManager as ShortTermMemory
 from .long_term import LongTermMemory
 from .encoder import MemoryEncoder
 from .memory_snapshot import MemorySnapshotManager
+from .temporal_weighting import TemporalWeightingSystem
 
 logger = logging.getLogger("coda.memory.enhanced")
 
@@ -89,6 +90,9 @@ class EnhancedMemoryManager:
             auto_snapshot=auto_snapshot,
             snapshot_interval=snapshot_interval
         )
+
+        # Initialize temporal weighting system
+        self.temporal_weighting = TemporalWeightingSystem(config)
 
         # Track recent topics and tools
         self.recent_topics = []
@@ -236,7 +240,8 @@ class EnhancedMemoryManager:
     def retrieve_relevant_memories(self,
                                  query: str,
                                  limit: int = 5,  # Increased from 3 to 5
-                                 min_similarity: float = 0.3) -> List[Dict[str, Any]]:
+                                 min_similarity: float = 0.3,
+                                 apply_temporal_weighting: bool = True) -> List[Dict[str, Any]]:
         """
         Retrieve relevant memories based on the query.
 
@@ -244,15 +249,19 @@ class EnhancedMemoryManager:
             query: The query text
             limit: Maximum number of memories to retrieve
             min_similarity: Minimum similarity score (lowered for better recall)
+            apply_temporal_weighting: Whether to apply temporal weighting to the results
 
         Returns:
             List of relevant memories
         """
         try:
             # Try to retrieve memories from long-term memory
+            # Retrieve more memories than needed for better filtering with temporal weighting
+            retrieve_limit = limit * 2 if apply_temporal_weighting else limit
+
             memories = self.long_term.retrieve_memories(
                 query=query,
-                limit=limit,
+                limit=retrieve_limit,
                 min_similarity=min_similarity
             )
 
@@ -292,10 +301,34 @@ class EnhancedMemoryManager:
 
                     # Sort by score and take top results
                     scored_memories.sort(key=lambda x: x.get('similarity', 0), reverse=True)
-                    memories = scored_memories[:limit]
+                    memories = scored_memories[:retrieve_limit]
 
                     if memories:
                         logger.info(f"Found {len(memories)} memories using keyword search")
+
+            # Apply temporal weighting if requested and memories were found
+            if apply_temporal_weighting and memories:
+                # Apply temporal weighting to adjust scores based on recency and importance
+                weighted_memories = self.temporal_weighting.apply_temporal_weighting(
+                    memories=memories,
+                    recency_boost=True
+                )
+
+                # Take the top memories after weighting
+                memories = weighted_memories[:limit]
+
+                logger.info(f"Applied temporal weighting to {len(weighted_memories)} memories, returning top {len(memories)}")
+
+                # Log the weighted results
+                for i, memory in enumerate(memories):
+                    final_score = memory.get('final_score', 0)
+                    decay_factor = memory.get('decay_factor', 1.0)
+                    recency_score = memory.get('recency_score', 0.5)
+                    content_preview = memory.get('content', '')[:50] + '...'
+                    logger.debug(f"Weighted Memory {i+1}: final_score={final_score:.2f}, decay={decay_factor:.2f}, recency={recency_score:.2f}, content={content_preview}")
+            elif memories and len(memories) > limit:
+                # If not applying temporal weighting, just take the top memories by similarity
+                memories = memories[:limit]
 
             return memories
 
@@ -893,6 +926,151 @@ class EnhancedMemoryManager:
     def disable_auto_snapshot(self) -> None:
         """Disable automatic snapshots."""
         self.snapshot_manager.disable_auto_snapshot()
+
+    def update_memory(self,
+                      memory_id: str,
+                      content: Optional[str] = None,
+                      importance: Optional[float] = None,
+                      metadata: Optional[Dict[str, Any]] = None) -> bool:
+        """
+        Update a memory in long-term storage.
+
+        Args:
+            memory_id: The memory ID
+            content: New content (if updating)
+            importance: New importance score (if updating)
+            metadata: New metadata (if updating)
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Get the original memory
+            original_memory = self.long_term.get_memory_by_id(memory_id)
+            if not original_memory:
+                logger.warning(f"Memory {memory_id} not found for update")
+                return False
+
+            # Create updated memory
+            updated_memory = original_memory.copy()
+
+            # Update fields if provided
+            if content is not None:
+                updated_memory["content"] = content
+
+            if importance is not None:
+                updated_memory["importance"] = importance
+
+            if metadata is not None:
+                # Get current metadata
+                current_metadata = updated_memory.get("metadata", {})
+
+                # Merge metadata
+                merged_metadata = {**current_metadata, **metadata}
+                updated_memory["metadata"] = merged_metadata
+
+            # Update the memory
+            result = self.long_term.update_memory(memory_id, updated_memory)
+
+            if result:
+                logger.info(f"Updated memory {memory_id}")
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Error updating memory: {e}", exc_info=True)
+            return False
+
+    def reinforce_memory(self,
+                        memory_id: str,
+                        reinforcement_strength: float = 1.0) -> bool:
+        """
+        Reinforce a memory to make it more resistant to forgetting.
+
+        Args:
+            memory_id: ID of the memory to reinforce
+            reinforcement_strength: Strength of reinforcement (0.0 to 1.0)
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Get the memory
+            memory = self.long_term.get_memory_by_id(memory_id)
+            if not memory:
+                logger.warning(f"Memory {memory_id} not found for reinforcement")
+                return False
+
+            # Apply reinforcement
+            updated_memory = self.temporal_weighting.reinforce_memory(
+                memory=memory,
+                reinforcement_strength=reinforcement_strength
+            )
+
+            # Update the memory in long-term storage
+            self.long_term.update_memory(memory_id, updated_memory)
+
+            logger.info(f"Reinforced memory {memory_id} with strength {reinforcement_strength}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error reinforcing memory: {e}", exc_info=True)
+            return False
+
+    def forget_memories(self, max_memories: Optional[int] = None) -> int:
+        """
+        Apply forgetting mechanism to remove less important memories.
+
+        Args:
+            max_memories: Optional maximum number of memories to keep
+                         (if None, uses the configured max_memories)
+
+        Returns:
+            Number of memories forgotten
+        """
+        try:
+            # Get current memory count
+            memory_count = len(self.long_term.metadata.get("memories", {}))
+
+            # Get maximum memories
+            if max_memories is None:
+                max_memories = self.long_term.max_memories
+
+            # If we're under the limit, no need to forget
+            if memory_count <= max_memories:
+                logger.info(f"Memory count {memory_count} is under limit {max_memories}, no forgetting needed")
+                return 0
+
+            # Get all memories
+            memories = []
+            for memory_id, memory_data in self.long_term.metadata.get("memories", {}).items():
+                memory = self.long_term.get_memory_by_id(memory_id)
+                if memory:
+                    memory["id"] = memory_id
+                    memories.append(memory)
+
+            # Apply temporal weighting to determine which memories to forget
+            forgotten_count = 0
+            for memory in memories:
+                # Check if we should forget this memory
+                if self.temporal_weighting.should_forget_memory(
+                    memory=memory,
+                    current_memory_count=memory_count - forgotten_count,
+                    max_memories=max_memories
+                ):
+                    # Remove the memory
+                    memory_id = memory.get("id")
+                    if memory_id:
+                        self.long_term.remove_memory(memory_id)
+                        forgotten_count += 1
+                        logger.debug(f"Forgot memory {memory_id}: {memory.get('content', '')[:50]}...")
+
+            logger.info(f"Forgot {forgotten_count} memories based on temporal weighting")
+            return forgotten_count
+
+        except Exception as e:
+            logger.error(f"Error applying forgetting mechanism: {e}", exc_info=True)
+            return 0
 
     def close(self) -> None:
         """Close memory manager and save state."""

@@ -41,6 +41,21 @@ memory:
   snapshot_dir: data/memory/snapshots
   auto_snapshot: true
   snapshot_interval: 10
+  # Temporal weighting settings
+  default_decay_rate: 30.0  # Half-life in days for default memory decay
+  # Decay rates for different memory types (half-life in days)
+  conversation_decay_rate: 15.0  # Conversations decay faster
+  fact_decay_rate: 60.0  # Facts decay slower
+  preference_decay_rate: 90.0  # Preferences decay very slowly
+  feedback_decay_rate: 45.0  # Feedback decays moderately
+  summary_decay_rate: 30.0  # Summaries decay at default rate
+  # Recency bias factor (higher = more bias towards recent memories)
+  recency_bias: 1.0
+  # Importance retention factor (higher = importance decays slower)
+  importance_retention: 0.8
+  # Reinforcement settings
+  reinforcement_boost: 0.2  # How much reinforcement boosts importance
+  max_reinforcement_count: 5  # Maximum number of reinforcements
 personality:
   lore_file: config/personality/personal_lore.json
   use_advanced: true

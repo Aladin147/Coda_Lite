@@ -1,6 +1,11 @@
 /**
  * WebSocket client for connecting to the Coda WebSocket server.
+ *
+ * This is a legacy class that now uses the new WebSocket service.
+ * New code should use the WebSocket service directly.
  */
+import websocketService, { ConnectionState, EventType } from './services/websocket';
+
 class WebSocketClient {
   /**
    * Create a new WebSocket client.
@@ -10,7 +15,6 @@ class WebSocketClient {
   constructor(url) {
     // Ensure we're always connecting to port 8765 regardless of what port the dashboard is running on
     this.url = 'ws://localhost:8765';
-    this.socket = null;
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 1000;
@@ -20,92 +24,63 @@ class WebSocketClient {
     this.onDisconnect = () => {};
     this.onEvent = (event) => {};
     this.onError = (error) => {};
+
+    // Set up connection state listener
+    websocketService.addConnectionStateListener(this._handleConnectionStateChange.bind(this));
+
+    // Set up event listeners for all event types
+    Object.values(EventType).forEach(eventType => {
+      websocketService.addEventListener(eventType, this._handleEvent.bind(this));
+    });
+  }
+
+  /**
+   * Handle connection state changes.
+   *
+   * @param {string} state - The new connection state
+   */
+  _handleConnectionStateChange(state) {
+    if (state === ConnectionState.CONNECTED) {
+      this.onConnect();
+    } else if (state === ConnectionState.DISCONNECTED || state === ConnectionState.ERROR) {
+      this.onDisconnect();
+    }
+  }
+
+  /**
+   * Handle WebSocket events.
+   *
+   * @param {Object} event - The WebSocket event
+   */
+  _handleEvent(event) {
+    this.onEvent(event);
   }
 
   /**
    * Connect to the WebSocket server.
    */
   connect() {
-    try {
-      this.socket = new WebSocket(this.url);
+    // Store the client in the window object for global access
+    window.wsClient = this;
 
-      // Store the client in the window object for global access
-      window.wsClient = this;
-
-      this.socket.onopen = () => {
-        console.log(`Connected to ${this.url}`);
-        this.reconnectAttempts = 0;
-        this.onConnect();
-      };
-
-      this.socket.onclose = (event) => {
-        console.log(`Disconnected from ${this.url}: ${event.code} ${event.reason}`);
-        this.onDisconnect();
-        this.reconnect();
-      };
-
-      this.socket.onerror = (error) => {
-        console.error(`WebSocket error: ${error}`);
-        this.onError(error);
-      };
-
-      this.socket.onmessage = (message) => {
-        try {
-          const event = JSON.parse(message.data);
-
-          // Handle replay events
-          if (event.type === 'replay' && Array.isArray(event.events)) {
-            console.log(`Received replay with ${event.events.length} events`);
-            event.events.forEach(replayEvent => {
-              this.onEvent(replayEvent);
-            });
-          } else {
-            this.onEvent(event);
-          }
-        } catch (error) {
-          console.error(`Error parsing message: ${error}`);
-        }
-      };
-    } catch (error) {
-      console.error(`Error connecting to ${this.url}: ${error}`);
+    // Connect using the WebSocket service
+    websocketService.connect(this.url).catch(error => {
+      console.error(`Error connecting to ${this.url}:`, error);
       this.onError(error);
-      this.reconnect();
-    }
+    });
   }
 
   /**
    * Disconnect from the WebSocket server.
    */
   disconnect() {
-    if (this.socket) {
-      this.socket.close();
-      this.socket = null;
+    // Disconnect using the WebSocket service
+    websocketService.disconnect();
 
-      // Remove the client from the window object
-      if (window.wsClient === this) {
-        window.wsClient = null;
-      }
+    // Remove the client from the window object
+    if (window.wsClient === this) {
+      window.wsClient = null;
     }
-  }
-
-  /**
-   * Reconnect to the WebSocket server.
-   */
-  reconnect() {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.log(`Maximum reconnect attempts (${this.maxReconnectAttempts}) reached`);
-      return;
-    }
-
-    this.reconnectAttempts++;
-    const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-
-    console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-
-    setTimeout(() => {
-      console.log(`Attempting to reconnect to ${this.url}`);
-      this.connect();
-    }, delay);
   }
 
   /**
@@ -114,7 +89,50 @@ class WebSocketClient {
    * @returns {boolean} True if connected, false otherwise
    */
   isConnected() {
-    return this.socket && this.socket.readyState === WebSocket.OPEN;
+    return websocketService.connectionState === ConnectionState.CONNECTED;
+  }
+
+  /**
+   * Send a client message to the server.
+   *
+   * @param {string} messageType - The client message type
+   * @param {Object} messageData - The client message data
+   */
+  sendClientMessage(messageType, messageData = {}) {
+    websocketService.sendClientMessage(messageType, messageData);
+  }
+
+  /**
+   * Send a push-to-talk request.
+   *
+   * @param {number} duration - The recording duration in seconds
+   * @param {boolean} continuous - Whether to continue listening after the duration
+   */
+  sendPushToTalk(duration = 5, continuous = false) {
+    websocketService.sendPushToTalk(duration, continuous);
+  }
+
+  /**
+   * Send a stop listening request.
+   */
+  sendStopListening() {
+    websocketService.sendStopListening();
+  }
+
+  /**
+   * Send a stop speaking request.
+   */
+  sendStopSpeaking() {
+    websocketService.sendStopSpeaking();
+  }
+
+  /**
+   * Send a text input.
+   *
+   * @param {string} text - The text input
+   */
+  sendTextInput(text) {
+    websocketService.sendTextInput(text);
   }
 }
 

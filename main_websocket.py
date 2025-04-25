@@ -393,6 +393,62 @@ class CodaAssistant:
 
         logger.info("Coda assistant initialized successfully")
 
+    def _register_client_message_handler(self):
+        """Register a handler for client messages."""
+        # Define the handler function
+        def handle_client_message(_event_type, data):
+            try:
+                # Unused parameter _event_type is intentionally prefixed with underscore
+                message_type = data.get("message_type")
+                message_data = data.get("message_data", {})
+
+                logger.info(f"Received client message: {message_type}")
+
+                # Handle different message types
+                if message_type == "push_to_talk":
+                    # Handle push-to-talk request
+                    duration = message_data.get("duration", 5)
+                    continuous = message_data.get("continuous", False)
+                    self.handle_push_to_talk(duration, continuous)
+                elif message_type == "stop_listening":
+                    # Handle stop listening request
+                    self.stt.stop_listening()
+                elif message_type == "stop_speaking":
+                    # Handle stop speaking request
+                    self.tts.stop()
+                elif message_type == "text_input":
+                    # Handle text input
+                    text = message_data.get("text", "")
+                    if text:
+                        # Process the text input in a separate thread
+                        threading.Thread(
+                            target=self._process_user_input,
+                            args=(text,),
+                            daemon=True
+                        ).start()
+
+            except Exception as e:
+                logger.error(f"Error handling client message: {e}", exc_info=True)
+
+        # Register the handler with the WebSocket server
+        # We need to use a custom event handler since the server doesn't support this directly
+        original_push_event = self.ws.server.push_event
+
+        def push_event_with_handler(event_type, data, high_priority=False):
+            # Call the original method
+            result = original_push_event(event_type, data, high_priority)
+
+            # Handle client messages
+            if event_type == "client_message":
+                handle_client_message(event_type, data)
+
+            return result
+
+        # Replace the push_event method with our custom handler
+        self.ws.server.push_event = push_event_with_handler
+
+        logger.info("Registered client message handler")
+
     def summarize_tool_result(self, original_query: str, tool_result: str) -> str:
         """Helper function to summarize a tool result in a natural way.
 
@@ -1056,6 +1112,17 @@ async def main_async():
     ensure_directories()
 
     # Set up signal handlers for graceful shutdown
+    def signal_handler(sig, _frame):
+        # Unused parameter _frame is intentionally prefixed with underscore
+        logger.info(f"Received signal {sig}, shutting down...")
+        global assistant, websocket_server
+        if assistant:
+            assistant.running = False
+        if websocket_server:
+            # Use our event loop manager to run the coroutine in a thread-safe way
+            from websocket.event_loop_manager import run_coroutine_threadsafe
+            run_coroutine_threadsafe(websocket_server.stop())
+
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
@@ -1068,14 +1135,14 @@ async def main_async():
     logger.info(f"Memory system fixes applied: {fix_results}")
 
     try:
-        # Initialize WebSocket server
+        # Initialize WebSocket server with duplicate message detection
         logger.info("Initializing WebSocket server...")
         websocket_server = CodaWebSocketServer(
             host=config.get("websocket.host", "localhost"),
             port=config.get("websocket.port", 8765)
         )
 
-        # Initialize WebSocket integration
+        # Initialize WebSocket integration with message deduplication
         logger.info("Initializing WebSocket integration...")
         websocket_integration = CodaWebSocketIntegration(websocket_server)
 
@@ -1110,6 +1177,11 @@ async def main_async():
             await websocket_server.stop()
             logger.info("WebSocket server stopped")
 
+        # Clean up the event loop manager
+        from websocket.event_loop_manager import get_event_loop_manager
+        get_event_loop_manager().close_all_loops()
+        logger.info("Closed all event loops")
+
         logger.info("Coda Lite shutdown complete. Goodbye!")
 
 def main():
@@ -1124,8 +1196,25 @@ def main():
         except Exception as e:
             logger.error(f"Error setting Windows event loop policy: {e}")
 
-    # Run the async main function
-    asyncio.run(main_async())
+    # Import our event loop manager
+    from websocket.event_loop_manager import get_event_loop_manager
+
+    # Create a new event loop for the main thread
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    # Register it with our event loop manager
+    get_event_loop_manager().set_main_loop(loop)
+    logger.info("Initialized main event loop and registered with event loop manager")
+
+    try:
+        # Run the async main function
+        loop.run_until_complete(main_async())
+    except Exception as e:
+        logger.error(f"Error in main: {e}", exc_info=True)
+    finally:
+        # Clean up the event loop
+        loop.close()
 
 if __name__ == "__main__":
     main()

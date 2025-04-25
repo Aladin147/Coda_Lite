@@ -42,10 +42,14 @@ class CodaWebSocketIntegration:
 
         # Event queue for handling events from non-async threads
         self.event_queue = queue.Queue()
-        
+
+        # Message deduplication
+        self._message_lock = threading.RLock()
+        self._recent_messages = {}  # hash -> timestamp
+
         # Create a dedicated event loop for the event processing thread
         self.event_loop = None
-        
+
         # Start the event processing thread
         self.event_thread = threading.Thread(target=self._process_event_queue, daemon=True)
         self.event_thread.start()
@@ -54,12 +58,12 @@ class CodaWebSocketIntegration:
 
     def _process_event_queue(self):
         """Process events from the event queue."""
-        # Create a new event loop for this thread
-        self.event_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.event_loop)
-        
-        logger.info("Event processing thread started")
-        
+        # Use our event loop manager to get or create an event loop for this thread
+        from .event_loop_manager import get_event_loop
+        self.event_loop = get_event_loop()
+
+        logger.info("Event processing thread started with dedicated event loop")
+
         try:
             while True:
                 try:
@@ -69,17 +73,22 @@ class CodaWebSocketIntegration:
                         event_type, data, high_priority = self.event_queue.get(timeout=0.5)
                     except queue.Empty:
                         continue
-                    
-                    # Create a task to push the event
-                    async def push_event():
-                        try:
-                            await self.server.push_event_async(event_type, data, high_priority)
-                        except Exception as e:
-                            logger.error(f"Error pushing event: {e}", exc_info=True)
-                    
-                    # Run the task in this thread's event loop
-                    self.event_loop.run_until_complete(push_event())
-                    
+
+                    # Check for duplicate messages
+                    from .message_deduplication import is_duplicate_message
+                    is_duplicate, count = is_duplicate_message(event_type, data)
+
+                    if is_duplicate:
+                        logger.warning(f"Duplicate message detected in event queue: {event_type} (count: {count})")
+                        # Still proceed with sending, but log the duplicate
+
+                    # Use the server's push_event method which is designed to be called from any thread
+                    # This avoids the "Task attached to a different loop" error
+                    try:
+                        self.server.push_event(event_type, data, high_priority)
+                    except Exception as e:
+                        logger.error(f"Error pushing event: {e}", exc_info=True)
+
                     # Mark the task as done
                     self.event_queue.task_done()
                 except Exception as e:
@@ -95,9 +104,12 @@ class CodaWebSocketIntegration:
         self.session_id = f"session_{int(time.time())}"
         self.conversation_turn_count = 0
 
-        # Send session start event
+        # Mark session start time
+        self.perf_tracker.mark("session_start_time", time.time())
+
+        # Send conversation start event
         self.event_queue.put((
-            EventType.SESSION_START,
+            EventType.CONVERSATION_START,
             {
                 "session_id": self.session_id,
                 "timestamp": time.time()
@@ -113,13 +125,13 @@ class CodaWebSocketIntegration:
             logger.warning("No active session to end")
             return
 
-        # Send session end event
+        # Send conversation end event
         self.event_queue.put((
-            EventType.SESSION_END,
+            EventType.CONVERSATION_END,
             {
                 "session_id": self.session_id,
-                "timestamp": time.time(),
-                "turn_count": self.conversation_turn_count
+                "duration_seconds": time.time() - self.perf_tracker.get_marker("session_start_time", time.time()),
+                "turns_count": self.conversation_turn_count
             },
             True  # high_priority
         ))
@@ -138,6 +150,27 @@ class CodaWebSocketIntegration:
         if not self.session_id:
             logger.warning("No active session for conversation turn")
             return
+
+        # Check for duplicate messages with a simple hash-based approach
+        import hashlib
+        message_hash = hashlib.md5(f"{role}:{content}".encode()).hexdigest()
+
+        # Check for duplicates with a lock to prevent race conditions
+        with self._message_lock:
+            # Check if we've seen this message recently (within the last 5 seconds)
+            current_time = time.time()
+            if message_hash in self._recent_messages:
+                last_time = self._recent_messages[message_hash]
+                if current_time - last_time < 5.0:  # 5 second window for duplicates
+                    logger.warning(f"Duplicate message detected, ignoring: {role}, content_length={len(content)}")
+                    return
+
+            # Update the recent messages cache
+            self._recent_messages[message_hash] = current_time
+
+            # Clean up old messages (older than 10 seconds)
+            self._recent_messages = {k: v for k, v in self._recent_messages.items()
+                                    if current_time - v < 10.0}
 
         self.conversation_turn_count += 1
 
@@ -811,18 +844,19 @@ class PerfTracker:
 
             return self.markers[end_name] - self.markers[start_name]
 
-    def get_marker(self, name: str) -> Optional[float]:
+    def get_marker(self, name: str, default: Optional[float] = None) -> Optional[float]:
         """
         Get a marker value.
 
         Args:
             name: The marker name
+            default: Default value if marker not found
 
         Returns:
-            The marker value, or None if not found
+            The marker value, or default if not found
         """
         with self.lock:
-            return self.markers.get(name)
+            return self.markers.get(name, default)
 
     def clear(self) -> None:
         """Clear all markers."""

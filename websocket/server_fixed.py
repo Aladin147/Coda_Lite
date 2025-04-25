@@ -10,10 +10,16 @@ import json
 import logging
 import uuid
 import threading
-from typing import Dict, Set, Any, Optional, List, Callable, MutableMapping
+import time
+from typing import Dict, Set, Any, Optional, List, Callable, MutableMapping, Tuple
 import websockets
 from websockets.server import WebSocketServerProtocol
 from concurrent.futures import ThreadPoolExecutor
+
+# Import our new modules
+from .event_loop_manager import get_event_loop, run_coroutine_threadsafe
+from .message_deduplication import is_duplicate_message
+from .authentication import validate_token, generate_token
 
 logger = logging.getLogger("coda.websocket")
 
@@ -126,13 +132,26 @@ class CodaWebSocketServer:
             async def handler(websocket):
                 await self._handle_client(websocket, "/")
 
-            # Store the current event loop for use in thread-safe operations
-            self.event_loop = asyncio.get_event_loop()
+            # Get the event loop using our event loop manager
+            self.event_loop = get_event_loop()
+
+            # Set this as the main loop in our event loop manager
+            from .event_loop_manager import get_event_loop_manager
+            get_event_loop_manager().set_main_loop(self.event_loop)
+
+            # For Windows, use SelectorEventLoop instead of ProactorEventLoop
+            # This helps avoid the _ProactorBaseWritePipeTransport._loop_writing assertion errors
+            if self.event_loop.__class__.__name__ == 'ProactorEventLoop':
+                logger.warning("Detected ProactorEventLoop on Windows, which may cause issues with WebSockets")
+                logger.info("Consider using 'asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())' at startup")
 
             self.server = await websockets.serve(
                 handler,
                 self.host,
-                self.port
+                self.port,
+                compression=None,  # Disable WebSocket compression to avoid permessage_deflate issues
+                max_size=10 * 1024 * 1024,  # 10MB max message size
+                max_queue=32  # Limit message queue to prevent memory issues
             )
 
             # Store a reference to the server's event loop
@@ -141,7 +160,7 @@ class CodaWebSocketServer:
             logger.info(f"WebSocket server started at ws://{self.host}:{self.port}")
         except Exception as e:
             self.running = False
-            logger.error(f"Failed to start WebSocket server: {e}")
+            logger.error(f"Failed to start WebSocket server: {e}", exc_info=True)
             raise
 
     async def stop(self):
@@ -187,7 +206,111 @@ class CodaWebSocketServer:
             websocket: The WebSocket connection
             path: The connection path
         """
-        client_id = str(uuid.uuid4())
+        # Generate a temporary client ID for the connection
+        temp_client_id = str(uuid.uuid4())
+
+        # Authentication flag
+        authenticated = False
+        client_id = temp_client_id
+
+        # Generate an authentication token for this client
+        auth_token = generate_token(temp_client_id)
+
+        # Send authentication challenge
+        try:
+            await websocket.send(json.dumps({
+                "type": "auth_challenge",
+                "data": {
+                    "token": auth_token,
+                    "message": "Please authenticate with this token"
+                }
+            }))
+            logger.debug(f"Sent authentication challenge to client {temp_client_id}")
+        except Exception as e:
+            logger.error(f"Error sending authentication challenge: {e}")
+            return
+
+        # Wait for authentication response (with timeout)
+        try:
+            # Set a timeout for authentication
+            auth_timeout = 30  # seconds
+            auth_deadline = time.time() + auth_timeout
+
+            while time.time() < auth_deadline and not authenticated:
+                try:
+                    # Wait for a message with a short timeout to allow checking the deadline
+                    message = await asyncio.wait_for(websocket.recv(), timeout=1.0)
+
+                    # Parse the message
+                    try:
+                        data = json.loads(message)
+                    except json.JSONDecodeError:
+                        logger.warning(f"Received invalid JSON during authentication")
+                        continue
+
+                    # Check if this is an authentication response
+                    if data.get("type") == "auth_response":
+                        token = data.get("data", {}).get("token")
+
+                        if token:
+                            # Validate the token
+                            is_valid, validated_client_id = validate_token(token)
+
+                            if is_valid and validated_client_id:
+                                authenticated = True
+                                client_id = validated_client_id
+                                logger.info(f"Client {client_id} authenticated successfully")
+
+                                # Send authentication success
+                                await websocket.send(json.dumps({
+                                    "type": "auth_result",
+                                    "data": {
+                                        "success": True,
+                                        "client_id": client_id
+                                    }
+                                }))
+
+                                break
+                            else:
+                                logger.warning(f"Invalid authentication token from client")
+
+                                # Send authentication failure
+                                await websocket.send(json.dumps({
+                                    "type": "auth_result",
+                                    "data": {
+                                        "success": False,
+                                        "message": "Invalid authentication token"
+                                    }
+                                }))
+                    else:
+                        # Not an authentication response, ignore
+                        logger.warning(f"Received non-authentication message during authentication phase")
+                except asyncio.TimeoutError:
+                    # Timeout waiting for a message, check the deadline
+                    continue
+
+            # Check if authentication succeeded
+            if not authenticated:
+                logger.warning(f"Authentication timeout for client {temp_client_id}")
+
+                # Send authentication failure
+                await websocket.send(json.dumps({
+                    "type": "auth_result",
+                    "data": {
+                        "success": False,
+                        "message": "Authentication timeout"
+                    }
+                }))
+
+                return
+        except websockets.exceptions.ConnectionClosed:
+            logger.info(f"Client disconnected during authentication")
+            return
+        except Exception as e:
+            logger.error(f"Error during authentication: {e}")
+            return
+
+        # Client is now authenticated, add to clients dictionary
         self.clients[client_id] = websocket
 
         # Notify connection handlers
@@ -197,7 +320,7 @@ class CodaWebSocketServer:
             except Exception as e:
                 logger.error(f"Error in connect handler: {e}")
 
-        logger.info(f"Client {client_id} connected")
+        logger.info(f"Client {client_id} connected and authenticated")
 
         # Send replay buffer if available
         with self.replay_lock:
@@ -218,7 +341,27 @@ class CodaWebSocketServer:
                     # Parse the message
                     data = json.loads(message)
 
-                    # Handle client messages (authentication, etc.)
+                    # Check for duplicate messages
+                    message_type = data.get("type", "unknown")
+                    message_data = data.get("data", {})
+
+                    is_duplicate, count = is_duplicate_message(message_type, message_data)
+
+                    if is_duplicate:
+                        logger.warning(f"Duplicate message detected from client {client_id}: {message_type} (count: {count})")
+
+                        # Send duplicate message notification
+                        await websocket.send(json.dumps({
+                            "type": "duplicate_message",
+                            "data": {
+                                "original_type": message_type,
+                                "count": count
+                            }
+                        }))
+
+                        continue
+
+                    # Handle client messages
                     await self._handle_message(client_id, data)
                 except json.JSONDecodeError:
                     logger.warning(f"Received invalid JSON from client {client_id}")
@@ -283,15 +426,29 @@ class CodaWebSocketServer:
             logger.debug(f"Event {event_type} dropped (no clients connected)")
             return
 
+        # Check for duplicate events
+        is_duplicate, count = is_duplicate_message(event_type, data)
+        if is_duplicate:
+            logger.warning(f"Duplicate event detected: {event_type} (count: {count})")
+            # Still proceed with broadcasting, but log the duplicate
+
         # Create the event
         with self.sequence_lock:
             self.sequence_number += 1
             seq = self.sequence_number
 
+        # Get the current event loop safely
+        try:
+            loop = get_event_loop()
+            current_time = loop.time()
+        except Exception:
+            # Fallback if we can't get the event loop time
+            current_time = time.time()
+
         event = {
             "version": "1.0",
             "seq": seq,
-            "timestamp": asyncio.get_event_loop().time(),
+            "timestamp": current_time,
             "type": event_type,
             "data": data
         }
@@ -314,6 +471,8 @@ class CodaWebSocketServer:
         disconnected_clients = []
         for client_id, websocket in client_items:
             try:
+                # Use a semaphore to limit concurrent sends
+                # This helps prevent the "assert f is self._write_fut" error
                 await websocket.send(event_json)
             except websockets.exceptions.ConnectionClosed:
                 disconnected_clients.append(client_id)
@@ -379,6 +538,12 @@ class CodaWebSocketServer:
             logger.debug(f"Event {event_type} dropped (no clients connected)")
             return
 
+        # Check for duplicate events
+        is_duplicate, count = is_duplicate_message(event_type, data)
+        if is_duplicate:
+            logger.warning(f"Duplicate event detected in push_event: {event_type} (count: {count})")
+            # Still proceed with broadcasting, but log the duplicate
+
         # Get the event loop in a thread-safe way
         try:
             # Use the server's event loop for all operations
@@ -386,8 +551,8 @@ class CodaWebSocketServer:
                 logger.error("Server event loop not initialized")
                 return
 
-            # Create a future to hold the result
-            future = asyncio.run_coroutine_threadsafe(
+            # Use our thread-safe event loop manager to run the coroutine
+            future = run_coroutine_threadsafe(
                 self.broadcast_event(event_type, data, high_priority),
                 self.server_loop
             )
@@ -397,11 +562,11 @@ class CodaWebSocketServer:
                 try:
                     fut.result()
                 except Exception as e:
-                    logger.error(f"Error in broadcast_event: {e}")
+                    logger.error(f"Error in broadcast_event: {e}", exc_info=True)
 
             future.add_done_callback(log_exception)
         except Exception as e:
-            logger.warning(f"Error dispatching event {event_type}: {e}")
+            logger.warning(f"Error dispatching event {event_type}: {e}", exc_info=True)
 
     def register_connect_handler(self, handler: Callable[[str], None]):
         """

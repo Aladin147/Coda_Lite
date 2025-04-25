@@ -1,0 +1,118 @@
+.performance-visualizer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.visualizer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.visualizer-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.visualizer-controls {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.metric-selector,
+.time-selector {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--input-background);
+  color: var(--text-color);
+  font-size: 0.9rem;
+}
+
+.stats-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.stat-card {
+  flex: 1;
+  min-width: 120px;
+  background-color: var(--card-background);
+  border-radius: 8px;
+  padding: 0.75rem;
+  box-shadow: 0 1px 3px var(--shadow-color);
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.chart-container {
+  flex: 1;
+  background-color: var(--card-background);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 1px 3px var(--shadow-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.performance-chart {
+  width: 100%;
+  height: 100%;
+  max-height: 300px;
+}
+
+@media (max-width: 768px) {
+  .visualizer-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .visualizer-controls {
+    width: 100%;
+  }
+  
+  .metric-selector,
+  .time-selector {
+    flex: 1;
+  }
+  
+  .stats-container {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .stat-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .stat-label {
+    margin-bottom: 0;
+  }
+}

@@ -57,14 +57,35 @@ class WhisperSTT:
 
         logger.info(f"Initializing WhisperSTT with model size: {model_size} on {device}")
 
-        # Initialize faster-whisper model
-        self.model = WhisperModel(
-            model_size,
-            device=device,
-            compute_type=compute_type,
-            download_root=download_root,
-            local_files_only=local_files_only,
-        )
+        # Try to initialize faster-whisper model with the requested device
+        try:
+            self.model = WhisperModel(
+                model_size,
+                device=device,
+                compute_type=compute_type,
+                download_root=download_root,
+                local_files_only=local_files_only,
+            )
+            logger.info(f"Successfully initialized WhisperModel on {device}")
+        except Exception as e:
+            # If CUDA initialization fails, fall back to CPU
+            if device.lower() != "cpu":
+                logger.warning(f"Failed to initialize WhisperModel on {device}: {e}")
+                logger.warning("Falling back to CPU")
+                self.device = "cpu"
+                self.compute_type = "float32"  # Better for CPU
+                self.model = WhisperModel(
+                    model_size,
+                    device="cpu",
+                    compute_type="float32",
+                    download_root=download_root,
+                    local_files_only=local_files_only,
+                )
+                logger.info("Successfully initialized WhisperModel on CPU as fallback")
+            else:
+                # If CPU initialization also fails, re-raise the exception
+                logger.error(f"Failed to initialize WhisperModel on CPU: {e}")
+                raise
 
         # Audio recording parameters
         self.format = pyaudio.paInt16
@@ -73,6 +94,38 @@ class WhisperSTT:
         self.chunk = 1024
         self.record_seconds = 5  # Default recording duration
         self.audio = pyaudio.PyAudio()
+
+        # List available audio devices and select a valid input device
+        self.input_device_index = None
+        info = self.audio.get_host_api_info_by_index(0)
+        num_devices = info.get('deviceCount')
+
+        logger.info(f"Available audio devices:")
+        scarlett_device = None
+
+        for i in range(num_devices):
+            device_info = self.audio.get_device_info_by_index(i)
+            if device_info.get('maxInputChannels') > 0:
+                device_name = device_info.get('name', '')
+                logger.info(f"  Input Device {i}: {device_name} (channels: {device_info.get('maxInputChannels')})")
+
+                # Look specifically for Scarlett 2i2 interface
+                if 'scarlett' in device_name.lower() or '2i2' in device_name.lower():
+                    scarlett_device = i
+                    logger.info(f"Found Scarlett 2i2 interface at index {i}")
+
+                # Select the first available input device as fallback
+                if self.input_device_index is None:
+                    self.input_device_index = i
+                    logger.info(f"Selected input device {i}: {device_name} as fallback")
+
+        # Prefer Scarlett 2i2 if found
+        if scarlett_device is not None:
+            self.input_device_index = scarlett_device
+            logger.info(f"Using Scarlett 2i2 interface (index {scarlett_device}) as preferred input device")
+
+        if self.input_device_index is None:
+            logger.warning("No input devices found! Audio recording will not work.")
 
         logger.info("WhisperSTT initialized successfully")
 
@@ -123,12 +176,13 @@ class WhisperSTT:
         logger.info(f"Listening for speech for {duration} seconds...")
 
         try:
-            # Open audio stream
+            # Open audio stream with the selected input device
             stream = self.audio.open(
                 format=self.format,
                 channels=self.channels,
                 rate=self.rate,
                 input=True,
+                input_device_index=self.input_device_index,
                 frames_per_buffer=self.chunk
             )
 
@@ -172,12 +226,13 @@ class WhisperSTT:
         logger.info("Starting continuous listening")
 
         try:
-            # Open audio stream
+            # Open audio stream with the selected input device
             stream = self.audio.open(
                 format=self.format,
                 channels=self.channels,
                 rate=self.rate,
                 input=True,
+                input_device_index=self.input_device_index,
                 frames_per_buffer=self.chunk
             )
 

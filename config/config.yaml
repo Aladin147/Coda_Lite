@@ -1,92 +1,77 @@
-# Coda Lite Configuration
-
-# Speech-to-Text settings
-stt:
-  model_size: "base"  # Options: tiny, base, small, medium, large
-  language: "en"
-  device: "cuda"  # Options: cpu, cuda - Using GPU for faster transcription
-  compute_type: "float16"  # Options: float32, float16, int8 - float16 is faster on GPU
-
-# Language Model settings
-llm:
-  model_name: "llama3"
-  temperature: 0.7
-  max_tokens: 256
-  system_prompt_file: "config/prompts/system.txt"
-  tool_prompt_file: "config/prompts/tools.txt"
-
-# Text-to-Speech settings
-tts:
-  engine: "csm"  # Options: csm
-  language: "EN"  # Language code for CSM-1B (EN, ES, FR, ZH, JP, KR)
-  voice: "EN-Default"  # Available voices for English: EN-US, EN-BR, EN_INDIA, EN-AU, EN-Default
-  speed: 1.0
-  device: "cuda"  # Options: cpu, cuda - Using GPU for better performance
-
-# Audio settings
 audio:
-  input_device: null  # null = default device
-  output_device: null  # null = default device
-  sample_rate: 16000
   channels: 1
-
-# Memory settings
-memory:
-  # Short-term memory settings
-  max_turns: 20  # Maximum number of conversation turns to store
-  max_tokens: 800  # Maximum number of tokens to include in context
-  export_dir: "data/memory"  # Directory for memory exports
-
-  # Long-term memory settings
-  long_term_enabled: true  # Enable long-term memory
-  long_term_path: "data/memory/long_term"  # Path to store long-term memory
-  embedding_model: "all-MiniLM-L6-v2"  # Sentence transformer model for embeddings
-  vector_db: "chroma"  # Vector database type (chroma, sqlite, in_memory)
-  max_memories: 1000  # Maximum number of memories to store
-  device: "cpu"  # Device to run embedding model on (cpu or cuda)
-
-  # Memory encoding settings
-  chunk_size: 200  # Target size of memory chunks in characters
-  chunk_overlap: 50  # Overlap between chunks in characters
-  min_chunk_length: 50  # Minimum length of a chunk to be stored
-
-  # Memory persistence settings
-  auto_persist: true  # Automatically persist short-term memory to long-term
-  persist_interval: 5  # Number of turns between persistence operations
-
-# Personality settings
-personality:
-  use_advanced: true  # Enable advanced personality features
-  lore_file: "config/personality/personal_lore.json"  # Path to personal lore file
-
-# Intent settings
-intent:
-  enabled: true  # Enable intent routing
-  debug_mode: false  # Enable debug mode for intent routing
-
-# Feedback settings
+  input_device: null
+  output_device: null
+  sample_rate: 16000
 feedback:
-  enabled: true  # Enable user feedback hooks
-  frequency: 0.3  # Frequency of feedback requests (0.0 to 1.0)
-  cooldown: 5  # Minimum number of turns between feedback requests
-  apply_adjustments: true  # Apply automatic adjustments based on feedback
-
-# Tool settings
-tools:
+  apply_adjustments: true
+  cooldown: 5
   enabled: true
-  available:
-    - get_time
-    - tell_joke
-    - get_weather
-    - get_date
-    - get_memory_stats
-    - search_memories
-    - add_fact
-    - add_preference
-
-# Logging settings
+  frequency: 0.3
+intent:
+  debug_mode: false
+  enabled: true
+llm:
+  max_tokens: 256
+  model_name: llama3
+  system_prompt_file: config/prompts/system.txt
+  temperature: 0.7
+  tool_prompt_file: config/prompts/tools.txt
 logging:
-  level: "INFO"  # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
-  file: "data/logs/coda.log"
-  max_size: 10485760  # 10 MB
   backup_count: 5
+  file: data/logs/coda.log
+  level: INFO
+  max_size: 10485760
+memory:
+  auto_persist: true
+  chunk_overlap: 50
+  chunk_size: 150
+  device: cpu
+  embedding_model: all-MiniLM-L6-v2
+  export_dir: data/memory
+  long_term_enabled: true
+  long_term_path: data/memory/long_term
+  max_memories: 1000
+  max_tokens: 800
+  max_turns: 20
+  min_chunk_length: 50
+  persist_interval: 1
+  vector_db: chroma
+personality:
+  lore_file: config/personality/personal_lore.json
+  use_advanced: true
+stt:
+  compute_type: float32
+  device: cpu
+  language: null
+  model_size: base
+  vad_filter: true
+tools:
+  available:
+  - get_time
+  - tell_joke
+  - get_weather
+  - get_date
+  - get_memory_stats
+  - search_memories
+  - add_fact
+  - add_preference
+  enabled: true
+tts:
+  audio_prompt_path: null
+  cfg_scale: 3.0
+  device: cuda
+  elevenlabs_api_key: sk_7b576d29574b14a97150b864497d937c4e1fdd2d6b3a1e4d
+  elevenlabs_model_id: eleven_multilingual_v2
+  elevenlabs_similarity_boost: 0.75
+  elevenlabs_stability: 0.5
+  elevenlabs_style: 0.0
+  elevenlabs_use_speaker_boost: true
+  elevenlabs_voice_id: kdmDKE6EkgrWrrykO9Qt
+  engine: elevenlabs
+  language: EN
+  speed: 1.0
+  temperature: 1.3
+  top_p: 0.95
+  use_torch_compile: true
+  voice: EN-Default

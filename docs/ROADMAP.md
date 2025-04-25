@@ -4,47 +4,81 @@ This roadmap outlines the planned development path for Coda Lite, from initial p
 
 ## Version Milestones
 
-### v0.0.1 - Initial Setup
+### v0.0.1 - Initial Setup ✅
+
 - ✅ Project structure and repository setup
 - ✅ Module placeholders and interfaces
 - ✅ Documentation framework
 
-### v0.0.1a - Basic Voice Loop
+### v0.0.1a - Basic Voice Loop ✅
+
 - ✅ Speech-to-text with faster-whisper
 - ✅ LLM integration with Ollama
-- 🔄 Text-to-speech with CSM-1B (currently using Coqui TTS)
-- 🔄 Simple conversation loop
-- ⏳ Latency optimization (target: sub-5s)
+- ✅ Text-to-speech with CSM-1B
+- ✅ Simple conversation loop
+- ✅ Latency optimization (target: sub-5s)
 
-### v0.0.2 - Tool Integration
-- ⏳ Structured output from LLM
-- ⏳ Tool router implementation
-- ⏳ Basic tools:
-  - ⏳ get_time()
-  - ⏳ tell_joke()
-  - ⏳ get_weather()
-- ⏳ Tool execution and response formatting
+### v0.0.2 - Tool Integration ✅
 
-### v0.0.3 - Enhanced Interaction
-- ⏳ Improved system prompts
-- ⏳ Context management
-- ⏳ Conversation history
-- ⏳ Interruption handling
-- ⏳ Voice activity detection
+- ✅ Structured output from LLM
+- ✅ Tool router implementation
+- ✅ Basic tools:
+  - ✅ get_time()
+  - ✅ tell_joke()
+  - ✅ get_date()
+- ✅ Tool execution and response formatting
 
-### v0.0.4 - Personality & Customization
-- ⏳ Voice customization options
-- ⏳ Personality tuning
-- ⏳ User preferences
-- ⏳ Custom wake word
+### v0.0.3 - Enhanced Interaction ✅
 
-### v0.0.5 - Knowledge Integration
-- ⏳ Local knowledge base
-- ⏳ RAG implementation
-- ⏳ Document indexing
-- ⏳ Personal data integration
+- ✅ Improved system prompts
+- ✅ Context management
+- ✅ Conversation history
+- ✅ Interruption handling
+- ✅ Voice activity detection
 
-### v0.1.0 - First Stable Release
+### v0.0.4 - Personality & Customization ✅
+
+- ✅ Voice customization options
+- ✅ Personality tuning
+- ✅ User preferences
+- 🔄 Custom wake word
+
+### v0.0.5 - Knowledge Integration ✅
+
+- ✅ Local knowledge base
+- ✅ Memory system with vector embeddings
+- ✅ Long-term memory storage
+- ✅ Personal data integration
+
+### v0.1.0 - WebSocket Architecture ✅
+
+- ✅ WebSocket server implementation
+- ✅ Event-based communication
+- ✅ Performance tracking
+- ✅ TTS factory with ElevenLabs integration
+- ✅ Modular architecture
+
+### v0.1.1 - Dashboard Integration ✅
+
+- ✅ React-based dashboard with WebSocket integration
+- ✅ Consolidated single-page view with all critical metrics
+- ✅ Real-time visualization of system events
+- ✅ Advanced performance monitoring and visualization
+- ✅ Memory inspection and debugging tools
+- ✅ Tool usage tracking and display
+- ✅ Event filtering and inspection
+- ✅ Dark mode by default with responsive design
+
+### v0.2.0 - Beta Release ⏳
+
+- ⏳ Wake word detection
+- ⏳ Token streaming for real-time TTS
+- ⏳ Additional languages support
+- ⏳ Memory summarization
+- ⏳ Comprehensive testing suite
+
+### v1.0.0 - Production Release ⏳
+
 - ⏳ Complete voice assistant functionality
 - ⏳ Comprehensive tool set
 - ⏳ Robust error handling
@@ -54,18 +88,21 @@ This roadmap outlines the planned development path for Coda Lite, from initial p
 ## Long-term Vision (v1.0 and beyond)
 
 ### Core Functionality Enhancements
+
 - ⏳ Multi-modal input/output
 - ⏳ Advanced context understanding
 - ⏳ Proactive assistance
 - ⏳ Multi-turn reasoning
 
 ### Technical Improvements
+
 - ⏳ Model switching based on query complexity
 - ⏳ Distributed processing for heavy tasks
 - ⏳ Offline-first with optional cloud fallback
 - ⏳ Hardware acceleration optimizations
 
 ### Ecosystem Development
+
 - ⏳ Plugin system for third-party extensions
 - ⏳ API for integration with other applications
 - ⏳ Community model repository

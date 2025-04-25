@@ -63,6 +63,26 @@ except ImportError as e:
     print(f"Error importing TTS module: {e}")
     sys.exit(1)
 
+# Import STT module
+try:
+    from stt.whisper_stt import WhisperSTT
+    STT_AVAILABLE = True
+    logger.info("STT module imported successfully")
+except ImportError as e:
+    STT_AVAILABLE = False
+    logger.error(f"Error importing STT module: {e}")
+    print(f"Error importing STT module: {e}")
+
+# Import memory module
+try:
+    from memory import MemoryManager, EnhancedMemoryManager, LongTermMemory
+    MEMORY_AVAILABLE = True
+    logger.info("Memory module imported successfully")
+except ImportError as e:
+    MEMORY_AVAILABLE = False
+    logger.error(f"Error importing Memory module: {e}")
+    print(f"Error importing Memory module: {e}")
+
 # Import audio modules for device verification
 try:
     import sounddevice as sd
@@ -114,7 +134,39 @@ class CodaDebugWrapper:
         self.config = ConfigLoader()
         logger.info("Configuration loaded")
 
-        # Initialize conversation history
+        # Initialize memory system
+        if MEMORY_AVAILABLE:
+            logger.info("Initializing memory system...")
+            try:
+                # Check if long-term memory is enabled
+                long_term_enabled = self.config.get("memory.long_term_enabled", True)
+
+                if long_term_enabled:
+                    logger.info("Using enhanced memory manager with long-term memory")
+                    self.memory = EnhancedMemoryManager(self.config.get_all())
+                    self.memory_available = True
+                    self.using_long_term_memory = True
+                else:
+                    logger.info("Using standard short-term memory manager")
+                    max_turns = self.config.get("memory.max_turns", 20)
+                    self.memory = MemoryManager(max_turns=max_turns)
+                    self.memory_available = True
+                    self.using_long_term_memory = False
+
+                logger.info("Memory system initialized successfully")
+            except Exception as e:
+                logger.error(f"Error initializing memory system: {e}")
+                self.memory = None
+                self.memory_available = False
+                self.using_long_term_memory = False
+                print("\n[WARNING] Memory system initialization failed - using simple conversation history")
+        else:
+            logger.warning("Memory module not available. Using simple conversation history.")
+            self.memory = None
+            self.memory_available = False
+            self.using_long_term_memory = False
+
+        # Initialize conversation history (used as fallback if memory system is not available)
         self.conversation_history: MessageList = []
 
         # Load system prompt
@@ -122,7 +174,13 @@ class CodaDebugWrapper:
         self.system_prompt = self._load_system_prompt(system_prompt_file)
         logger.info(f"System prompt loaded from {system_prompt_file}")
 
-        # Add system message to conversation history
+        # Add system message to memory and conversation history
+        if self.memory_available and self.memory is not None:
+            # Add to memory system
+            self.memory.add_turn("system", self.system_prompt)
+            logger.info("Added system prompt to memory system")
+
+        # Add to conversation history
         self.conversation_history.append({"role": "system", "content": self.system_prompt})
 
         # Initialize LLM module
@@ -141,32 +199,94 @@ class CodaDebugWrapper:
         # Initialize TTS module
         logger.info("Initializing Text-to-Speech module...")
         try:
-            # Try to create TTS with specific model
-            try:
-                device = self.config.get("tts.device", "cuda" if torch.cuda.is_available() else "cpu")
+            # Get TTS engine from config
+            tts_engine = self.config.get("tts.engine", "elevenlabs")
+            device = self.config.get("tts.device", "cuda" if torch.cuda.is_available() else "cpu")
 
-                logger.info(f"Creating CSM-1B TTS with device={device}")
+            logger.info(f"Creating TTS with engine={tts_engine}, device={device}")
 
+            # Initialize TTS based on the configured engine
+            if tts_engine == "elevenlabs":
+                # ElevenLabs-specific parameters
+                self.tts = create_tts(
+                    engine="elevenlabs",
+                    api_key=self.config.get("tts.elevenlabs_api_key", ""),
+                    voice_id=self.config.get("tts.elevenlabs_voice_id", "JBFqnCBsd6RMkjVDRZzb"),
+                    model_id=self.config.get("tts.elevenlabs_model_id", "eleven_multilingual_v2"),
+                    stability=self.config.get("tts.elevenlabs_stability", 0.5),
+                    similarity_boost=self.config.get("tts.elevenlabs_similarity_boost", 0.75),
+                    style=self.config.get("tts.elevenlabs_style", 0.0),
+                    use_speaker_boost=self.config.get("tts.elevenlabs_use_speaker_boost", True)
+                )
+                logger.info(f"ElevenLabs TTS initialized with voice={self.config.get('tts.elevenlabs_voice_id')}")
+            elif tts_engine == "dia":
+                # Dia-specific parameters
+                self.tts = create_tts(
+                    engine="dia",
+                    device=device,
+                    audio_prompt_path=self.config.get("tts.audio_prompt_path"),
+                    temperature=self.config.get("tts.temperature", 1.3),
+                    top_p=self.config.get("tts.top_p", 0.95),
+                    cfg_scale=self.config.get("tts.cfg_scale", 3.0),
+                    use_torch_compile=self.config.get("tts.use_torch_compile", True)
+                )
+                logger.info(f"Dia TTS initialized with device={device}")
+            else:  # Default to CSM
                 # CSM-specific parameters
                 self.tts = create_tts(
                     engine="csm",
                     device=device,
                     language=self.config.get("tts.language", "en")
                 )
-            except Exception as model_error:
-                # If that fails, log the error
-                logger.error(f"Failed to initialize CSM-1B TTS: {model_error}")
-                logger.warning("No TTS engine available. Speech synthesis will not work.")
-                self.tts = None
+                logger.info(f"CSM-1B TTS initialized with device={device}")
 
-            logger.info("TTS initialized successfully")
+            # Store the current TTS engine for reference
+            self.current_tts_engine = tts_engine
+            logger.info(f"TTS initialized successfully with engine: {tts_engine}")
         except Exception as e:
-            logger.error(f"Error initializing TTS: {e}")
+            # If initialization fails, log the error
+            logger.error(f"Failed to initialize TTS: {e}")
+            logger.warning("No TTS engine available. Speech synthesis will not work.")
+
             # Create a mock TTS for testing
             from tts.mock_tts import MockTTS
             logger.warning("Using MockTTS as fallback")
             self.tts = MockTTS()
+            self.current_tts_engine = "mock"
             print("\n[WARNING] Using MockTTS - no audio output will be produced")
+
+        # Initialize STT module
+        if STT_AVAILABLE:
+            logger.info("Initializing Speech-to-Text module...")
+            try:
+                # Get STT parameters from config
+                stt_model_size = self.config.get("stt.model_size", "base")
+                stt_device = self.config.get("stt.device", "cuda" if torch.cuda.is_available() else "cpu")
+                stt_compute_type = self.config.get("stt.compute_type", "float16" if stt_device == "cuda" else "float32")
+                stt_language = self.config.get("stt.language", None)  # Auto-detect language by default
+
+                # Initialize WhisperSTT
+                self.stt = WhisperSTT(
+                    model_size=stt_model_size,
+                    device=stt_device,
+                    compute_type=stt_compute_type,
+                    language=stt_language,
+                    vad_filter=True
+                )
+                logger.info(f"STT initialized with model: {stt_model_size} on {stt_device}")
+                self.stt_available = True
+            except Exception as e:
+                logger.error(f"Error initializing STT: {e}")
+                self.stt = None
+                self.stt_available = False
+                print("\n[WARNING] STT initialization failed - speech recognition will not work")
+        else:
+            logger.warning("STT module not available. Speech recognition will not work.")
+            self.stt = None
+            self.stt_available = False
+
+        # Initialize demo mode flag
+        self.demo_mode = False
 
         logger.info("Coda debug wrapper initialized successfully")
 
@@ -194,7 +314,13 @@ class CodaDebugWrapper:
         if not text.strip():
             return {"response": "", "error": "Empty input", "timings": {}}
 
-        # Add user message to conversation history
+        # Add user message to memory or conversation history
+        if self.memory_available and self.memory is not None:
+            # Add to memory system
+            self.memory.add_turn("user", text)
+            logger.info("Added user message to memory system")
+
+        # Always add to conversation history for LLM context
         self.conversation_history.append({"role": "user", "content": text})
 
         # Generate response from LLM
@@ -202,13 +328,40 @@ class CodaDebugWrapper:
             # Timing information
             timings = {}
 
+            # Retrieve relevant memories if using long-term memory
+            memories = []
+            if self.memory_available and self.memory is not None and self.using_long_term_memory:
+                try:
+                    # Get relevant memories
+                    memories = self.get_relevant_memories(text, limit=3)
+                    if memories:
+                        logger.info(f"Found {len(memories)} relevant memories for context")
+                        print(f"\n[MEMORY] Found {len(memories)} relevant memories for context")
+                except Exception as e:
+                    logger.error(f"Error retrieving memories: {e}")
+
+            # Create a copy of the conversation history for the LLM
+            messages_for_llm = list(self.conversation_history)
+
+            # Add memories to the context if available
+            if memories:
+                # Insert memories after the system message
+                memory_content = "\n\nRelevant information from your memory:\n"
+                for i, memory in enumerate(memories):
+                    memory_text = memory.get('content', '') if isinstance(memory, dict) else str(memory)
+                    memory_content += f"Memory {i+1}: {memory_text}\n"
+
+                # Add as a system message after the main system prompt
+                messages_for_llm.insert(1, {"role": "system", "content": memory_content})
+                logger.info("Added memories to LLM context")
+
             # Start LLM generation
             logger.info(f"Sending to LLM: {text[:50]}{'...' if len(text) > 50 else ''}")
             print(f"\n[LLM] Processing: {text[:50]}{'...' if len(text) > 50 else ''}")
 
             llm_start = time.time()
             response_obj = self.llm.chat(
-                messages=self.conversation_history,
+                messages=messages_for_llm,
                 temperature=temperature,
                 max_tokens=max_tokens,
                 stream=False  # Ensure we're not using streaming mode
@@ -271,7 +424,26 @@ class CodaDebugWrapper:
             logger.info(f"LLM response received in {timings['llm_time']:.2f} seconds")
             print(f"[LLM] Response received in {timings['llm_time']:.2f} seconds")
 
-            # Add assistant message to conversation history
+            # Add assistant message to memory or conversation history
+            if self.memory_available and self.memory is not None:
+                # Add to memory system
+                self.memory.add_turn("assistant", response)
+                logger.info("Added assistant response to memory system")
+
+                # If using enhanced memory manager, persist to long-term memory
+                if self.using_long_term_memory and hasattr(self.memory, 'persist_short_term_memory'):
+                    # Check if it's time to persist based on turn count
+                    turns_since_persist = self.memory.short_term.turn_count - getattr(self.memory, 'turn_count_at_last_persist', 0)
+                    persist_interval = self.config.get("memory.persist_interval", 5)
+
+                    if turns_since_persist >= persist_interval:
+                        try:
+                            stored_count = self.memory.persist_short_term_memory()
+                            logger.info(f"Persisted {stored_count} memories to long-term storage")
+                        except Exception as e:
+                            logger.error(f"Error persisting memories: {e}")
+
+            # Always add to conversation history for LLM context
             self.conversation_history.append({"role": "assistant", "content": response})
 
             # Limit conversation history to last 10 messages (plus system prompt)
@@ -376,9 +548,147 @@ class CodaDebugWrapper:
             logger.error(f"Error saving conversation: {e}", exc_info=True)
             return False
 
+    def listen(self, duration: int = 5) -> Dict[str, Any]:
+        """
+        Listen for speech and transcribe it.
+
+        Args:
+            duration: Duration to listen in seconds
+
+        Returns:
+            Dict with transcription text and timing information
+        """
+        if not self.stt_available or self.stt is None:
+            logger.error("STT is not available")
+            return {"transcription": "", "error": "STT is not available", "timings": {}}
+
+        try:
+            # Timing information
+            timings = {}
+
+            # Start STT
+            logger.info(f"Listening for {duration} seconds...")
+            print(f"\n[STT] Listening for {duration} seconds...")
+
+            stt_start = time.time()
+
+            # Listen and transcribe
+            transcription = self.stt.listen(duration=duration)
+
+            stt_end = time.time()
+
+            # Record timing
+            timings["stt_time"] = stt_end - stt_start
+
+            # Log results
+            logger.info(f"Transcription completed in {timings['stt_time']:.2f} seconds")
+            print(f"[STT] Transcription: {transcription}")
+            print(f"[STT] Time taken: {timings['stt_time']:.2f} seconds")
+
+            return {
+                "transcription": transcription,
+                "error": None,
+                "timings": timings
+            }
+
+        except Exception as e:
+            logger.error(f"Error during speech recognition: {e}", exc_info=True)
+            print(f"\n[STT] ERROR: {e}")
+            return {
+                "transcription": "",
+                "error": str(e),
+                "timings": {}
+            }
+
     def clear_conversation(self) -> None:
         """Clear the conversation history except for the system prompt."""
+        # Clear the conversation history
         self.conversation_history = [self.conversation_history[0]]
+
+        # Clear the memory if available
+        if self.memory_available and self.memory is not None:
+            try:
+                # For short-term memory manager
+                if hasattr(self.memory, 'reset'):
+                    self.memory.reset()
+                    logger.info("Reset short-term memory")
+                # For enhanced memory manager
+                elif hasattr(self.memory, 'short_term') and hasattr(self.memory.short_term, 'reset'):
+                    self.memory.short_term.reset()
+                    logger.info("Reset short-term memory in enhanced memory manager")
+
+                # Re-add system prompt to memory
+                if hasattr(self.memory, 'add_turn'):
+                    self.memory.add_turn("system", self.system_prompt)
+                    logger.info("Added system prompt to memory after reset")
+            except Exception as e:
+                logger.error(f"Error clearing memory: {e}")
+                print(f"\n[WARNING] Error clearing memory: {e}")
+
+    def get_relevant_memories(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """
+        Retrieve relevant memories for the given query.
+
+        Args:
+            query: The query to search for relevant memories
+            limit: Maximum number of memories to retrieve
+
+        Returns:
+            List of relevant memories
+        """
+        if not self.memory_available or self.memory is None or not self.using_long_term_memory:
+            logger.warning("Long-term memory not available for retrieval")
+            return []
+
+        try:
+            # Check if the memory has the search_memories method (EnhancedMemoryManager)
+            if hasattr(self.memory, 'search_memories'):
+                memories = self.memory.search_memories(query, limit=limit)
+                logger.info(f"Retrieved {len(memories)} relevant memories from long-term storage")
+                return memories
+            # Check if the memory has a long_term attribute with retrieve_memories method
+            elif hasattr(self.memory, 'long_term') and hasattr(self.memory.long_term, 'retrieve_memories'):
+                memories = self.memory.long_term.retrieve_memories(query, limit=limit)
+                logger.info(f"Retrieved {len(memories)} relevant memories from long-term storage")
+                return memories
+            else:
+                logger.warning("Memory system does not support memory retrieval")
+                return []
+        except Exception as e:
+            logger.error(f"Error retrieving memories: {e}")
+            return []
+
+    def close(self) -> None:
+        """Close and clean up resources."""
+        # Close memory system if available
+        if self.memory_available and self.memory is not None:
+            try:
+                # For enhanced memory manager
+                if self.using_long_term_memory and hasattr(self.memory, 'close'):
+                    logger.info("Closing enhanced memory manager")
+                    self.memory.close()
+                    logger.info("Enhanced memory manager closed")
+                # For standard memory manager
+                elif hasattr(self.memory, 'export'):
+                    # Export memory to file
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    export_dir = self.config.get("memory.export_dir", "data/memory")
+                    os.makedirs(export_dir, exist_ok=True)
+                    export_path = f"{export_dir}/session_{timestamp}.json"
+                    self.memory.export(export_path)
+                    logger.info(f"Exported memory to {export_path}")
+            except Exception as e:
+                logger.error(f"Error closing memory: {e}")
+                print(f"\n[WARNING] Error closing memory: {e}")
+
+        # Close STT if available
+        if self.stt_available and self.stt is not None:
+            try:
+                self.stt.close()
+                logger.info("STT resources released")
+            except Exception as e:
+                logger.error(f"Error closing STT: {e}")
+                print(f"\n[WARNING] Error closing STT: {e}")
 
 def create_gui():
     """Create the PySimpleGUI interface."""
@@ -401,6 +711,12 @@ def create_gui():
             sg.Text('Max Tokens:'),
             sg.Slider(range=(50, 500), default_value=256, resolution=1, orientation='h', size=(10, 15), key='-MAX_TOKENS-')
         ],
+        [
+            sg.Button('Push-to-Talk', key='-PTT-', size=(15, 1), button_color=('white', 'green')),
+            sg.Text('Duration:'),
+            sg.Slider(range=(1, 10), default_value=5, resolution=1, orientation='h', size=(10, 15), key='-PTT_DURATION-'),
+            sg.Button('Demo Mode', key='-DEMO-', size=(15, 1), button_color=('white', 'blue'))
+        ],
 
         [sg.HorizontalSeparator()],
 
@@ -412,6 +728,13 @@ def create_gui():
             sg.Button('Copy', key='-COPY-', size=(10, 1)),
             sg.Button('Clear Response', key='-CLEAR_RESPONSE-', size=(10, 1)),
             sg.Checkbox('Auto-speak', key='-AUTO_SPEAK-', default=False)
+        ],
+        [
+            sg.Text('TTS Engine:'),
+            sg.Radio('CSM', 'TTS_ENGINE', key='-TTS_CSM-'),
+            sg.Radio('Dia', 'TTS_ENGINE', key='-TTS_DIA-'),
+            sg.Radio('ElevenLabs', 'TTS_ENGINE', key='-TTS_ELEVENLABS-', default=True),
+            sg.Button('Switch TTS Engine', key='-SWITCH_TTS-', size=(15, 1))
         ],
 
         [sg.HorizontalSeparator()],
@@ -425,6 +748,7 @@ def create_gui():
             sg.Button('Clear Log', key='-CLEAR_LOG-', size=(10, 1)),
             sg.Button('Save Conversation', key='-SAVE-', size=(15, 1)),
             sg.Button('Clear Conversation', key='-CLEAR_CONV-', size=(15, 1)),
+            sg.Button('View Memories', key='-VIEW_MEMORIES-', size=(15, 1)),
             sg.Checkbox('Show Timing', key='-SHOW_TIMING-', default=True)
         ],
 
@@ -529,8 +853,8 @@ def process_in_thread(window, coda, text, temperature, max_tokens):
                     llm_time = result["timings"].get("llm_time", 0)
                     log_message(window, f"Response generated in {llm_time:.2f} seconds")
 
-                # Auto-speak if enabled
-                if window['-AUTO_SPEAK-'].get():
+                # Auto-speak if enabled or in demo mode
+                if window['-AUTO_SPEAK-'].get() or coda.demo_mode:
                     window['-STATUS-'].update('Speaking...')
                     window.refresh()
 
@@ -575,6 +899,16 @@ def main():
         log_message(window, "Initializing Coda debug wrapper...")
         coda = CodaDebugWrapper()
         log_message(window, "Coda debug wrapper initialized successfully")
+
+        # Set the correct radio button based on the current TTS engine
+        if hasattr(coda, 'current_tts_engine'):
+            if coda.current_tts_engine == "csm":
+                window['-TTS_CSM-'].update(True)
+            elif coda.current_tts_engine == "dia":
+                window['-TTS_DIA-'].update(True)
+            elif coda.current_tts_engine == "elevenlabs":
+                window['-TTS_ELEVENLABS-'].update(True)
+            log_message(window, f"Current TTS engine: {coda.current_tts_engine}")
     except Exception as e:
         import traceback
         error_traceback = traceback.format_exc()
@@ -630,6 +964,15 @@ def main():
 
                         if success:
                             log_message(window, "Speech played successfully")
+
+                            # If in demo mode and auto-speak is enabled, listen for the next input
+                            if coda.demo_mode and window['-AUTO_SPEAK-'].get():
+                                # Wait a moment before starting to listen again
+                                time.sleep(1)
+
+                                # Simulate clicking the Push-to-Talk button
+                                log_message(window, "Demo mode: Automatically listening for next input")
+                                window.write_event_value('-PTT-', None)
                         else:
                             log_message(window, "Error playing speech", "ERROR")
                     except Exception as e:
@@ -669,6 +1012,186 @@ def main():
                 coda.clear_conversation()
                 log_message(window, "Conversation history cleared")
 
+        # View Memories
+        elif event == '-VIEW_MEMORIES-':
+            if coda and coda.memory_available and coda.using_long_term_memory:
+                try:
+                    # Get the last user input or a default query
+                    last_user_input = ""
+                    for msg in reversed(coda.conversation_history):
+                        if msg.get("role") == "user":
+                            last_user_input = msg.get("content", "")
+                            break
+
+                    query = last_user_input if last_user_input else "Show me relevant memories"
+
+                    # Get memories
+                    memories = coda.get_relevant_memories(query, limit=10)
+
+                    if memories:
+                        # Format memories for display
+                        memory_text = "=== Memories from Long-Term Storage ===\n\n"
+                        for i, memory in enumerate(memories):
+                            # Extract content and metadata
+                            content = memory.get('content', '') if isinstance(memory, dict) else str(memory)
+                            metadata = memory.get('metadata', {}) if isinstance(memory, dict) else {}
+                            timestamp = metadata.get('timestamp', 'Unknown time')
+                            source_type = metadata.get('source_type', 'Unknown source')
+
+                            memory_text += f"Memory {i+1}:\n"
+                            memory_text += f"Content: {content}\n"
+                            memory_text += f"Type: {source_type}\n"
+                            memory_text += f"Timestamp: {timestamp}\n\n"
+
+                        # Show in a popup
+                        sg.popup_scrolled(memory_text, title="Long-Term Memories", size=(80, 20))
+                        log_message(window, f"Displayed {len(memories)} memories from long-term storage")
+                    else:
+                        sg.popup_ok("No memories found in long-term storage.", title="Long-Term Memories")
+                        log_message(window, "No memories found in long-term storage")
+                except Exception as e:
+                    sg.popup_error(f"Error retrieving memories: {e}", title="Memory Error")
+                    log_message(window, f"Error retrieving memories: {e}", "ERROR")
+            else:
+                sg.popup_ok("Long-term memory is not available.", title="Memory Not Available")
+                log_message(window, "Long-term memory is not available", "WARNING")
+
+        # Switch TTS Engine
+        elif event == '-SWITCH_TTS-':
+            if coda:
+                # Determine which engine is selected
+                if values['-TTS_CSM-']:
+                    new_engine = "csm"
+                elif values['-TTS_DIA-']:
+                    new_engine = "dia"
+                elif values['-TTS_ELEVENLABS-']:
+                    new_engine = "elevenlabs"
+                else:
+                    new_engine = "csm"  # Default fallback
+
+                # Check if we're actually changing engines
+                if new_engine != coda.current_tts_engine:
+                    log_message(window, f"Switching TTS engine from {coda.current_tts_engine} to {new_engine}...")
+
+                    try:
+                        # Get device from config
+                        device = coda.config.get("tts.device", "cuda" if torch.cuda.is_available() else "cpu")
+
+                        # Initialize the new TTS engine
+                        if new_engine == "elevenlabs":
+                            # ElevenLabs-specific parameters
+                            coda.tts = create_tts(
+                                engine="elevenlabs",
+                                api_key=coda.config.get("tts.elevenlabs_api_key", ""),
+                                voice_id=coda.config.get("tts.elevenlabs_voice_id", "JBFqnCBsd6RMkjVDRZzb"),
+                                model_id=coda.config.get("tts.elevenlabs_model_id", "eleven_multilingual_v2"),
+                                stability=coda.config.get("tts.elevenlabs_stability", 0.5),
+                                similarity_boost=coda.config.get("tts.elevenlabs_similarity_boost", 0.75),
+                                style=coda.config.get("tts.elevenlabs_style", 0.0),
+                                use_speaker_boost=coda.config.get("tts.elevenlabs_use_speaker_boost", True)
+                            )
+                            log_message(window, f"ElevenLabs TTS initialized with voice={coda.config.get('tts.elevenlabs_voice_id')}")
+                        elif new_engine == "dia":
+                            # Dia-specific parameters
+                            coda.tts = create_tts(
+                                engine="dia",
+                                device=device,
+                                audio_prompt_path=coda.config.get("tts.audio_prompt_path"),
+                                temperature=coda.config.get("tts.temperature", 1.3),
+                                top_p=coda.config.get("tts.top_p", 0.95),
+                                cfg_scale=coda.config.get("tts.cfg_scale", 3.0),
+                                use_torch_compile=coda.config.get("tts.use_torch_compile", True)
+                            )
+                            log_message(window, f"Dia TTS initialized with device={device}")
+                        else:  # Default to CSM
+                            # CSM-specific parameters
+                            coda.tts = create_tts(
+                                engine="csm",
+                                device=device,
+                                language=coda.config.get("tts.language", "en")
+                            )
+                            log_message(window, f"CSM-1B TTS initialized with device={device}")
+
+                        # Update the current TTS engine
+                        coda.current_tts_engine = new_engine
+                        log_message(window, f"TTS engine switched to {new_engine} successfully")
+
+                        # Update the config file to persist the change
+                        coda.config.set("tts.engine", new_engine)
+                        coda.config.save()  # Save the configuration to disk
+                        log_message(window, f"Updated configuration with new TTS engine: {new_engine}")
+
+                    except Exception as e:
+                        log_message(window, f"Error switching TTS engine: {e}", "ERROR")
+                else:
+                    log_message(window, f"Already using {new_engine} TTS engine")
+            else:
+                log_message(window, "Coda is not initialized", "ERROR")
+
+        # Push-to-Talk
+        elif event == '-PTT-':
+            if coda and coda.stt_available:
+                # Get the duration from the slider
+                duration = int(values['-PTT_DURATION-'])
+
+                # Update status
+                window['-STATUS-'].update('Listening...')
+                window['-PTT-'].update('Listening...', button_color=('white', 'red'))
+                window.refresh()
+
+                # Start listening in a separate thread to keep the GUI responsive
+                def listen_thread():
+                    try:
+                        # Listen for speech
+                        log_message(window, f"Listening for {duration} seconds...")
+                        result = coda.listen(duration=duration)
+
+                        # Update the input field with the transcription
+                        if result["error"]:
+                            log_message(window, f"Error during speech recognition: {result['error']}", "ERROR")
+                        else:
+                            transcription = result.get("transcription", "")
+                            if transcription:
+                                # Update the input field
+                                window['-INPUT-'].update(transcription)
+                                log_message(window, f"Transcription: {transcription}")
+
+                                # If in demo mode, automatically send the transcription to the LLM
+                                if coda.demo_mode:
+                                    # Process the transcription
+                                    log_message(window, "Demo mode: Automatically sending transcription to LLM")
+                                    threading.Thread(target=process_in_thread, args=(window, coda, transcription, values['-TEMP-'], int(values['-MAX_TOKENS-']))).start()
+                            else:
+                                log_message(window, "No speech detected or transcription failed", "WARNING")
+
+                        # Reset the button
+                        window['-PTT-'].update('Push-to-Talk', button_color=('white', 'green'))
+                        window['-STATUS-'].update('Ready')
+                    except Exception as e:
+                        log_message(window, f"Error in listen thread: {e}", "ERROR")
+                        window['-PTT-'].update('Push-to-Talk', button_color=('white', 'green'))
+                        window['-STATUS-'].update('Ready')
+
+                # Start the listening thread
+                threading.Thread(target=listen_thread).start()
+            else:
+                log_message(window, "STT is not available", "ERROR")
+
+        # Demo Mode
+        elif event == '-DEMO-':
+            if coda:
+                # Toggle demo mode
+                coda.demo_mode = not coda.demo_mode
+
+                if coda.demo_mode:
+                    window['-DEMO-'].update('Demo Mode: ON', button_color=('white', 'red'))
+                    log_message(window, "Demo mode enabled - Push-to-Talk will automatically process responses")
+                else:
+                    window['-DEMO-'].update('Demo Mode', button_color=('white', 'blue'))
+                    log_message(window, "Demo mode disabled")
+            else:
+                log_message(window, "Coda is not initialized", "ERROR")
+
         # Save conversation
         elif event == '-SAVE-':
             if coda:
@@ -680,12 +1203,23 @@ def main():
                 else:
                     log_message(window, "Error saving conversation", "ERROR")
 
+    # Close resources
+    if coda:
+        try:
+            log_message(window, "Closing Coda resources...")
+            coda.close()
+            log_message(window, "Coda resources closed successfully")
+        except Exception as e:
+            log_message(window, f"Error closing Coda resources: {e}", "ERROR")
+
     # Close the window
     window.close()
 
 if __name__ == "__main__":
     # Create data directories
     os.makedirs("data/conversations", exist_ok=True)
+    os.makedirs("data/memory", exist_ok=True)
+    os.makedirs("data/memory/long_term", exist_ok=True)
 
     # Run the GUI
     main()

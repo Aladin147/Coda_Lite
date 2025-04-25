@@ -1,0 +1,12 @@
+# Dia TTS requirements
+git+https://github.com/nari-labs/dia.git
+soundfile>=0.13.1
+torch>=2.6.0
+torchaudio>=2.6.0
+numpy>=2.2.4
+huggingface-hub>=0.30.2
+simpleaudio
+# For Linux systems
+triton>=3.2.0; sys_platform == 'linux'
+# For Windows systems
+triton-windows>=3.2.0.post18; sys_platform == 'win32'

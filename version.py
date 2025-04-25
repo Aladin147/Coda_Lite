@@ -4,17 +4,19 @@ Coda Lite version information.
 This module provides version information for the Coda Lite project.
 """
 
-__version__ = "0.0.9"
-__version_name__ = "Adaptive Agent"
-__version_description__ = "Self-tuning, memory-aware assistant"
+__version__ = "0.1.1-dev"
+__version_name__ = "Dashboard Integration"
+__version_description__ = "Visual interface for monitoring and interaction"
 
 # Version history
 VERSION_HISTORY = {
     "0.0.0": "Initial Prototype",
     "0.0.1": "Personality Engine",
     "0.0.2": "Memory & Tools",
-    "0.1.0": "Alpha Candidate",
-    "0.0.9": "Adaptive Agent"
+    "0.0.8": "Tool Calling",
+    "0.0.9": "Adaptive Agent",
+    "0.1.0": "WebSocket Architecture",
+    "0.1.1": "Dashboard Integration"
 }
 
 def get_version_info():

@@ -57,7 +57,7 @@ logger.info(get_full_version_string())
 from config.config_loader import ConfigLoader
 from stt import WhisperSTT
 from llm import OllamaLLM
-from tts import create_tts
+# TTS imports are now handled in the initialization code
 
 # Type definitions for conversation history
 Message = Dict[str, str]
@@ -171,12 +171,45 @@ class CodaAssistant:
 
         # Initialize TTS module
         logger.info("Initializing Text-to-Speech module...")
-        self.tts = create_tts(
-            engine="csm",  # Use CSM-1B TTS
-            language=config.get("tts.language", "EN"),
-            voice=config.get("tts.voice", "EN-US"),
-            device=config.get("tts.device", "cuda")
-        )
+
+        # Use the TTS factory to get the appropriate TTS instance
+        from tts.factory import get_tts_instance, get_available_tts_engines
+
+        # Get available TTS engines
+        available_engines = get_available_tts_engines()
+        logger.info(f"Available TTS engines: {available_engines}")
+
+        # Get the configured TTS engine, defaulting to ElevenLabs
+        tts_engine = config.get("tts.engine", "elevenlabs")
+
+        # Check if the requested engine is available
+        if tts_engine not in available_engines or not available_engines[tts_engine]:
+            logger.warning(f"Requested TTS engine '{tts_engine}' is not available. Falling back to ElevenLabs.")
+            tts_engine = "elevenlabs"
+
+        try:
+            # Initialize TTS with lazy loading
+            self.tts = get_tts_instance(
+                tts_type=tts_engine,
+                config=config.get_all()
+            )
+
+            if tts_engine == "elevenlabs":
+                logger.info(f"Initialized ElevenLabs TTS with voice: {config.get('tts.elevenlabs_voice_id', '21m00Tcm4TlvDq8ikWAM')}")
+            elif tts_engine == "csm":
+                logger.info(f"Initialized CSM TTS with language: {config.get('tts.language', 'EN')}")
+            elif tts_engine == "dia":
+                logger.info(f"Initialized Dia TTS with model: {config.get('tts.dia_model_path', 'default')}")
+        except Exception as e:
+            logger.error(f"Error initializing TTS engine '{tts_engine}': {e}")
+            logger.info("Falling back to ElevenLabs TTS")
+
+            # Fallback to ElevenLabs TTS
+            self.tts = get_tts_instance(
+                tts_type="elevenlabs",
+                config=config.get_all()
+            )
+            logger.info(f"Initialized ElevenLabs TTS with voice: {config.get('tts.elevenlabs_voice_id', '21m00Tcm4TlvDq8ikWAM')}")
 
         # Initialize personality
         logger.info("Initializing personality...")
@@ -831,6 +864,29 @@ class CodaAssistant:
                     logger.warning("TTS worker thread did not terminate gracefully")
             except Exception as e:
                 logger.error(f"Error stopping TTS worker thread: {e}")
+
+        # Close the TTS module
+        if hasattr(self, 'tts') and self.tts:
+            # Try to close the TTS module
+            try:
+                # First try the close method if it exists
+                if hasattr(self.tts, 'close'):
+                    self.tts.close()
+                    logger.info("Closed TTS module using close() method")
+                # Then try the unload method if it exists
+                elif hasattr(self.tts, 'unload'):
+                    self.tts.unload()
+                    logger.info("Closed TTS module using unload() method")
+            except Exception as e:
+                logger.warning(f"Error closing TTS module: {e}")
+
+            # Use the factory's unload function to ensure proper cleanup
+            try:
+                from tts.factory import unload_current_tts
+                unload_current_tts()
+                logger.info("Unloaded TTS module using factory")
+            except Exception as e:
+                logger.warning(f"Error unloading TTS module using factory: {e}")
 
         # Close the STT module
         logger.info("Closing STT module")

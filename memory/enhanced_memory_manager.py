@@ -129,7 +129,8 @@ class EnhancedMemoryManager:
     def get_enhanced_context(self,
                             user_input: str,
                             max_tokens: int = 800,
-                            max_memories: int = 3) -> List[Dict[str, str]]:
+                            max_memories: int = 3,
+                            include_system: bool = True) -> List[Dict[str, str]]:
         """
         Get enhanced conversation context with relevant long-term memories.
 
@@ -137,6 +138,7 @@ class EnhancedMemoryManager:
             user_input: Current user input
             max_tokens: Maximum number of tokens for short-term context
             max_memories: Maximum number of long-term memories to include
+            include_system: Whether to include system messages in the context
 
         Returns:
             Enhanced context with relevant memories
@@ -146,6 +148,9 @@ class EnhancedMemoryManager:
 
         # Retrieve relevant memories
         memories = self.retrieve_relevant_memories(user_input, limit=max_memories)
+
+        # Store the retrieved memories for later access
+        self.last_retrieved_memories = memories
 
         # If we have memories, add them to the context
         if memories:
@@ -366,6 +371,19 @@ class EnhancedMemoryManager:
                 preferences[key] = value
 
         return preferences
+
+    def search_memories(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """
+        Search for relevant memories based on a query.
+
+        Args:
+            query: The search query
+            limit: Maximum number of results to return
+
+        Returns:
+            List of memory dictionaries
+        """
+        return self.long_term.retrieve_memories(query, limit=limit)
 
     def _extract_and_update_topics(self, text: str) -> List[str]:
         """

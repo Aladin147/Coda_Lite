@@ -35,6 +35,9 @@ ENV/
 data/logs/
 data/audio/
 data/temp/
+data/memory/backups/
+data/memory/long_term/
+data/memory/test_results/
 
 # Model files
 *.gguf
@@ -50,3 +53,13 @@ config/prompts/*.txt
 # OS specific
 .DS_Store
 Thumbs.db
+
+# Audio output files
+*.wav
+
+# Node.js
+node_modules/
+.vite/
+
+# Requirements
+requirements_current.txt

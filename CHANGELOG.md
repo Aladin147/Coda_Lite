@@ -13,6 +13,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
+## [0.1.2-memory-debug-ui] - 2025-04-27
+
+### Added
+
+- Memory debug UI components for dashboard
+- Memory operations log with filtering and details
+- Memory statistics visualization with usage metrics
+- Memory search interface with type and importance filtering
+- Memory reinforcement and forgetting controls
+- Memory debug state management with Zustand
+- Comprehensive tests for memory debug UI components
+- Detailed documentation for memory debug UI
+
+### Changed
+
+- Updated App component to handle memory debug events
+- Enhanced WebSocket event handling for memory debug
+- Improved memory debug panel layout and usability
+- Added memory debug toggle to dashboard
+
+### Fixed
+
+- Fixed memory search result display for empty results
+- Improved memory operation filtering performance
+- Enhanced memory statistics visualization
+
 ## [0.1.2-memory-debug] - 2025-04-26
 
 ### Added

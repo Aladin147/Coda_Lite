@@ -8,7 +8,9 @@ import VoiceControls from './components/VoiceControls';
 import TextInput from './components/TextInput';
 import ConnectionStatus from './components/ConnectionStatus';
 import WebSocketDebugger from './components/WebSocketDebugger';
+import { MemoryDebugPanel } from './components/MemoryDebug';
 import WebSocketClient from './WebSocketClient';
+import { useMemoryDebugStore } from './store/memoryDebugStore';
 
 function App() {
   // State for the application
@@ -36,6 +38,9 @@ function App() {
   const [messages, setMessages] = useState<any[]>([]);
   const [mode, setMode] = useState<'idle' | 'listening' | 'thinking' | 'speaking' | 'error'>('idle');
   const [emotion, setEmotion] = useState<'neutral' | 'playful' | 'supportive' | 'concerned' | 'witty' | 'focused'>('neutral');
+
+  // Memory debug state
+  const { addOperation, updateStats, setSearchResults } = useMemoryDebugStore();
 
   // Initialize WebSocket connection
   useEffect(() => {
@@ -227,6 +232,34 @@ function App() {
         case 'emotion_change':
           setEmotion(event.data.emotion);
           break;
+
+        // Memory debug events
+        case 'memory_debug_operation':
+          console.log('Received memory_debug_operation event:', event.data);
+          addOperation({
+            timestamp: event.timestamp || new Date().toISOString(),
+            operation_type: event.data.operation_type,
+            details: event.data.details
+          });
+          break;
+
+        case 'memory_debug_stats':
+          console.log('Received memory_debug_stats event:', event.data);
+          updateStats(event.data.stats);
+          break;
+
+        case 'memory_debug_search':
+          console.log('Received memory_debug_search event:', event.data);
+          const searchResults = event.data.results.map((result: any) => ({
+            id: result.id,
+            content: result.content,
+            type: result.metadata?.source_type || result.type || 'unknown',
+            importance: result.metadata?.importance || result.importance || 0.5,
+            timestamp: result.metadata?.timestamp || event.timestamp || new Date().toISOString(),
+            similarity: result.similarity || result.score || 0
+          }));
+          setSearchResults(searchResults, event.data.query);
+          break;
       }
     };
 
@@ -360,6 +393,9 @@ function App() {
           </div>
 
           <ConversationView messages={messages} />
+
+          {/* Memory Debug Panel */}
+          <MemoryDebugPanel />
 
           {/* WebSocket Debugger (conditionally rendered) */}
           {showDebugger ? (

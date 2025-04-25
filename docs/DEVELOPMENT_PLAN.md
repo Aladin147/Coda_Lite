@@ -33,6 +33,7 @@ This document outlines the comprehensive development plan for Coda Lite, incorpo
 - Implement basic watchdog process
 - Add comprehensive error handling
 - Fix WebSocket authentication
+- Migrate to Gemma 2B as primary LLM
 
 ### Phase 2: Observability (Weeks 4-6)
 - Implement logging infrastructure

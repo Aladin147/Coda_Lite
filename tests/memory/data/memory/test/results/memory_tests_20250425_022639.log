@@ -1,0 +1,273 @@
+2025-04-25 02:26:47,246 - memory_test.runner - INFO - Starting memory system tests
+2025-04-25 02:26:47,249 - memory_test - INFO - Starting memory test with ID: 20250425_022647
+2025-04-25 02:26:47,249 - memory_test - INFO - Starting test: test_add_turn
+2025-04-25 02:26:47,250 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=5
+2025-04-25 02:26:47,250 - memory_test - INFO - Completed test: test_add_turn in 0.00s
+2025-04-25 02:26:47,250 - memory_test - INFO - Starting test: test_export_import
+2025-04-25 02:26:47,250 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=5
+2025-04-25 02:26:47,251 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=5
+2025-04-25 02:26:47,258 - memory_test - INFO - Completed test: test_export_import in 0.01s
+2025-04-25 02:26:47,258 - memory_test - INFO - Starting test: test_get_context
+2025-04-25 02:26:47,258 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=10
+2025-04-25 02:26:47,258 - memory_test - INFO - Completed test: test_get_context in 0.00s
+2025-04-25 02:26:47,259 - memory_test - INFO - Starting test: test_get_turn_count
+2025-04-25 02:26:47,259 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=5
+2025-04-25 02:26:47,259 - memory_test - INFO - Completed test: test_get_turn_count in 0.00s
+2025-04-25 02:26:47,259 - memory_test - INFO - Starting test: test_initialization
+2025-04-25 02:26:47,260 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=20
+2025-04-25 02:26:47,260 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=10
+2025-04-25 02:26:47,260 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=1000
+2025-04-25 02:26:47,260 - memory_test - INFO - Completed test: test_initialization in 0.00s
+2025-04-25 02:26:47,260 - memory_test - INFO - Starting test: test_maxlen_behavior
+2025-04-25 02:26:47,260 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=3
+2025-04-25 02:26:47,261 - memory_test - INFO - Completed test: test_maxlen_behavior in 0.00s
+2025-04-25 02:26:47,261 - memory_test - INFO - Starting test: test_reset
+2025-04-25 02:26:47,261 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=5
+2025-04-25 02:26:47,261 - memory_test - INFO - Completed test: test_reset in 0.00s
+2025-04-25 02:26:47,262 - memory_test - INFO - Starting test: test_token_counting
+2025-04-25 02:26:47,262 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=10
+2025-04-25 02:26:47,262 - memory_test - INFO - Completed test: test_token_counting in 0.00s
+2025-04-25 02:26:47,262 - memory_test - INFO - Completed memory test with ID: 20250425_022647
+2025-04-25 02:26:47,263 - memory_test - INFO - Starting memory test with ID: 20250425_022647
+2025-04-25 02:26:47,263 - memory_test - INFO - Starting test: test_add_memory
+2025-04-25 02:26:47,263 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,263 - memory_test.utils - INFO - Added memory 4e917f00-ff39-410e-8e1a-accdedf32047 with 22 chars
+2025-04-25 02:26:47,263 - memory_test.utils - INFO - Added memory 4a9012ac-9146-490c-8bb6-576dd3e19b6f with 28 chars
+2025-04-25 02:26:47,265 - memory_test - INFO - Completed test: test_add_memory in 0.00s
+2025-04-25 02:26:47,265 - memory_test - INFO - Starting test: test_add_topic
+2025-04-25 02:26:47,265 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,265 - memory_test - INFO - Completed test: test_add_topic in 0.00s
+2025-04-25 02:26:47,266 - memory_test - INFO - Starting test: test_get_all_memories
+2025-04-25 02:26:47,266 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,266 - memory_test.utils - INFO - Added memory 9a18b50a-d647-49b2-b248-0244c6ca701a with 13 chars
+2025-04-25 02:26:47,266 - memory_test.utils - INFO - Added memory 228872c0-f514-4244-855d-1ffa9ddf6b7e with 13 chars
+2025-04-25 02:26:47,266 - memory_test.utils - INFO - Added memory 641305e6-bafd-4fea-948f-0bb493721a09 with 13 chars
+2025-04-25 02:26:47,266 - memory_test.utils - INFO - Added memory 751791c5-d237-4fac-a9b4-28130cb14956 with 13 chars
+2025-04-25 02:26:47,266 - memory_test.utils - INFO - Added memory 97ad09aa-f243-44dd-948e-31453f0c5a0f with 13 chars
+2025-04-25 02:26:47,266 - memory_test - INFO - Completed test: test_get_all_memories in 0.00s
+2025-04-25 02:26:47,267 - memory_test - INFO - Starting test: test_get_memory_by_id
+2025-04-25 02:26:47,267 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,267 - memory_test.utils - INFO - Added memory 04f9b85b-83ef-4659-84be-7e356f723d72 with 42 chars
+2025-04-25 02:26:47,267 - memory_test - INFO - Completed test: test_get_memory_by_id in 0.00s
+2025-04-25 02:26:47,267 - memory_test - INFO - Starting test: test_get_memory_stats
+2025-04-25 02:26:47,269 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,269 - memory_test.utils - INFO - Added memory f090f6cf-5a18-4f13-a696-df37879c9486 with 13 chars
+2025-04-25 02:26:47,269 - memory_test.utils - INFO - Added memory a83545e9-93c1-4995-a7f9-e237ca31e62f with 13 chars
+2025-04-25 02:26:47,269 - memory_test.utils - INFO - Added memory f0b3d004-d3de-45d0-872c-2c0b46bf0618 with 13 chars
+2025-04-25 02:26:47,269 - memory_test.utils - INFO - Added memory b8d45c29-d7d9-4a46-8296-c0b9c2a303c2 with 13 chars
+2025-04-25 02:26:47,270 - memory_test.utils - INFO - Added memory 90c0e266-1cda-4a1b-8c5f-7af4ef2576f5 with 13 chars
+2025-04-25 02:26:47,270 - memory_test - INFO - Completed test: test_get_memory_stats in 0.00s
+2025-04-25 02:26:47,270 - memory_test - INFO - Starting test: test_initialization_chroma
+2025-04-25 02:26:47,270 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,271 - memory_test - INFO - Completed test: test_initialization_chroma in 0.00s
+2025-04-25 02:26:47,271 - memory_test - INFO - Starting test: test_initialization_in_memory
+2025-04-25 02:26:47,272 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,272 - memory_test - INFO - Completed test: test_initialization_in_memory in 0.00s
+2025-04-25 02:26:47,272 - memory_test - INFO - Starting test: test_initialization_sqlite
+2025-04-25 02:26:47,273 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,273 - memory_test - INFO - Completed test: test_initialization_sqlite in 0.00s
+2025-04-25 02:26:47,273 - memory_test - INFO - Starting test: test_memory_persistence
+2025-04-25 02:26:47,273 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,274 - memory_test.utils - INFO - Added memory f40d470b-0d57-42ae-99ee-6f715da629b4 with 33 chars
+2025-04-25 02:26:47,274 - memory_test.utils - INFO - Added memory eef1c920-2b24-4d99-a94d-ad0beb3f88e5 with 39 chars
+2025-04-25 02:26:47,274 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,274 - memory_test - INFO - Completed test: test_memory_persistence in 0.00s
+2025-04-25 02:26:47,274 - memory_test - INFO - Starting test: test_memory_pruning
+2025-04-25 02:26:47,275 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,275 - memory_test.utils - INFO - Added memory 6efcb5f3-150e-4a6c-b9b2-1266982c55a2 with 13 chars
+2025-04-25 02:26:47,275 - memory_test.utils - INFO - Added memory 163b045f-7bc2-46f2-b572-05b6a6840628 with 13 chars
+2025-04-25 02:26:47,275 - memory_test.utils - INFO - Added memory 46e62c04-67e9-41ee-9314-72b834700bb1 with 13 chars
+2025-04-25 02:26:47,275 - memory_test.utils - INFO - Added memory 77751320-9de2-4a05-b8d2-47891d856a59 with 13 chars
+2025-04-25 02:26:47,275 - memory_test.utils - INFO - Added memory 346822dd-c6a2-4fd9-8bd4-f56225a03fee with 13 chars
+2025-04-25 02:26:47,275 - memory_test - INFO - Completed test: test_memory_pruning in 0.00s
+2025-04-25 02:26:47,276 - memory_test - INFO - Starting test: test_search_by_metadata
+2025-04-25 02:26:47,276 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,276 - memory_test.utils - INFO - Added memory 34669b4a-40ea-4252-92f2-79b450e763b2 with 39 chars
+2025-04-25 02:26:47,276 - memory_test.utils - INFO - Added memory 3dc01e24-a845-418c-a01f-e57d431e7f59 with 42 chars
+2025-04-25 02:26:47,277 - memory_test.utils - INFO - Added memory 3ebd784a-f37c-4793-97f8-acb94a319d96 with 31 chars
+2025-04-25 02:26:47,277 - memory_test - INFO - Completed test: test_search_by_metadata in 0.00s
+2025-04-25 02:26:47,277 - memory_test - INFO - Starting test: test_search_memories
+2025-04-25 02:26:47,278 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,278 - memory_test.utils - INFO - Added memory 8cbc2c32-a635-4569-957d-2eae2304fd8e with 39 chars
+2025-04-25 02:26:47,278 - memory_test.utils - INFO - Added memory e62728d7-2ae1-440a-8f6a-6cb176ff0631 with 42 chars
+2025-04-25 02:26:47,278 - memory_test.utils - INFO - Added memory fb6a64e7-d7e2-42db-b7c8-858fad7ff0dc with 31 chars
+2025-04-25 02:26:47,278 - memory_test - INFO - Completed test: test_search_memories in 0.00s
+2025-04-25 02:26:47,278 - memory_test - INFO - Completed memory test with ID: 20250425_022647
+2025-04-25 02:26:47,280 - memory_test - INFO - Starting memory test with ID: 20250425_022647
+2025-04-25 02:26:47,280 - memory_test - INFO - Starting test: test_add_fact
+2025-04-25 02:26:47,281 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=20
+2025-04-25 02:26:47,281 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,281 - memory_test.utils - INFO - TestMemoryEncoder initialized
+2025-04-25 02:26:47,281 - memory_test.utils - INFO - TestEnhancedMemoryManager initialized
+2025-04-25 02:26:47,281 - memory_test.utils - INFO - Added memory f97250c4-68bb-4c63-a636-75e0bcef001a with 39 chars
+2025-04-25 02:26:47,281 - memory_test - INFO - Completed test: test_add_fact in 0.00s
+2025-04-25 02:26:47,282 - memory_test - INFO - Starting test: test_add_preference
+2025-04-25 02:26:47,282 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=20
+2025-04-25 02:26:47,282 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,282 - memory_test.utils - INFO - TestMemoryEncoder initialized
+2025-04-25 02:26:47,282 - memory_test.utils - INFO - TestEnhancedMemoryManager initialized
+2025-04-25 02:26:47,283 - memory_test.utils - INFO - Added memory 8ee1dd46-311c-4320-89d4-b92422c132f8 with 27 chars
+2025-04-25 02:26:47,283 - memory_test - INFO - Completed test: test_add_preference in 0.00s
+2025-04-25 02:26:47,283 - memory_test - INFO - Starting test: test_add_turn
+2025-04-25 02:26:47,283 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=20
+2025-04-25 02:26:47,283 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,284 - memory_test.utils - INFO - TestMemoryEncoder initialized
+2025-04-25 02:26:47,284 - memory_test.utils - INFO - TestEnhancedMemoryManager initialized
+2025-04-25 02:26:47,284 - memory_test.utils - INFO - Added memory 2d34736d-089b-4c5f-b166-830546c0b760 with 42 chars
+2025-04-25 02:26:47,284 - memory_test.utils - INFO - Added memory 3c20b702-5e1f-4ffd-9d15-5051fe01acac with 25 chars
+2025-04-25 02:26:47,284 - memory_test.utils - INFO - Added memory 3172d13b-fc92-4c8c-aa18-83ac7a15e585 with 42 chars
+2025-04-25 02:26:47,284 - memory_test - INFO - Completed test: test_add_turn in 0.00s
+2025-04-25 02:26:47,284 - memory_test - INFO - Starting test: test_auto_persist
+2025-04-25 02:26:47,285 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=20
+2025-04-25 02:26:47,285 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,285 - memory_test.utils - INFO - TestMemoryEncoder initialized
+2025-04-25 02:26:47,285 - memory_test.utils - INFO - TestEnhancedMemoryManager initialized
+2025-04-25 02:26:47,285 - memory_test.utils - INFO - Added memory 60c8726f-861f-4b86-a74e-2b6fa6a0f146 with 42 chars
+2025-04-25 02:26:47,286 - memory_test.utils - INFO - Added memory c0325bba-1c1c-41da-a404-9ee5124836b5 with 25 chars
+2025-04-25 02:26:47,286 - memory_test.utils - INFO - Added memory 26756a80-1f4d-4348-9548-e8bd8233ee1a with 42 chars
+2025-04-25 02:26:47,286 - memory_test - INFO - Completed test: test_auto_persist in 0.00s
+2025-04-25 02:26:47,287 - memory_test - INFO - Starting test: test_clear_short_term
+2025-04-25 02:26:47,287 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=20
+2025-04-25 02:26:47,287 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,287 - memory_test.utils - INFO - TestMemoryEncoder initialized
+2025-04-25 02:26:47,287 - memory_test.utils - INFO - TestEnhancedMemoryManager initialized
+2025-04-25 02:26:47,287 - memory_test.utils - INFO - Added memory cebf5ce8-f7d1-4777-96ca-b7bf2c84de7f with 42 chars
+2025-04-25 02:26:47,287 - memory_test.utils - INFO - Added memory e415dd78-ee22-4bdb-a753-1c813e7530ec with 25 chars
+2025-04-25 02:26:47,288 - memory_test.utils - INFO - Added memory 3e61a6e3-f16d-4b08-a228-51f9acadf0f2 with 42 chars
+2025-04-25 02:26:47,288 - memory_test - INFO - Completed test: test_clear_short_term in 0.00s
+2025-04-25 02:26:47,288 - memory_test - INFO - Starting test: test_get_enhanced_context
+2025-04-25 02:26:47,288 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=20
+2025-04-25 02:26:47,289 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,289 - memory_test.utils - INFO - TestMemoryEncoder initialized
+2025-04-25 02:26:47,289 - memory_test.utils - INFO - TestEnhancedMemoryManager initialized
+2025-04-25 02:26:47,289 - memory_test.utils - INFO - Added memory 0e57cd27-ca6f-473f-a8e2-78594297e844 with 42 chars
+2025-04-25 02:26:47,289 - memory_test.utils - INFO - Added memory 49326801-a273-4998-af16-75c6460fd424 with 25 chars
+2025-04-25 02:26:47,289 - memory_test.utils - INFO - Added memory f4d3ac40-c847-4f98-944e-caf048b50449 with 42 chars
+2025-04-25 02:26:47,289 - memory_test.utils - INFO - Added memory c5d96ba0-2956-4472-b617-4b1752ab52f8 with 39 chars
+2025-04-25 02:26:47,289 - memory_test.utils - INFO - Added memory 4524a8aa-09ca-431c-96a6-4e8534dcf482 with 42 chars
+2025-04-25 02:26:47,290 - memory_test.utils - INFO - Added memory 04a185b4-5264-4978-a472-b83bf7db5a93 with 26 chars
+2025-04-25 02:26:47,290 - memory_test - INFO - Completed test: test_get_enhanced_context in 0.00s
+2025-04-25 02:26:47,290 - memory_test - INFO - Starting test: test_initialization
+2025-04-25 02:26:47,291 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=20
+2025-04-25 02:26:47,291 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,291 - memory_test.utils - INFO - TestMemoryEncoder initialized
+2025-04-25 02:26:47,291 - memory_test.utils - INFO - TestEnhancedMemoryManager initialized
+2025-04-25 02:26:47,291 - memory_test - INFO - Completed test: test_initialization in 0.00s
+2025-04-25 02:26:47,291 - memory_test - INFO - Starting test: test_memory_integration
+2025-04-25 02:26:47,292 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=20
+2025-04-25 02:26:47,292 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,292 - memory_test.utils - INFO - TestMemoryEncoder initialized
+2025-04-25 02:26:47,292 - memory_test.utils - INFO - TestEnhancedMemoryManager initialized
+2025-04-25 02:26:47,292 - memory_test.utils - INFO - Added memory 04281a6f-6f92-473c-9f34-8af4fc053549 with 42 chars
+2025-04-25 02:26:47,292 - memory_test.utils - INFO - Added memory 620118a9-4f0c-4bd9-99ba-a104034a94a9 with 29 chars
+2025-04-25 02:26:47,292 - memory_test.utils - INFO - Added memory 3b27a644-e22b-4671-9b19-1ecd0521aa45 with 60 chars
+2025-04-25 02:26:47,292 - memory_test.utils - INFO - Added memory 1530f2ea-8a59-4cba-a2f0-dd80cde1d715 with 42 chars
+2025-04-25 02:26:47,293 - memory_test.utils - INFO - Added memory 322ad99a-f9e2-4706-8b48-0e45f6659992 with 29 chars
+2025-04-25 02:26:47,293 - memory_test.utils - INFO - Added memory 2601bd16-a387-44f3-9e3d-d5160d3e6241 with 60 chars
+2025-04-25 02:26:47,293 - memory_test.utils - INFO - Added memory a691d565-6938-42d4-b7f1-f6824900a1c5 with 29 chars
+2025-04-25 02:26:47,293 - memory_test.utils - INFO - Added memory ffa9eebe-b8cf-4147-bae2-b43afac2e8b6 with 118 chars
+2025-04-25 02:26:47,293 - memory_test.utils - INFO - Added memory ff8918a8-e311-4043-95ce-70f7fb3d142d with 42 chars
+2025-04-25 02:26:47,293 - memory_test.utils - INFO - Added memory f75d8b18-00e9-431d-9e3a-6c157badc6a4 with 29 chars
+2025-04-25 02:26:47,293 - memory_test.utils - INFO - Added memory d3071728-bd08-4d5d-a792-db21ee987e59 with 60 chars
+2025-04-25 02:26:47,294 - memory_test.utils - INFO - Added memory 201bcdde-4875-4e43-97ef-c913b6b35a73 with 29 chars
+2025-04-25 02:26:47,294 - memory_test.utils - INFO - Added memory fd35e010-3440-4c98-88d2-54eb86bf5dbf with 118 chars
+2025-04-25 02:26:47,294 - memory_test - INFO - Completed test: test_memory_integration in 0.00s
+2025-04-25 02:26:47,294 - memory_test - INFO - Starting test: test_persist_short_term_memory
+2025-04-25 02:26:47,295 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=20
+2025-04-25 02:26:47,295 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,295 - memory_test.utils - INFO - TestMemoryEncoder initialized
+2025-04-25 02:26:47,295 - memory_test.utils - INFO - TestEnhancedMemoryManager initialized
+2025-04-25 02:26:47,295 - memory_test.utils - INFO - Added memory acb9a691-d5ff-4235-8486-1cac83fafad3 with 42 chars
+2025-04-25 02:26:47,295 - memory_test.utils - INFO - Added memory 970c64ed-a520-4292-813c-43829d6b2a1f with 25 chars
+2025-04-25 02:26:47,295 - memory_test.utils - INFO - Added memory edc3dea2-af82-4bfe-98b1-4710aff65d22 with 42 chars
+2025-04-25 02:26:47,296 - memory_test.utils - INFO - Added memory 9bbe3ba1-c0e4-4956-9698-975317a21070 with 42 chars
+2025-04-25 02:26:47,296 - memory_test.utils - INFO - Added memory e314965c-4154-4b35-8be6-bf18ac4fbaa0 with 25 chars
+2025-04-25 02:26:47,296 - memory_test.utils - INFO - Added memory 5e8e6831-d544-4874-a2d4-bc3fa46ad976 with 42 chars
+2025-04-25 02:26:47,296 - memory_test.utils - INFO - Added memory 63cc04fa-4930-476f-89c7-0d6b80593cf2 with 22 chars
+2025-04-25 02:26:47,296 - memory_test.utils - INFO - Added memory 9d9423a4-1f7c-4421-8c4d-3766edbc90ba with 58 chars
+2025-04-25 02:26:47,296 - memory_test.utils - INFO - Added memory c4b9dd8c-15e1-424a-b5ee-26e695f0a0c2 with 42 chars
+2025-04-25 02:26:47,296 - memory_test.utils - INFO - Added memory 679dc887-a0b6-4e43-a185-a40f83f25f8e with 25 chars
+2025-04-25 02:26:47,297 - memory_test.utils - INFO - Added memory 54df1597-f562-4e32-a844-13c877e79725 with 42 chars
+2025-04-25 02:26:47,297 - memory_test.utils - INFO - Added memory 7aaa9ef9-baca-4527-bf3a-393e17c1de57 with 22 chars
+2025-04-25 02:26:47,297 - memory_test.utils - INFO - Added memory adc3066b-682e-42b1-92bd-2156503560be with 58 chars
+2025-04-25 02:26:47,297 - memory_test - INFO - Completed test: test_persist_short_term_memory in 0.00s
+2025-04-25 02:26:47,297 - memory_test - INFO - Starting test: test_retrieve_relevant_memories
+2025-04-25 02:26:47,299 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=20
+2025-04-25 02:26:47,299 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,299 - memory_test.utils - INFO - TestMemoryEncoder initialized
+2025-04-25 02:26:47,299 - memory_test.utils - INFO - TestEnhancedMemoryManager initialized
+2025-04-25 02:26:47,299 - memory_test.utils - INFO - Added memory 0f57f161-ee64-4dc4-bbb1-1e08b1fe254a with 39 chars
+2025-04-25 02:26:47,299 - memory_test.utils - INFO - Added memory 8160f5da-e897-40af-be1c-72a5783a22eb with 42 chars
+2025-04-25 02:26:47,299 - memory_test.utils - INFO - Added memory e5358e14-a01c-40db-b501-11f0e2c5b6f4 with 26 chars
+2025-04-25 02:26:47,299 - memory_test.utils - INFO - Added memory 7d273ab0-691e-4eb0-99dd-c5c6609dcba7 with 30 chars
+2025-04-25 02:26:47,299 - memory_test.utils - INFO - Added memory ec376e29-521b-4d6d-99a3-6999da02006d with 27 chars
+2025-04-25 02:26:47,299 - memory_test - INFO - Completed test: test_retrieve_relevant_memories in 0.00s
+2025-04-25 02:26:47,300 - memory_test - INFO - Starting test: test_topic_extraction
+2025-04-25 02:26:47,300 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=20
+2025-04-25 02:26:47,300 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,300 - memory_test.utils - INFO - TestMemoryEncoder initialized
+2025-04-25 02:26:47,301 - memory_test.utils - INFO - TestEnhancedMemoryManager initialized
+2025-04-25 02:26:47,301 - memory_test - INFO - Completed test: test_topic_extraction in 0.00s
+2025-04-25 02:26:47,301 - memory_test - INFO - Completed memory test with ID: 20250425_022647
+2025-04-25 02:26:47,302 - memory_test - INFO - Starting memory test with ID: 20250425_022647
+2025-04-25 02:26:47,302 - memory_test - INFO - Starting test: test_add_memory_with_events
+2025-04-25 02:26:47,303 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=20
+2025-04-25 02:26:47,303 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,303 - memory_test.utils - INFO - TestMemoryEncoder initialized
+2025-04-25 02:26:47,303 - memory_test.utils - INFO - TestEnhancedMemoryManager initialized
+2025-04-25 02:26:47,303 - memory_test - INFO - Completed test: test_add_memory_with_events in 0.00s
+2025-04-25 02:26:47,304 - memory_test - INFO - Starting test: test_add_turn_with_events
+2025-04-25 02:26:47,304 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=20
+2025-04-25 02:26:47,304 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,305 - memory_test.utils - INFO - TestMemoryEncoder initialized
+2025-04-25 02:26:47,305 - memory_test.utils - INFO - TestEnhancedMemoryManager initialized
+2025-04-25 02:26:47,305 - memory_test - INFO - Completed test: test_add_turn_with_events in 0.00s
+2025-04-25 02:26:47,306 - memory_test - INFO - Starting test: test_clear_short_term_with_events
+2025-04-25 02:26:47,307 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=20
+2025-04-25 02:26:47,307 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,307 - memory_test.utils - INFO - TestMemoryEncoder initialized
+2025-04-25 02:26:47,307 - memory_test.utils - INFO - TestEnhancedMemoryManager initialized
+2025-04-25 02:26:47,307 - memory_test.utils - INFO - Added memory 6d61b319-7abf-44bc-958c-c6a4f6806d53 with 42 chars
+2025-04-25 02:26:47,308 - memory_test.utils - INFO - Added memory 20eab4f2-5301-42dc-a8fc-8a0f5a3c02f6 with 25 chars
+2025-04-25 02:26:47,308 - memory_test.utils - INFO - Added memory 8d7320af-632a-48d6-abe9-4bcfb41de6ac with 42 chars
+2025-04-25 02:26:47,308 - memory_test - INFO - Completed test: test_clear_short_term_with_events in 0.00s
+2025-04-25 02:26:47,308 - memory_test - INFO - Starting test: test_duplicate_message_detection
+2025-04-25 02:26:47,310 - memory_test - INFO - Completed test: test_duplicate_message_detection in 0.00s
+2025-04-25 02:26:47,310 - memory_test - INFO - Starting test: test_get_enhanced_context_with_events
+2025-04-25 02:26:47,311 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=20
+2025-04-25 02:26:47,311 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,311 - memory_test.utils - INFO - TestMemoryEncoder initialized
+2025-04-25 02:26:47,311 - memory_test.utils - INFO - TestEnhancedMemoryManager initialized
+2025-04-25 02:26:47,311 - memory_test.utils - INFO - Added memory c2e64074-b864-40b3-8562-9ad9feca96ca with 42 chars
+2025-04-25 02:26:47,311 - memory_test.utils - INFO - Added memory 4b42697a-5e13-47af-9a38-bb45a64e096f with 25 chars
+2025-04-25 02:26:47,312 - memory_test.utils - INFO - Added memory ebf00ab9-c98a-4915-93db-67869a293e01 with 42 chars
+2025-04-25 02:26:47,312 - memory_test - INFO - Completed test: test_get_enhanced_context_with_events in 0.00s
+2025-04-25 02:26:47,312 - memory_test - INFO - Starting test: test_get_memories_with_events
+2025-04-25 02:26:47,313 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=20
+2025-04-25 02:26:47,313 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,313 - memory_test.utils - INFO - TestMemoryEncoder initialized
+2025-04-25 02:26:47,313 - memory_test.utils - INFO - TestEnhancedMemoryManager initialized
+2025-04-25 02:26:47,313 - memory_test - INFO - Completed test: test_get_memories_with_events in 0.00s
+2025-04-25 02:26:47,313 - memory_test - INFO - Starting test: test_initialization
+2025-04-25 02:26:47,314 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=20
+2025-04-25 02:26:47,314 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,314 - memory_test.utils - INFO - TestMemoryEncoder initialized
+2025-04-25 02:26:47,314 - memory_test.utils - INFO - TestEnhancedMemoryManager initialized
+2025-04-25 02:26:47,315 - memory_test - INFO - Completed test: test_initialization in 0.00s
+2025-04-25 02:26:47,315 - memory_test - INFO - Starting test: test_memory_persistence_with_events
+2025-04-25 02:26:47,315 - memory_test.utils - INFO - TestShortTermMemory initialized with max_turns=20
+2025-04-25 02:26:47,316 - memory_test.utils - INFO - TestLongTermMemory initialized
+2025-04-25 02:26:47,316 - memory_test.utils - INFO - TestMemoryEncoder initialized
+2025-04-25 02:26:47,316 - memory_test.utils - INFO - TestEnhancedMemoryManager initialized
+2025-04-25 02:26:47,316 - memory_test.utils - INFO - Added memory 2f22eac5-72c2-4416-968b-84ca979452ea with 42 chars
+2025-04-25 02:26:47,316 - memory_test.utils - INFO - Added memory ebf72f4f-50f5-45bd-ad03-f126ccae8b26 with 29 chars
+2025-04-25 02:26:47,316 - memory_test.utils - INFO - Added memory 5b571995-63fa-42d0-a5ef-64dc67fdd4c0 with 60 chars
+2025-04-25 02:26:47,316 - memory_test.utils - INFO - Added memory de94b6d7-c4b4-4a61-b968-72f7fef6d8ad with 42 chars
+2025-04-25 02:26:47,316 - memory_test.utils - INFO - Added memory 97140f3d-17fa-4409-95dd-d6dd897b4444 with 29 chars
+2025-04-25 02:26:47,317 - memory_test.utils - INFO - Added memory 6c8bbd6b-3bb4-4370-af38-344aacb35443 with 60 chars
+2025-04-25 02:26:47,317 - memory_test.utils - INFO - Added memory 94516ed0-4b7e-448e-94d7-10dcd9361934 with 29 chars
+2025-04-25 02:26:47,317 - memory_test.utils - INFO - Added memory f6fcebcc-afd9-4880-81e6-56964b94f9e0 with 56 chars
+2025-04-25 02:26:47,317 - memory_test - INFO - Completed test: test_memory_persistence_with_events in 0.00s
+2025-04-25 02:26:47,317 - memory_test - INFO - Completed memory test with ID: 20250425_022647
+2025-04-25 02:26:47,326 - memory_test.runner - INFO - Test report saved to data/memory/test/results/test_report_20250425_022647.json
+2025-04-25 02:26:47,326 - memory_test.runner - INFO - Memory system tests completed

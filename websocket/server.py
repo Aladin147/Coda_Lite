@@ -63,10 +63,13 @@ class CodaWebSocketServer:
             # Store the current event loop for use in thread-safe operations
             self.event_loop = asyncio.get_event_loop()
 
+            # Create a server with CORS support
             self.server = await websockets.serve(
                 handler,
                 self.host,
-                self.port
+                self.port,
+                # Add CORS headers to support connections from any origin
+                process_request=self._process_request
             )
 
             # Store a reference to the server's event loop
@@ -228,9 +231,12 @@ class CodaWebSocketServer:
         # Serialize the event
         event_json = json.dumps(event)
 
+        # Create a copy of the clients dictionary to avoid modification during iteration
+        clients_copy = list(self.clients.items())
+
         # Broadcast to all clients
         disconnected_clients = []
-        for client_id, websocket in self.clients.items():
+        for client_id, websocket in clients_copy:
             try:
                 await websocket.send(event_json)
             except websockets.exceptions.ConnectionClosed:
@@ -241,17 +247,18 @@ class CodaWebSocketServer:
 
         # Clean up disconnected clients
         for client_id in disconnected_clients:
-            self.clients.pop(client_id, None)
-            logger.info(f"Removed disconnected client {client_id}")
+            if client_id in self.clients:  # Check if client still exists
+                self.clients.pop(client_id, None)
+                logger.info(f"Removed disconnected client {client_id}")
 
-            # Notify disconnect handlers
-            for handler in self.on_disconnect_handlers:
-                try:
-                    handler(client_id)
-                except Exception as e:
-                    logger.error(f"Error in disconnect handler: {e}")
+                # Notify disconnect handlers
+                for handler in self.on_disconnect_handlers:
+                    try:
+                        handler(client_id)
+                    except Exception as e:
+                        logger.error(f"Error in disconnect handler: {e}")
 
-        logger.debug(f"Broadcast event {event_type} to {len(self.clients)} clients")
+        logger.debug(f"Broadcast event {event_type} to {len(clients_copy)} clients")
 
     async def push_event_async(self, event_type: str, data: Dict[str, Any],
                            high_priority: bool = False):
@@ -299,13 +306,12 @@ class CodaWebSocketServer:
 
         # Get the event loop in a thread-safe way
         try:
-            # Create a dedicated event loop for this thread if needed
-            try:
-                loop = asyncio.get_event_loop()
-            except RuntimeError:
-                # If there's no event loop in this thread, create a new one
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
+            # Check if we have a server loop
+            if self.server_loop is None:
+                logger.error("Server event loop not initialized, cannot dispatch event")
+                return
+
+            logger.debug(f"Dispatching event {event_type} to server loop")
 
             # Create a future to hold the result
             future = asyncio.run_coroutine_threadsafe(
@@ -318,11 +324,11 @@ class CodaWebSocketServer:
                 try:
                     fut.result()
                 except Exception as e:
-                    logger.error(f"Error in broadcast_event: {e}")
+                    logger.error(f"Error in broadcast_event: {e}", exc_info=True)
 
             future.add_done_callback(log_exception)
         except Exception as e:
-            logger.warning(f"Error dispatching event {event_type}: {e}")
+            logger.error(f"Error dispatching event {event_type}: {e}", exc_info=True)
 
     def register_connect_handler(self, handler: Callable[[str], None]):
         """
@@ -350,3 +356,23 @@ class CodaWebSocketServer:
             Number of connected clients
         """
         return len(self.clients)
+
+    async def _process_request(self, path, request_headers):
+        """
+        Process HTTP request before the WebSocket handshake.
+        This is used to add CORS headers to support connections from any origin.
+
+        Args:
+            path: The request path
+            request_headers: The request headers
+
+        Returns:
+            None to continue with the WebSocket handshake, or a tuple of
+            (status_code, headers, body) to reject the handshake with a HTTP response
+        """
+        # Log the incoming request for debugging
+        logger.debug(f"WebSocket connection request: path={path}")
+
+        # Always allow the connection regardless of origin
+        # The WebSocket protocol handles CORS automatically once the connection is established
+        return None

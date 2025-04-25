@@ -1,0 +1,30 @@
+{
+  "timestamp": "2025-04-25T02:36:41.298580",
+  "duration_seconds": 0.08694338798522949,
+  "total_tests": 39,
+  "failures": 3,
+  "errors": 1,
+  "skipped": 0,
+  "success_rate": 89.74358974358975,
+  "failures_detail": [
+    {
+      "test": "test_maxlen_behavior (test_short_term_memory.ShortTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_short_term_memory.py\", line 99, in test_maxlen_behavior\n    self.assertTrue(system_found, \"System message should be preserved\")\nAssertionError: False is not true : System message should be preserved\n"
+    },
+    {
+      "test": "test_search_memories (test_long_term_memory.LongTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_long_term_memory.py\", line 223, in test_search_memories\n    self.assertGreater(len(results), 0)\nAssertionError: 0 not greater than 0\n"
+    },
+    {
+      "test": "test_auto_persist (test_enhanced_memory_manager.EnhancedMemoryManagerTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_enhanced_memory_manager.py\", line 295, in test_auto_persist\n    self.assertEqual(memory.turn_count_at_last_persist, 0)\nAssertionError: 3 != 0\n"
+    }
+  ],
+  "errors_detail": [
+    {
+      "test": "test_initialization_chroma (test_long_term_memory.LongTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_long_term_memory.py\", line 51, in tearDown\n    self.memory.close()\nAttributeError: 'NoneType' object has no attribute 'close'\n"
+    }
+  ],
+  "skipped_detail": []
+}

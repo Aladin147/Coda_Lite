@@ -109,8 +109,18 @@ See [Dashboard Transformation Plan](docs/dashboard_transformation_plan.md) and [
 We are currently experiencing some challenges with the dashboard implementation:
 
 - React errors with "Maximum update depth exceeded" in the Avatar component
-- WebSocket connection issues between the dashboard and the Coda backend
 - Memory system initialization issues
+
+**WebSocket Improvements:**
+
+We've made significant improvements to the WebSocket implementation:
+
+- **Event Loop Management**: Thread-safe event loop management for improved stability
+- **Message Deduplication**: Robust message deduplication to prevent duplicate messages
+- **Authentication System**: Secure token-based authentication for WebSocket connections
+- **Dashboard Integration**: Updated dashboard to work with the new WebSocket implementation
+
+These improvements address the WebSocket connection issues we were experiencing. For more details, see [WebSocket Implementation](docs/websocket_implementation.md).
 
 For a detailed list of known issues and attempted fixes, see [Known Issues](docs/KNOWN_ISSUES.md).
 

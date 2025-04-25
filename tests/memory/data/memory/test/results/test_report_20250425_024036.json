@@ -1,0 +1,17 @@
+{
+  "timestamp": "2025-04-25T02:40:36.525323",
+  "duration_seconds": 0.0826866626739502,
+  "total_tests": 39,
+  "failures": 1,
+  "errors": 0,
+  "skipped": 0,
+  "success_rate": 97.43589743589743,
+  "failures_detail": [
+    {
+      "test": "test_maxlen_behavior (test_short_term_memory.ShortTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_short_term_memory.py\", line 130, in test_maxlen_behavior\n    self.assertTrue(system_found, \"System message should be preserved\")\nAssertionError: False is not true : System message should be preserved\n"
+    }
+  ],
+  "errors_detail": [],
+  "skipped_detail": []
+}

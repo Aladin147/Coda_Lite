@@ -1,0 +1,98 @@
+{
+  "timestamp": "2025-04-25T02:26:47.325053",
+  "duration_seconds": 0.07636833190917969,
+  "total_tests": 39,
+  "failures": 12,
+  "errors": 9,
+  "skipped": 0,
+  "success_rate": 46.15384615384615,
+  "failures_detail": [
+    {
+      "test": "test_get_context (test_short_term_memory.ShortTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_short_term_memory.py\", line 112, in test_get_context\n    self.assertTrue(len(context) < 5)\nAssertionError: False is not true\n"
+    },
+    {
+      "test": "test_maxlen_behavior (test_short_term_memory.ShortTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_short_term_memory.py\", line 90, in test_maxlen_behavior\n    self.assertEqual(turns[0][\"role\"], \"system\")\nAssertionError: 'user' != 'system'\n- user\n+ system\n\n"
+    },
+    {
+      "test": "test_token_counting (test_short_term_memory.ShortTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_short_term_memory.py\", line 212, in test_token_counting\n    self.assertTrue(len(turn[\"content\"]) < len(long_message))\nAssertionError: False is not true\n"
+    },
+    {
+      "test": "test_memory_persistence (test_long_term_memory.LongTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_long_term_memory.py\", line 318, in test_memory_persistence\n    self.assertEqual(memory2.metadata[\"memory_count\"], 2)\nAssertionError: 0 != 2\n"
+    },
+    {
+      "test": "test_memory_pruning (test_long_term_memory.LongTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_long_term_memory.py\", line 379, in test_memory_pruning\n    self.assertEqual(memory.metadata[\"memory_count\"], 3)\nAssertionError: 5 != 3\n"
+    },
+    {
+      "test": "test_search_by_metadata (test_long_term_memory.LongTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_long_term_memory.py\", line 275, in test_search_by_metadata\n    self.assertEqual(len(results), 2)\nAssertionError: 0 != 2\n"
+    },
+    {
+      "test": "test_search_memories (test_long_term_memory.LongTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_long_term_memory.py\", line 213, in test_search_memories\n    self.assertGreater(len(results), 0)\nAssertionError: 0 not greater than 0\n"
+    },
+    {
+      "test": "test_auto_persist (test_enhanced_memory_manager.EnhancedMemoryManagerTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_enhanced_memory_manager.py\", line 266, in test_auto_persist\n    self.assertEqual(memory.turn_count_at_last_persist, 0)\nAssertionError: 3 != 0\n"
+    },
+    {
+      "test": "test_get_enhanced_context (test_enhanced_memory_manager.EnhancedMemoryManagerTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_enhanced_memory_manager.py\", line 141, in test_get_enhanced_context\n    self.assertGreater(len(context), 3)  # More than just the conversation turns\nAssertionError: 3 not greater than 3\n"
+    },
+    {
+      "test": "test_memory_integration (test_enhanced_memory_manager.EnhancedMemoryManagerTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_enhanced_memory_manager.py\", line 327, in test_memory_integration\n    self.assertTrue(found_memory)\nAssertionError: False is not true\n"
+    },
+    {
+      "test": "test_retrieve_relevant_memories (test_enhanced_memory_manager.EnhancedMemoryManagerTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_enhanced_memory_manager.py\", line 215, in test_retrieve_relevant_memories\n    self.assertGreater(len(memories), 0)\nAssertionError: 0 not greater than 0\n"
+    },
+    {
+      "test": "test_topic_extraction (test_enhanced_memory_manager.EnhancedMemoryManagerTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_enhanced_memory_manager.py\", line 290, in test_topic_extraction\n    self.assertGreater(len(topics), 0)\nAssertionError: 0 not greater than 0\n"
+    }
+  ],
+  "errors_detail": [
+    {
+      "test": "test_initialization_chroma (test_long_term_memory.LongTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_long_term_memory.py\", line 60, in test_initialization_chroma\n    self.assertEqual(memory.vector_db_type, \"chroma\")\nAttributeError: 'TestLongTermMemory' object has no attribute 'vector_db_type'\n"
+    },
+    {
+      "test": "test_initialization_in_memory (test_long_term_memory.LongTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_long_term_memory.py\", line 102, in test_initialization_in_memory\n    self.assertEqual(memory.vector_db_type, \"in_memory\")\nAttributeError: 'TestLongTermMemory' object has no attribute 'vector_db_type'\n"
+    },
+    {
+      "test": "test_initialization_sqlite (test_long_term_memory.LongTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_long_term_memory.py\", line 83, in test_initialization_sqlite\n    self.assertEqual(memory.vector_db_type, \"sqlite\")\nAttributeError: 'TestLongTermMemory' object has no attribute 'vector_db_type'\n"
+    },
+    {
+      "test": "test_add_memory_with_events (test_websocket_memory.WebSocketMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_websocket_memory.py\", line 140, in test_add_memory_with_events\n    memory_id = memory.add_memory(\nAttributeError: 'WebSocketEnhancedMemoryManager' object has no attribute 'add_memory'\n"
+    },
+    {
+      "test": "test_add_turn_with_events (test_websocket_memory.WebSocketMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_websocket_memory.py\", line 119, in test_add_turn_with_events\n    self.ws_integration.add_conversation_turn.assert_called_with(\"user\", \"Hello, who are you?\")\n  File \"C:\\Users\\aladi\\AppData\\Local\\Programs\\Python\\Python310\\lib\\unittest\\mock.py\", line 643, in __getattr__\n    raise AttributeError(\"Mock object has no attribute %r\" % name)\nAttributeError: Mock object has no attribute 'add_conversation_turn'\n"
+    },
+    {
+      "test": "test_duplicate_message_detection (test_websocket_memory.WebSocketMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"C:\\Users\\aladi\\AppData\\Local\\Programs\\Python\\Python310\\lib\\unittest\\mock.py\", line 1248, in _dot_lookup\n    return getattr(thing, comp)\nAttributeError: module 'websocket' has no attribute 'integration'\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_websocket_memory.py\", line 263, in test_duplicate_message_detection\n    with patch('websocket.integration.CodaWebSocketIntegration.add_conversation_turn') as mock_add_turn:\n  File \"C:\\Users\\aladi\\AppData\\Local\\Programs\\Python\\Python310\\lib\\unittest\\mock.py\", line 1431, in __enter__\n    self.target = self.getter()\n  File \"C:\\Users\\aladi\\AppData\\Local\\Programs\\Python\\Python310\\lib\\unittest\\mock.py\", line 1618, in <lambda>\n    getter = lambda: _importer(target)\n  File \"C:\\Users\\aladi\\AppData\\Local\\Programs\\Python\\Python310\\lib\\unittest\\mock.py\", line 1261, in _importer\n    thing = _dot_lookup(thing, comp, import_path)\n  File \"C:\\Users\\aladi\\AppData\\Local\\Programs\\Python\\Python310\\lib\\unittest\\mock.py\", line 1250, in _dot_lookup\n    __import__(import_path)\nModuleNotFoundError: No module named 'websocket.integration'\n"
+    },
+    {
+      "test": "test_get_enhanced_context_with_events (test_websocket_memory.WebSocketMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_websocket_memory.py\", line 212, in test_get_enhanced_context_with_events\n    memory.add_memory(\nAttributeError: 'WebSocketEnhancedMemoryManager' object has no attribute 'add_memory'\n"
+    },
+    {
+      "test": "test_get_memories_with_events (test_websocket_memory.WebSocketMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_websocket_memory.py\", line 168, in test_get_memories_with_events\n    memory.add_memory(\nAttributeError: 'WebSocketEnhancedMemoryManager' object has no attribute 'add_memory'\n"
+    },
+    {
+      "test": "test_memory_persistence_with_events (test_websocket_memory.WebSocketMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_websocket_memory.py\", line 304, in test_memory_persistence_with_events\n    self.ws_integration.memory_store.reset_mock()\n  File \"C:\\Users\\aladi\\AppData\\Local\\Programs\\Python\\Python310\\lib\\unittest\\mock.py\", line 643, in __getattr__\n    raise AttributeError(\"Mock object has no attribute %r\" % name)\nAttributeError: Mock object has no attribute 'memory_store'\n"
+    }
+  ],
+  "skipped_detail": []
+}

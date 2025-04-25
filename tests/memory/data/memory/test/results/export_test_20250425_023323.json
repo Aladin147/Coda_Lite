@@ -1,0 +1,24 @@
+{
+  "session_start": "2025-04-25T02:33:23.558396",
+  "turn_count": 3,
+  "turns": [
+    {
+      "role": "system",
+      "content": "You are Coda.",
+      "timestamp": "2025-04-25T02:33:23.558396",
+      "turn_index": 0
+    },
+    {
+      "role": "user",
+      "content": "Hello.",
+      "timestamp": "2025-04-25T02:33:23.558396",
+      "turn_index": 1
+    },
+    {
+      "role": "assistant",
+      "content": "Hi there.",
+      "timestamp": "2025-04-25T02:33:23.558396",
+      "turn_index": 2
+    }
+  ]
+}

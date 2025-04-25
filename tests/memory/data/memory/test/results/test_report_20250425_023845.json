@@ -1,0 +1,25 @@
+{
+  "timestamp": "2025-04-25T02:38:45.853436",
+  "duration_seconds": 0.08763909339904785,
+  "total_tests": 39,
+  "failures": 3,
+  "errors": 0,
+  "skipped": 0,
+  "success_rate": 92.3076923076923,
+  "failures_detail": [
+    {
+      "test": "test_maxlen_behavior (test_short_term_memory.ShortTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_short_term_memory.py\", line 99, in test_maxlen_behavior\n    self.assertTrue(system_found, \"System message should be preserved\")\nAssertionError: False is not true : System message should be preserved\n"
+    },
+    {
+      "test": "test_memory_pruning (test_long_term_memory.LongTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_long_term_memory.py\", line 421, in test_memory_pruning\n    self.assertTrue(all(idx >= 2 for idx in indices),\nAssertionError: False is not true : Expected indices >= 2, got [0, 1, 2]\n"
+    },
+    {
+      "test": "test_auto_persist (test_enhanced_memory_manager.EnhancedMemoryManagerTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_enhanced_memory_manager.py\", line 302, in test_auto_persist\n    self.assertEqual(memory.turn_count_at_last_persist, 0)\nAssertionError: 3 != 0\n"
+    }
+  ],
+  "errors_detail": [],
+  "skipped_detail": []
+}

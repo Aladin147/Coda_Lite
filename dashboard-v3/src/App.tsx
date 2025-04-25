@@ -69,15 +69,48 @@ function App() {
       // Process different event types
       switch (event.type) {
         case 'latency_trace':
+          console.log('Received latency_trace event:', event.data);
+
+          // Extract metrics with proper fallbacks and conversions
+          const sttSeconds = parseFloat(event.data.stt_seconds || event.data.component_times?.stt || 0);
+          const llmSeconds = parseFloat(event.data.llm_seconds || event.data.component_times?.llm || 0);
+          const ttsSeconds = parseFloat(event.data.tts_seconds || event.data.component_times?.tts || 0);
+          const toolSeconds = parseFloat(event.data.tool_seconds || event.data.component_times?.tools || 0);
+          const memorySeconds = parseFloat(event.data.memory_seconds || event.data.component_times?.memory || 0);
+
+          // Calculate total if not provided
+          const totalSeconds = parseFloat(
+            event.data.total_processing_seconds ||
+            event.data.total_seconds ||
+            (sttSeconds + llmSeconds + ttsSeconds + toolSeconds + memorySeconds) ||
+            0
+          );
+
+          // Audio durations
+          const sttAudioDuration = parseFloat(event.data.stt_audio_duration || event.data.audio_durations?.stt || 0);
+          const ttsAudioDuration = parseFloat(event.data.tts_audio_duration || event.data.audio_durations?.tts || 0);
+
+          // Update metrics with properly parsed values
           setPerformanceMetrics({
-            stt: event.data.stt_seconds || 0,
-            llm: event.data.llm_seconds || 0,
-            tts: event.data.tts_seconds || 0,
-            total: event.data.total_seconds || 0,
-            stt_audio: event.data.stt_audio_duration || 0,
-            tts_audio: event.data.tts_audio_duration || 0,
-            tool_seconds: event.data.tool_seconds || 0,
-            memory_seconds: event.data.memory_seconds || 0
+            stt: sttSeconds,
+            llm: llmSeconds,
+            tts: ttsSeconds,
+            total: totalSeconds,
+            stt_audio: sttAudioDuration,
+            tts_audio: ttsAudioDuration,
+            tool_seconds: toolSeconds,
+            memory_seconds: memorySeconds
+          });
+
+          console.log('Updated performance metrics:', {
+            stt: sttSeconds,
+            llm: llmSeconds,
+            tts: ttsSeconds,
+            total: totalSeconds,
+            stt_audio: sttAudioDuration,
+            tts_audio: ttsAudioDuration,
+            tool_seconds: toolSeconds,
+            memory_seconds: memorySeconds
           });
           break;
         case 'system_metrics':
@@ -88,28 +121,101 @@ function App() {
           });
           break;
         case 'memory_store':
+          console.log('Received memory_store event:', event.data);
           setMemories(prev => {
             const newMemories = [...prev];
-            const existingIndex = newMemories.findIndex(m => m.memory_id === event.data.memory_id);
+            const existingIndex = newMemories.findIndex(m => m.id === event.data.memory_id);
+
+            // Format the memory data to match the expected format in MemoryViewer
+            const newMemory = {
+              id: event.data.memory_id,
+              content: event.data.content_preview || '',
+              type: event.data.memory_type || 'unknown',
+              importance: event.data.importance || 0,
+              timestamp: event.timestamp || new Date().toISOString()
+            };
 
             if (existingIndex >= 0) {
-              newMemories[existingIndex] = event.data;
+              newMemories[existingIndex] = newMemory;
             } else {
-              newMemories.push(event.data);
+              newMemories.push(newMemory);
             }
 
+            console.log('Updated memories:', newMemories);
             return newMemories.slice(0, 100);
           });
           break;
-        case 'conversation_message':
+
+        case 'memory_retrieve':
+          console.log('Received memory_retrieve event:', event.data);
+          // If the event contains results, add them to the memories list
+          if (event.data.results && Array.isArray(event.data.results)) {
+            setMemories(prev => {
+              const newMemories = [...prev];
+
+              // Process each result and add it to the memories list
+              event.data.results.forEach(result => {
+                const memoryId = result.id || `mem-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+                const existingIndex = newMemories.findIndex(m => m.id === memoryId);
+
+                // Format the memory data
+                const memory = {
+                  id: memoryId,
+                  content: result.content || '',
+                  type: result.metadata?.source_type || 'retrieved',
+                  importance: result.metadata?.importance || result.score || 0.5,
+                  timestamp: result.metadata?.timestamp || event.timestamp || new Date().toISOString()
+                };
+
+                if (existingIndex >= 0) {
+                  newMemories[existingIndex] = memory;
+                } else {
+                  newMemories.push(memory);
+                }
+              });
+
+              console.log('Updated memories after retrieval:', newMemories);
+              return newMemories.slice(0, 100);
+            });
+          }
+          break;
+        case 'conversation_turn':
+          // Add deduplication logic based on content and timestamp
           setMessages(prev => {
+            // Generate a unique ID if one doesn't exist
+            const messageId = event.data.turn_id || `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+            const newMessage = {
+              id: messageId,
+              role: event.data.role,
+              content: event.data.content,
+              timestamp: event.timestamp || new Date().toISOString()
+            };
+
+            // Check for duplicates based on content and role (within a short time window)
+            const isDuplicate = prev.some(m =>
+              m.role === newMessage.role &&
+              m.content === newMessage.content &&
+              // Only consider it a duplicate if it's within 5 seconds
+              Math.abs(new Date(m.timestamp).getTime() - new Date(newMessage.timestamp).getTime()) < 5000
+            );
+
+            // If it's a duplicate, don't add it
+            if (isDuplicate) {
+              console.log('Detected duplicate message, ignoring:', newMessage);
+              return prev;
+            }
+
+            // Check if we already have this exact message ID
+            const existingIndex = prev.findIndex(m => m.id === messageId);
+
+            // Create a new array to avoid state mutation issues
             const newMessages = [...prev];
-            const existingIndex = newMessages.findIndex(m => m.message_id === event.data.message_id);
 
             if (existingIndex >= 0) {
-              newMessages[existingIndex] = event.data;
+              newMessages[existingIndex] = newMessage;
             } else {
-              newMessages.push(event.data);
+              newMessages.push(newMessage);
             }
 
             return newMessages.slice(0, 100);

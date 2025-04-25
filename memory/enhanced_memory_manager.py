@@ -129,7 +129,7 @@ class EnhancedMemoryManager:
     def get_enhanced_context(self,
                             user_input: str,
                             max_tokens: int = 800,
-                            max_memories: int = 3,
+                            max_memories: int = 5,  # Increased from 3 to 5 for better recall
                             include_system: bool = True) -> List[Dict[str, str]]:
         """
         Get enhanced conversation context with relevant long-term memories.
@@ -146,52 +146,145 @@ class EnhancedMemoryManager:
         # Get short-term context
         context = self.short_term.get_context(max_tokens=max_tokens)
 
-        # Retrieve relevant memories
-        memories = self.retrieve_relevant_memories(user_input, limit=max_memories)
+        try:
+            # Retrieve relevant memories with a lower similarity threshold for better recall
+            memories = self.retrieve_relevant_memories(
+                query=user_input,
+                limit=max_memories,
+                min_similarity=0.3  # Lower threshold for better recall
+            )
 
-        # Store the retrieved memories for later access
-        self.last_retrieved_memories = memories
+            # Store the retrieved memories for later access
+            self.last_retrieved_memories = memories
 
-        # If we have memories, add them to the context
-        if memories:
-            # Find position to insert memories (after system message if present)
-            insert_pos = 1 if context and context[0]["role"] == "system" else 0
+            # If we have memories, add them to the context
+            if memories:
+                # Find position to insert memories (after system message if present)
+                insert_pos = 1 if context and context[0]["role"] == "system" else 0
 
-            # Format memories as a system message
-            memory_content = "Relevant information from previous conversations:\n\n"
-            for i, memory in enumerate(memories):
-                memory_content += f"{i+1}. {memory['content']}\n\n"
+                # Group memories by type for better organization
+                memory_types = {}
+                for memory in memories:
+                    memory_type = memory.get("metadata", {}).get("source_type", "general")
+                    if memory_type not in memory_types:
+                        memory_types[memory_type] = []
+                    memory_types[memory_type].append(memory)
 
-            # Insert memories
-            context.insert(insert_pos, {
-                "role": "system",
-                "content": memory_content
-            })
+                # Format memories as a system message with type grouping
+                memory_content = "Relevant information from your memory:\n\n"
 
-            logger.info(f"Added {len(memories)} memories to context")
+                # Add facts first (if any)
+                if "fact" in memory_types:
+                    memory_content += "Facts:\n"
+                    for i, memory in enumerate(memory_types["fact"]):
+                        memory_content += f"- {memory['content']}\n"
+                    memory_content += "\n"
+
+                # Add preferences next (if any)
+                if "preference" in memory_types:
+                    memory_content += "Preferences:\n"
+                    for i, memory in enumerate(memory_types["preference"]):
+                        memory_content += f"- {memory['content']}\n"
+                    memory_content += "\n"
+
+                # Add conversation memories last (if any)
+                if "conversation" in memory_types:
+                    memory_content += "From previous conversations:\n"
+                    for i, memory in enumerate(memory_types["conversation"]):
+                        memory_content += f"- {memory['content']}\n"
+                    memory_content += "\n"
+
+                # Add any other memory types
+                for memory_type, memories_list in memory_types.items():
+                    if memory_type not in ["fact", "preference", "conversation"]:
+                        memory_content += f"{memory_type.capitalize()}:\n"
+                        for memory in memories_list:
+                            memory_content += f"- {memory['content']}\n"
+                        memory_content += "\n"
+
+                # Insert memories
+                context.insert(insert_pos, {
+                    "role": "system",
+                    "content": memory_content
+                })
+
+                logger.info(f"Added {len(memories)} memories to context, grouped by type")
+
+        except Exception as e:
+            logger.error(f"Error retrieving memories: {e}", exc_info=True)
+            # Continue with just the short-term context if there's an error
 
         return context
 
     def retrieve_relevant_memories(self,
                                  query: str,
-                                 limit: int = 3,
-                                 min_similarity: float = 0.5) -> List[Dict[str, Any]]:
+                                 limit: int = 5,  # Increased from 3 to 5
+                                 min_similarity: float = 0.3) -> List[Dict[str, Any]]:
         """
         Retrieve relevant memories based on the query.
 
         Args:
             query: The query text
             limit: Maximum number of memories to retrieve
-            min_similarity: Minimum similarity score
+            min_similarity: Minimum similarity score (lowered for better recall)
 
         Returns:
             List of relevant memories
         """
-        return self.long_term.retrieve_memories(
-            query=query,
-            limit=limit,
-            min_similarity=min_similarity
-        )
+        try:
+            # Try to retrieve memories from long-term memory
+            memories = self.long_term.retrieve_memories(
+                query=query,
+                limit=limit,
+                min_similarity=min_similarity
+            )
+
+            # Log the results
+            if memories:
+                logger.info(f"Retrieved {len(memories)} memories for query: {query[:50]}...")
+                for i, memory in enumerate(memories):
+                    similarity = memory.get('similarity', 0)
+                    content_preview = memory.get('content', '')[:50] + '...'
+                    logger.debug(f"Memory {i+1}: similarity={similarity:.2f}, content={content_preview}")
+            else:
+                logger.info(f"No memories found for query: {query[:50]}...")
+
+                # If no memories found with semantic search, try keyword search
+                # This is a fallback mechanism to ensure we get some results
+                logger.debug("Attempting keyword-based fallback search")
+
+                # Extract keywords from the query (simple approach)
+                keywords = [word.lower() for word in query.split() if len(word) > 3]
+
+                if keywords:
+                    # Get all memories and filter manually
+                    all_memories = []
+                    for memory_id in self.long_term.metadata["memories"]:
+                        memory = self.long_term.get_memory_by_id(memory_id)
+                        if memory:
+                            all_memories.append(memory)
+
+                    # Score memories based on keyword matches
+                    scored_memories = []
+                    for memory in all_memories:
+                        content = memory.get('content', '').lower()
+                        score = sum(1 for keyword in keywords if keyword in content)
+                        if score > 0:
+                            memory['similarity'] = score / len(keywords)  # Normalize score
+                            scored_memories.append(memory)
+
+                    # Sort by score and take top results
+                    scored_memories.sort(key=lambda x: x.get('similarity', 0), reverse=True)
+                    memories = scored_memories[:limit]
+
+                    if memories:
+                        logger.info(f"Found {len(memories)} memories using keyword search")
+
+            return memories
+
+        except Exception as e:
+            logger.error(f"Error retrieving memories: {e}", exc_info=True)
+            return []  # Return empty list on error
 
     def persist_short_term_memory(self) -> int:
         """
@@ -200,33 +293,65 @@ class EnhancedMemoryManager:
         Returns:
             Number of memories stored
         """
-        # Get all turns from short-term memory
-        turns = list(self.short_term.turns)
+        try:
+            # Get all turns from short-term memory
+            turns = list(self.short_term.turns)
 
-        # Skip if no turns
-        if not turns:
+            # Skip if no turns
+            if not turns:
+                logger.info("No turns to persist")
+                return 0
+
+            # Skip if we've already persisted these turns
+            if self.turn_count_at_last_persist >= self.short_term.turn_count:
+                logger.info("Turns already persisted")
+                return 0
+
+            # Log the turns we're about to persist
+            logger.debug(f"Persisting {len(turns)} turns from short-term memory")
+            for i, turn in enumerate(turns):
+                role = turn.get('role', 'unknown')
+                content_preview = turn.get('content', '')[:50] + '...' if len(turn.get('content', '')) > 50 else turn.get('content', '')
+                logger.debug(f"Turn {i+1}: role={role}, content={content_preview}")
+
+            # Encode conversation into memory chunks
+            memories = self.encoder.encode_conversation(turns)
+            logger.debug(f"Encoded {len(memories)} memory chunks from {len(turns)} turns")
+
+            # Store memories
+            stored_count = 0
+            for memory in memories:
+                try:
+                    # Ensure memory has required fields
+                    if "content" not in memory:
+                        logger.warning(f"Skipping memory chunk without content: {memory}")
+                        continue
+
+                    # Add memory to long-term storage
+                    memory_id = self.long_term.add_memory(
+                        content=memory["content"],
+                        source_type=memory.get("source_type", "conversation"),
+                        importance=memory.get("importance", 0.5),
+                        metadata=memory.get("metadata", {})
+                    )
+
+                    # Log the persisted memory
+                    content_preview = memory["content"][:50] + '...' if len(memory["content"]) > 50 else memory["content"]
+                    logger.debug(f"Persisted memory {memory_id}: {content_preview}")
+
+                    stored_count += 1
+                except Exception as e:
+                    logger.error(f"Error persisting memory chunk: {e}", exc_info=True)
+
+            # Update last persist turn count
+            self.turn_count_at_last_persist = self.short_term.turn_count
+
+            logger.info(f"Persisted {stored_count} memories from short-term memory")
+            return stored_count
+
+        except Exception as e:
+            logger.error(f"Error persisting short-term memory: {e}", exc_info=True)
             return 0
-
-        # Encode conversation into memory chunks
-        memories = self.encoder.encode_conversation(turns)
-
-        # Store memories
-        stored_count = 0
-        for memory in memories:
-            self.long_term.add_memory(
-                content=memory["content"],
-                source_type=memory["source_type"],
-                importance=memory["importance"],
-                metadata=memory["metadata"]
-            )
-            stored_count += 1
-
-        # Update last persist turn count
-        self.turn_count_at_last_persist = self.short_term.turn_count
-
-        logger.info(f"Persisted {stored_count} memories from short-term memory")
-
-        return stored_count
 
     def add_fact(self,
                 fact: str,

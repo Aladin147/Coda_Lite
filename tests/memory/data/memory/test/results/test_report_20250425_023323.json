@@ -1,0 +1,50 @@
+{
+  "timestamp": "2025-04-25T02:33:23.650010",
+  "duration_seconds": 0.09395122528076172,
+  "total_tests": 39,
+  "failures": 6,
+  "errors": 3,
+  "skipped": 0,
+  "success_rate": 76.92307692307693,
+  "failures_detail": [
+    {
+      "test": "test_maxlen_behavior (test_short_term_memory.ShortTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_short_term_memory.py\", line 90, in test_maxlen_behavior\n    self.assertEqual(turns[0][\"role\"], \"system\")\nAssertionError: 'user' != 'system'\n- user\n+ system\n\n"
+    },
+    {
+      "test": "test_initialization_chroma (test_long_term_memory.LongTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_long_term_memory.py\", line 61, in test_initialization_chroma\n    self.assertIsNotNone(memory.collection)\nAssertionError: unexpectedly None\n"
+    },
+    {
+      "test": "test_initialization_sqlite (test_long_term_memory.LongTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_long_term_memory.py\", line 84, in test_initialization_sqlite\n    self.assertIsNotNone(memory.conn)\nAssertionError: unexpectedly None\n"
+    },
+    {
+      "test": "test_memory_pruning (test_long_term_memory.LongTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_long_term_memory.py\", line 387, in test_memory_pruning\n    self.assertIn(4, indices)\nAssertionError: 4 not found in [1, 2, 3]\n"
+    },
+    {
+      "test": "test_auto_persist (test_enhanced_memory_manager.EnhancedMemoryManagerTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_enhanced_memory_manager.py\", line 266, in test_auto_persist\n    self.assertEqual(memory.turn_count_at_last_persist, 0)\nAssertionError: 3 != 0\n"
+    },
+    {
+      "test": "test_retrieve_relevant_memories (test_enhanced_memory_manager.EnhancedMemoryManagerTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_enhanced_memory_manager.py\", line 224, in test_retrieve_relevant_memories\n    self.assertGreater(len(memories), 0)\nAssertionError: 0 not greater than 0\n"
+    }
+  ],
+  "errors_detail": [
+    {
+      "test": "test_search_memories (test_long_term_memory.LongTermMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_long_term_memory.py\", line 210, in test_search_memories\n    results = memory.search_memories(\"Tell me about John\", limit=2)\n  File \"F:\\Coda_Lite\\tests\\memory\\test_utils\\memory_test_utils.py\", line 386, in search_memories\n    if \"John\" in query and \"New York\" in self.memories.values()[0][\"content\"]:\nTypeError: 'dict_values' object is not subscriptable\n"
+    },
+    {
+      "test": "test_get_memories_with_events (test_websocket_memory.WebSocketMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_websocket_memory.py\", line 274, in test_get_memories_with_events\n    self.assertEqual(args[0], \"Tell me about myself\")  # query\nIndexError: tuple index out of range\n"
+    },
+    {
+      "test": "test_memory_persistence_with_events (test_websocket_memory.WebSocketMemoryTest)",
+      "message": "Traceback (most recent call last):\n  File \"F:\\Coda_Lite\\tests\\memory\\test_websocket_memory.py\", line 411, in test_memory_persistence_with_events\n    memories = memory.get_memories(\"Tell me about John's pet\")\n  File \"F:\\Coda_Lite\\tests\\memory\\test_websocket_memory.py\", line 61, in get_memories\n    memories = super().retrieve_relevant_memories(query, limit=limit, min_similarity=min_relevance)\n  File \"F:\\Coda_Lite\\tests\\memory\\test_utils\\memory_test_utils.py\", line 771, in retrieve_relevant_memories\n    return self.long_term.search_memories(query, limit=limit, min_similarity=min_similarity)\n  File \"F:\\Coda_Lite\\tests\\memory\\test_utils\\memory_test_utils.py\", line 386, in search_memories\n    if \"John\" in query and \"New York\" in self.memories.values()[0][\"content\"]:\nTypeError: 'dict_values' object is not subscriptable\n"
+    }
+  ],
+  "skipped_detail": []
+}

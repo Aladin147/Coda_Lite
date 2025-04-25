@@ -41,6 +41,11 @@ class CodaWebSocketIntegration:
 
         # Event queue for handling events from non-async threads
         self.event_queue = queue.Queue()
+
+        # Create a dedicated event loop for the event processing thread
+        self.event_loop = None
+
+        # Start the event processing thread
         self.event_thread = threading.Thread(target=self._process_event_queue, daemon=True)
         self.event_thread.start()
 
@@ -48,35 +53,44 @@ class CodaWebSocketIntegration:
 
     def _process_event_queue(self):
         """Process events from the event queue."""
-        while True:
-            try:
-                # Get the next event from the queue
-                event_type, data, high_priority = self.event_queue.get()
+        # Create a new event loop for this thread
+        self.event_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.event_loop)
 
-                # Try to get the current event loop
+        logger.info("Event processing thread started with dedicated event loop")
+
+        try:
+            while True:
                 try:
-                    loop = asyncio.get_event_loop()
-                except RuntimeError:
-                    # No event loop in this thread, create a new one
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
+                    # Get the next event from the queue with a timeout
+                    # This allows the thread to check for shutdown periodically
+                    try:
+                        event_type, data, high_priority = self.event_queue.get(timeout=0.5)
+                    except queue.Empty:
+                        continue
 
-                # Create a task to push the event
-                async def push_event():
-                    await self.server.push_event_async(event_type, data, high_priority)
+                    # Create a task to push the event
+                    async def push_event():
+                        try:
+                            await self.server.push_event_async(event_type, data, high_priority)
+                        except Exception as e:
+                            logger.error(f"Error pushing event: {e}", exc_info=True)
 
-                # Run the task
-                try:
-                    loop.run_until_complete(push_event())
+                    # Run the task in this thread's event loop
+                    try:
+                        self.event_loop.run_until_complete(push_event())
+                    except Exception as e:
+                        logger.error(f"Error running event task: {e}", exc_info=True)
+
+                    # Mark the task as done
+                    self.event_queue.task_done()
                 except Exception as e:
-                    logger.error(f"Error pushing event: {e}", exc_info=True)
-
-                # Mark the task as done
-                self.event_queue.task_done()
-
-            except Exception as e:
-                logger.error(f"Error processing event queue: {e}", exc_info=True)
-                time.sleep(0.1)  # Avoid tight loop if there's an error
+                    logger.error(f"Error processing event queue: {e}", exc_info=True)
+                    time.sleep(0.1)  # Avoid tight loop if there's an error
+        finally:
+            # Clean up the event loop
+            self.event_loop.close()
+            logger.info("Event processing thread stopped")
 
     def start_session(self) -> str:
         """
@@ -122,6 +136,10 @@ class CodaWebSocketIntegration:
         logger.info(f"Ended session {self.session_id}")
         self.session_id = None
 
+    # Keep track of recently sent messages to prevent duplicates
+    _recent_messages = {}
+    _message_lock = threading.Lock()
+
     def add_conversation_turn(self, role: str, content: str) -> None:
         """
         Add a conversation turn.
@@ -134,20 +152,44 @@ class CodaWebSocketIntegration:
             logger.warning("No active session for conversation turn")
             return
 
+        # Create a message hash to detect duplicates
+        message_hash = f"{role}:{hash(content)}"
+
+        # Check for duplicates with a lock to prevent race conditions
+        with self._message_lock:
+            # Check if we've seen this message recently (within the last 5 seconds)
+            current_time = time.time()
+            if message_hash in self._recent_messages:
+                last_time = self._recent_messages[message_hash]
+                if current_time - last_time < 5.0:  # 5 second window for duplicates
+                    logger.warning(f"Duplicate message detected, ignoring: {role}, content_length={len(content)}")
+                    return
+
+            # Update the recent messages cache
+            self._recent_messages[message_hash] = current_time
+
+            # Clean up old messages (older than 10 seconds)
+            self._recent_messages = {k: v for k, v in self._recent_messages.items()
+                                    if current_time - v < 10.0}
+
+        # Increment the turn counter and generate a unique ID
         self.conversation_turn_count += 1
+        turn_id = f"turn_{self.session_id}_{self.conversation_turn_count}"
 
         # Send conversation turn event
+        logger.info(f"Adding conversation turn: role={role}, turn_id={turn_id}, content_length={len(content)}")
+
         self.event_queue.put((
             EventType.CONVERSATION_TURN,
             {
                 "role": role,
                 "content": content,
-                "turn_id": self.conversation_turn_count
+                "turn_id": turn_id
             },
-            False
+            True  # Mark as high priority to ensure it's in the replay buffer
         ))
 
-        logger.debug(f"Added conversation turn: {role}")
+        logger.debug(f"Added conversation turn: {role}, turn_id={turn_id}")
 
     # STT integration methods
 
@@ -505,6 +547,8 @@ class CodaWebSocketIntegration:
         # Create a preview of the content
         content_preview = content[:100] + "..." if len(content) > 100 else content
 
+        logger.info(f"Storing memory: id={memory_id}, type={memory_type}, importance={importance}")
+
         # Send memory store event
         self.event_queue.put((
             EventType.MEMORY_STORE,
@@ -512,12 +556,13 @@ class CodaWebSocketIntegration:
                 "content_preview": content_preview,
                 "memory_type": memory_type,
                 "importance": importance,
-                "memory_id": memory_id
+                "memory_id": memory_id,
+                "timestamp": time.time()  # Add timestamp for proper display in UI
             },
             True  # high_priority
         ))
 
-        logger.debug(f"Memory stored: {content_preview[:30]}...")
+        logger.debug(f"Memory stored: id={memory_id}, preview={content_preview[:30]}...")
 
     def memory_retrieve(self, query: str, results: List[Dict[str, Any]]) -> None:
         """
@@ -533,15 +578,28 @@ class CodaWebSocketIntegration:
             content = results[0].get("content", "")
             top_result_preview = content[:100] + "..." if len(content) > 100 else content
 
+        # Format results for transmission
+        formatted_results = []
+        for result in results:
+            # Create a copy to avoid modifying the original
+            formatted_result = {
+                "id": result.get("id", f"mem_{int(time.time())}_{len(formatted_results)}"),
+                "content": result.get("content", ""),
+                "score": result.get("score", 0.5),
+                "metadata": result.get("metadata", {})
+            }
+            formatted_results.append(formatted_result)
+
         # Send memory retrieve event
         self.event_queue.put((
             EventType.MEMORY_RETRIEVE,
             {
                 "query": query,
                 "results_count": len(results),
-                "top_result_preview": top_result_preview
+                "top_result_preview": top_result_preview,
+                "results": formatted_results  # Include the full results
             },
-            False
+            True  # Mark as high priority to ensure it's in the replay buffer
         ))
 
         logger.debug(f"Memory retrieved: {len(results)} results for query '{query}'")
@@ -698,16 +756,22 @@ class CodaWebSocketIntegration:
             gpu_vram_mb: GPU VRAM usage in MB
             uptime_seconds: System uptime in seconds
         """
+        # Calculate uptime if not provided
+        if uptime_seconds is None:
+            uptime_seconds = time.time() - self.perf_tracker.session_start_time
+
+        logger.info(f"Sending system metrics: Memory={memory_mb:.1f}MB, CPU={cpu_percent:.1f}%, GPU VRAM={gpu_vram_mb or 0:.1f}MB")
+
         # Send system metrics event
         self.event_queue.put((
             EventType.SYSTEM_METRICS,
             {
-                "memory_mb": memory_mb,
-                "cpu_percent": cpu_percent,
-                "gpu_vram_mb": gpu_vram_mb,
-                "uptime_seconds": uptime_seconds or time.time() - self.perf_tracker.session_start_time
+                "memory_mb": float(memory_mb),
+                "cpu_percent": float(cpu_percent),
+                "gpu_vram_mb": float(gpu_vram_mb) if gpu_vram_mb is not None else 0.0,
+                "uptime_seconds": float(uptime_seconds)
             },
-            False
+            True  # Mark as high priority to ensure it's in the replay buffer
         ))
 
         logger.debug(f"System metrics sent: {memory_mb:.1f}MB, {cpu_percent:.1f}% CPU")
@@ -731,11 +795,14 @@ class CodaWebSocketIntegration:
             tts_seconds = self.perf_tracker.get_duration("tts_start", "tts_end")
 
         tool_seconds = self.perf_tracker.get_duration("tool_start", "tool_end")
+        memory_seconds = 0  # Add memory operation timing if available
 
         # Calculate total processing time (excluding audio playback/recording)
         total_seconds = stt_seconds + llm_seconds + tts_seconds
         if tool_seconds > 0:
             total_seconds += tool_seconds
+        if memory_seconds > 0:
+            total_seconds += memory_seconds
 
         # Get audio durations if available
         stt_audio_duration = self.perf_tracker.markers.get("stt_audio_duration", 0)
@@ -743,6 +810,8 @@ class CodaWebSocketIntegration:
 
         # Calculate total interaction time (processing + audio)
         total_interaction_seconds = total_seconds + stt_audio_duration + tts_audio_duration
+
+        logger.info(f"Sending latency trace: STT={stt_seconds:.2f}s, LLM={llm_seconds:.2f}s, TTS={tts_seconds:.2f}s, Total={total_seconds:.2f}s")
 
         # Send latency trace event with clear separation between processing and audio times
         self.event_queue.put((
@@ -753,15 +822,16 @@ class CodaWebSocketIntegration:
                 "tts_seconds": tts_seconds,  # Synthesis time only (not playback)
                 "total_processing_seconds": total_seconds,  # Total processing time
                 "total_seconds": total_seconds,  # Keep for backward compatibility
-                "tool_seconds": tool_seconds if tool_seconds > 0 else None,
+                "tool_seconds": tool_seconds if tool_seconds > 0 else 0,
+                "memory_seconds": memory_seconds,
                 "stt_audio_duration": stt_audio_duration,  # Actual audio recording duration
                 "tts_audio_duration": tts_audio_duration,  # Actual audio playback duration
                 "total_interaction_seconds": total_interaction_seconds  # Total time including audio
             },
-            False
+            True  # Mark as high priority to ensure it's in the replay buffer
         ))
 
-        logger.debug(f"Latency trace: STT={stt_seconds:.2f}s, LLM={llm_seconds:.2f}s, TTS={tts_seconds:.2f}s, Total={total_seconds:.2f}s")
+        logger.debug(f"Latency trace sent: STT={stt_seconds:.2f}s, LLM={llm_seconds:.2f}s, TTS={tts_seconds:.2f}s, Total={total_seconds:.2f}s")
 
 
 class PerfTracker:

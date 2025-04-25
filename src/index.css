@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-text m-0 min-h-screen;
+  }
+
+  h1 {
+    @apply text-3xl font-bold mb-4;
+  }
+
+  h2 {
+    @apply text-2xl font-bold mb-3;
+  }
+
+  h3 {
+    @apply text-xl font-bold mb-2;
+  }
+
+  h4 {
+    @apply text-lg font-semibold mb-2;
+  }
+
+  a {
+    @apply text-primary hover:text-primary-light transition-colors;
+  }
+
+  button {
+    @apply px-4 py-2 rounded-md bg-primary text-white font-medium 
+           hover:bg-primary-light transition-colors focus:outline-none 
+           focus:ring-2 focus:ring-primary focus:ring-opacity-50;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-background-card rounded-lg shadow-md p-4;
+  }
+
+  .section-title {
+    @apply text-lg font-semibold mb-3 text-text-secondary;
+  }
+
+  .metric {
+    @apply flex justify-between items-center py-1;
+  }
+
+  .metric-label {
+    @apply text-text-secondary;
+  }
+
+  .metric-value {
+    @apply font-medium;
+  }
+}

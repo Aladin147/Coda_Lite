@@ -1,0 +1,12 @@
+{
+  "timestamp": "2025-04-25T02:41:54.298035",
+  "duration_seconds": 0.07544350624084473,
+  "total_tests": 39,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "success_rate": 100.0,
+  "failures_detail": [],
+  "errors_detail": [],
+  "skipped_detail": []
+}

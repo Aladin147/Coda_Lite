@@ -382,6 +382,43 @@ class MemoryEncoder:
 
         return memory
 
+    def encode_conversation_message(self, message: str, role: str = "user") -> Dict[str, Any]:
+        """
+        Encode a single conversation message for long-term storage.
+        This is a simplified version of encode_conversation for single messages.
+
+        Args:
+            message: The message content
+            role: The role of the speaker ("user" or "assistant")
+
+        Returns:
+            Encoded memory
+        """
+        # Calculate importance
+        importance = self._calculate_importance(message)
+
+        # Extract topics
+        topics = self._extract_topics(message)
+        topics_str = ",".join(topics) if topics else ""
+
+        # Create metadata
+        metadata = {
+            "speakers": role,
+            "timestamp": "",  # No timestamp for direct encoding
+            "topics": topics_str,
+            "direct_encoding": "true"  # Mark as directly encoded
+        }
+
+        memory = {
+            "content": message,
+            "source_type": "conversation",
+            "importance": importance,
+            "metadata": metadata
+        }
+
+        logger.debug(f"Encoded single conversation message from {role}: {message[:50]}...")
+        return memory
+
     def encode_feedback(self,
                        feedback: Dict[str, Any],
                        metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

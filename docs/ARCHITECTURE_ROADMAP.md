@@ -91,7 +91,7 @@ WebSocket Push   Local logs/events
 
 - **Structured Errors**: Errors as events in the stream
 - **Isolation**: UI errors don't affect core functionality
-- **Example Format**:
+- **Example Format**
   ```json
   {
     "type": "error",

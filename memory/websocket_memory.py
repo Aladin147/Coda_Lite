@@ -34,6 +34,31 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
             short_term_memory: Optional existing short-term memory instance
             long_term_memory: Optional existing long-term memory instance
         """
+        # Ensure config has the expected structure
+        if not isinstance(config, dict):
+            logger.warning(f"Config is not a dictionary, got {type(config)}. Creating empty config.")
+            config = {}
+
+        # Ensure memory section exists
+        if "memory" not in config:
+            logger.warning("Memory section missing from config, creating default memory config")
+            config["memory"] = {
+                "long_term_enabled": True,
+                "max_turns": 20,
+                "max_tokens": 800,
+                "long_term_path": "data/memory/long_term",
+                "embedding_model": "all-MiniLM-L6-v2",
+                "vector_db": "in_memory",  # Fallback to in-memory if chroma not available
+                "max_memories": 1000,
+                "device": "cpu",
+                "auto_persist": True,
+                "persist_interval": 1,
+                "chunk_size": 150,
+                "chunk_overlap": 50,
+                "min_chunk_length": 50
+            }
+
+        # Initialize parent class
         super().__init__(
             config=config,
             short_term_memory=short_term_memory,

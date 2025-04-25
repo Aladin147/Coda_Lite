@@ -13,6 +13,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
+## [0.1.2-websocket-improvements] - 2025-04-25
+
+### Added
+
+- Thread-safe event loop management system for WebSocket implementation
+- Message deduplication system to prevent duplicate messages
+- Secure token-based authentication for WebSocket connections
+- Comprehensive WebSocket implementation documentation
+- Dashboard WebSocket service with authentication support
+- Extensive test suite for WebSocket components
+
+### Changed
+
+- Updated WebSocket server to use thread-local event loops
+- Improved WebSocket client with connection state management
+- Enhanced WebSocket integration with message deduplication
+- Updated dashboard to work with the new WebSocket implementation
+- Improved error handling and recovery in WebSocket components
+
+### Fixed
+
+- Fixed asyncio errors with ProactorEventLoop on Windows
+- Fixed message duplication issues in WebSocket communication
+- Fixed WebSocket connection issues between dashboard and backend
+- Fixed event loop management across multiple threads
+
 ## [0.1.1-dashboard-transformation] - 2025-04-24
 
 ### Added

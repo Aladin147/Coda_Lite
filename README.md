@@ -1,4 +1,4 @@
-# Coda Lite – Core Operations & Digital Assistant (v0.1.1)
+# Coda Lite – Core Operations & Digital Assistant (v0.1.2)
 
 **Coda Lite** is a lightweight, local-first voice assistant prototype focused on one thing:
 ⚡ **Real-time, low-latency, human-feeling conversation.**
@@ -27,7 +27,7 @@ This project is the **first step** in building an open, modular, transparent AI 
 | Layer         | Tool                             | Purpose                        |
 |---------------|----------------------------------|--------------------------------|
 | 🎙️ STT        | [faster-whisper](https://github.com/guillaumekln/faster-whisper)  | Local speech-to-text          |
-| 🧠 LLM        | [Ollama](https://ollama.com/) + LLaMA 3 / DeepSeek   | Local reasoning engine        |
+| 🧠 LLM        | [Ollama](https://ollama.com/) + Gemma 2B / LLaMA 3   | Local reasoning engine        |
 | 🗣️ TTS        | [ElevenLabs](https://elevenlabs.io/) / [MeloTTS (CSM-1B)](https://github.com/myshell-ai/MeloTTS) / [Dia TTS](https://github.com/nari-labs/dia)      | High-quality speech generation       |
 | 🔧 Tools      | Python function routing          | Responding to structured LLM output |
 
@@ -57,7 +57,28 @@ This project is the **first step** in building an open, modular, transparent AI 
 
 ---
 
-## 🚀 Current Version: `v0.1.1` - Dashboard Integration
+## 🚀 Current Version: `v0.1.2` - Memory Enhancements
+
+> Enhanced memory system with advanced features:
+
+- Gemma 2B migration for improved performance (2.26x faster than LLaMA 3) ✅
+- Memory system fixes for improved reliability ✅
+- Memory snapshot system for debugging and analysis ✅
+- Temporal weighting system for memory importance decay ✅
+- Memory debug system with WebSocket integration ✅
+- Memory debug UI components for dashboard ✅
+- Active recall system with spaced repetition algorithm ✅
+- Memory self-testing framework for integrity verification ✅
+- Memory summarization system with topic clustering ✅
+- User profile generation from preferences and facts ✅
+- Recent memory summarization with temporal filtering ✅
+- Memory type summarization for different memory types ✅
+- Memory overview generation with comprehensive statistics ✅
+- WebSocket integration for memory enhancements ✅
+- Comprehensive tests for memory enhancements ✅
+- Detailed documentation for memory enhancements ✅
+
+## 🚀 Previous Version: `v0.1.1` - Dashboard Integration
 
 > Visual interface for monitoring and interaction:
 
@@ -134,7 +155,6 @@ For a detailed list of known issues and attempted fixes, see [Known Issues](docs
 - Additional languages support
 - Improved error handling and recovery
 - Expanded personality with context-aware responses
-- Memory summarization for longer conversations
 - Comprehensive testing suite
 
 ---
@@ -225,10 +245,14 @@ Coda Lite features a sophisticated memory system with both short-term and long-t
 - **Enhanced Persistence**: Ensures memories are reliably saved across sessions
 - **Optimized Retrieval**: Retrieves the most relevant memories with adaptive thresholds
 - **Topic Grouping**: Organizes memories by topic for better context integration
+- **Memory Summarization**: Generates summaries of memory clusters and user profiles
+- **Active Recall**: Tests and reinforces important memories for better retention
+- **Memory Self-Testing**: Verifies memory integrity and retrieval accuracy
+- **Temporal Weighting**: Applies time-based decay to memory importance
 
 The memory system enables Coda to remember user preferences, important facts, and previous conversations, creating a more personalized and contextually aware experience.
 
-See [Memory System Documentation](docs/LONG_TERM_MEMORY.md) and [Memory System Fixes](docs/MEMORY_SYSTEM_FIXES.md) for more details.
+See [Memory System Documentation](docs/LONG_TERM_MEMORY.md), [Memory System Fixes](docs/MEMORY_SYSTEM_FIXES.md), [Memory Summarization](docs/MEMORY_SUMMARIZATION.md), [Active Recall](docs/ACTIVE_RECALL.md), and [Memory Self-Testing](docs/MEMORY_SELF_TESTING.md) for more details.
 
 ---
 
@@ -237,12 +261,23 @@ See [Memory System Documentation](docs/LONG_TERM_MEMORY.md) and [Memory System F
 ```bash
 coda-lite/
 ├── main.py               # Entry point (CLI version)
-├── main_websocket.py      # Entry point (WebSocket version)
+├── main_websocket.py     # Entry point (WebSocket version)
 ├── version.py            # Version information
 ├── stt/                  # Speech-to-text (Whisper)
-├── tts/                  # Text-to-speech (MeloTTS/CSM-1B, Dia TTS, ElevenLabs)
-├── llm/                  # LLM handling and prompt logic
+├── tts/                  # Text-to-speech (ElevenLabs, Dia TTS)
+├── llm/                  # LLM handling and prompt logic (Gemma 2B, LLaMA 3)
 ├── memory/               # Memory management (short-term and long-term)
+│   ├── short_term.py     # Short-term conversation memory
+│   ├── long_term.py      # Long-term vector-based memory
+│   ├── encoder.py        # Memory encoding and chunking
+│   ├── enhanced_memory_manager.py  # Enhanced memory manager
+│   ├── memory_snapshot.py          # Memory snapshot system
+│   ├── temporal_weighting.py       # Temporal weighting system
+│   ├── memory_debug.py             # Memory debug system
+│   ├── active_recall.py            # Active recall system
+│   ├── self_testing.py             # Memory self-testing framework
+│   ├── summarization.py            # Memory summarization system
+│   └── websocket_memory.py         # WebSocket integration for memory
 ├── personality/          # Personality management
 ├── intent/               # Intent routing system
 ├── feedback/             # User feedback system
@@ -251,8 +286,7 @@ coda-lite/
 ├── utils/                # Utility functions and helpers
 ├── config/               # Prompt and settings files
 ├── data/                 # Cached audio, logs, temp files
-├── gui/                  # Debug GUI for testing
-├── dashboard/            # Tauri + React dashboard
+├── dashboard-v3/         # React dashboard (current version)
 ├── docs/                 # Project documentation
 ├── examples/             # Example scripts
 ├── tests/                # Unit tests

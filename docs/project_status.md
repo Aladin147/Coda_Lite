@@ -67,6 +67,8 @@ This document tracks the current status of the Coda Lite project, including comp
 
 ### Dashboard 2.0
 
+- ✅ Cleaned up legacy dashboard implementations
+- ✅ Standardized on dashboard-v3 as the current implementation
 - ⏳ Implement layered architecture with Zustand/Redux
 - ⏳ Create WebSocket service module
 - ⏳ Develop expressive avatar with emotional states

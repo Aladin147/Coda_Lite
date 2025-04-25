@@ -102,7 +102,7 @@ The dashboard can send the following commands to the WebSocket server:
 1. Install dependencies:
 
    ```bash
-   cd dashboard
+   cd dashboard-v3
    npm install
    ```
 
@@ -138,7 +138,7 @@ This will create a distributable package in the `src-tauri/target/release` direc
 
 ## Related Documentation
 
-- [Dashboard README](../dashboard/README.md) - Quick start guide for the dashboard
+- [Dashboard README](../dashboard-v3/README.md) - Quick start guide for the dashboard
 - [WebSocket Server Documentation](websocket_server.md) - Documentation for Coda's WebSocket server
 - [Architecture Transformation Roadmap](ARCHITECTURE_ROADMAP.md) - Detailed plan for the WebSocket-based architecture
 

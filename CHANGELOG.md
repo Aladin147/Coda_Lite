@@ -13,6 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
+## [0.1.2-dashboard-cleanup] - 2025-04-26
+
+### Added
+
+- Standardized on dashboard-v3 as the current implementation
+- Updated documentation to reference dashboard-v3
+
+### Changed
+
+- Updated dashboard references in documentation
+- Improved project organization
+
+### Removed
+
+- Removed legacy dashboard implementations (dashboard-LEGACY, dashboard-clean-LEGACY, dashboard-v2-LEGACY)
+- Cleaned up unused dashboard code
+
 ## [0.1.2-memory-snapshots] - 2025-04-26
 
 ### Added

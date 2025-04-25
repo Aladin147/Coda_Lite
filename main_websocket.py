@@ -197,7 +197,7 @@ class CodaAssistant:
         logger.info("Initializing Language Model module with WebSocket integration...")
         self.llm = WebSocketOllamaLLM(
             websocket_integration=self.ws,
-            model_name=config.get("llm.model_name", "llama3"),
+            model_name=config.get("llm.model_name", "gemma:2b"),
             host="http://localhost:11434",
             timeout=120
         )
@@ -258,7 +258,7 @@ class CodaAssistant:
 
         # Initialize memory manager with WebSocket integration
         logger.info("Initializing memory manager with WebSocket integration...")
-        long_term_enabled = config.get("memory.long_term_enabled", False)
+        long_term_enabled = config.get("memory.long_term_enabled", True)  # Default to True for better functionality
 
         if long_term_enabled:
             logger.info("Using enhanced memory manager with long-term memory and WebSocket integration")
@@ -266,6 +266,56 @@ class CodaAssistant:
                 websocket_integration=self.ws,
                 config=config.get_all()
             )
+
+            # Add test memories using the proper methods
+            try:
+                logger.info("Adding test memories for demonstration...")
+
+                # Add facts using the add_fact method
+                self.memory.add_fact(
+                    fact="Coda is a voice assistant that runs locally on the user's computer.",
+                    source="system"
+                )
+
+                # Add preferences using the add_preference method
+                self.memory.add_preference(
+                    preference="The user prefers dark mode interfaces with minimal design."
+                )
+
+                # Add conversation memories using the encoder
+                conversation_message = "The user is working on implementing ElevenLabs TTS as the default voice system."
+                memory = self.memory.encoder.encode_conversation_message(
+                    message=conversation_message,
+                    role="assistant"
+                )
+
+                self.memory.long_term.add_memory(
+                    content=memory["content"],
+                    source_type=memory["source_type"],
+                    importance=memory["importance"],
+                    metadata=memory["metadata"]
+                )
+
+                # Add another conversation memory
+                self.memory.long_term.add_memory(
+                    content="The dashboard should show all metrics on a single page rather than separate tabs.",
+                    source_type="conversation",
+                    importance=0.7,
+                    metadata={"speakers": "user", "topics": "dashboard,design,metrics", "direct_encoding": "true"}
+                )
+
+                # Force persist to ensure memories are saved
+                # Note: LongTermMemory doesn't have a persist method, it's handled automatically
+
+                logger.info("Test memories added successfully")
+
+                # Test memory retrieval
+                logger.info("Testing memory retrieval...")
+                memories = self.memory.retrieve_relevant_memories("What TTS system is being implemented?")
+                logger.info(f"Retrieved {len(memories)} memories for test query")
+
+            except Exception as e:
+                logger.error(f"Error adding test memories: {e}", exc_info=True)
         else:
             logger.info("Using standard short-term memory manager (without WebSocket integration)")
             max_turns = config.get("memory.max_turns", 20)
@@ -369,7 +419,7 @@ class CodaAssistant:
 
         # Signal start of LLM processing
         self.ws.llm_start(
-            model=self.config.get("llm.model_name", "llama3"),
+            model=self.config.get("llm.model_name", "gemma:2b"),
             prompt_tokens=sum(len(msg["content"]) for msg in messages) // 4,  # Rough estimate
             system_prompt_preview=self.summarization_prompt[:100] + "..."
         )
@@ -558,7 +608,7 @@ class CodaAssistant:
 
             # Signal start of LLM processing
             self.ws.llm_start(
-                model=self.config.get("llm.model_name", "llama3"),
+                model=self.config.get("llm.model_name", "gemma:2b"),
                 prompt_tokens=sum(len(msg["content"]) for msg in context) // 4,  # Rough estimate
                 system_prompt_preview=self.system_prompt[:100] + "..."
             )
@@ -1064,6 +1114,17 @@ async def main_async():
 
 def main():
     """Main entry point for Coda Lite."""
+    # Fix for Windows asyncio issues with ProactorEventLoop
+    if sys.platform == 'win32':
+        # Use the selector event loop instead of the default ProactorEventLoop on Windows
+        # This helps avoid the _ProactorBaseWritePipeTransport._loop_writing assertion errors
+        try:
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+            logger.info("Set Windows event loop policy to WindowsSelectorEventLoopPolicy")
+        except Exception as e:
+            logger.error(f"Error setting Windows event loop policy: {e}")
+
+    # Run the async main function
     asyncio.run(main_async())
 
 if __name__ == "__main__":

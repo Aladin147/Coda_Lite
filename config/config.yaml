@@ -13,7 +13,7 @@ intent:
   enabled: true
 llm:
   max_tokens: 256
-  model_name: llama3
+  model_name: gemma:2b
   system_prompt_file: config/prompts/system.txt
   temperature: 0.7
   tool_prompt_file: config/prompts/tools.txt

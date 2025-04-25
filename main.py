@@ -164,7 +164,7 @@ class CodaAssistant:
         # Initialize LLM module
         logger.info("Initializing Language Model module...")
         self.llm = OllamaLLM(
-            model_name=config.get("llm.model_name", "llama3"),
+            model_name=config.get("llm.model_name", "gemma:2b"),
             host="http://localhost:11434",
             timeout=120
         )

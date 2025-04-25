@@ -13,6 +13,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
+## [0.1.2-gemma-migration] - 2025-04-26
+
+### Added
+
+- Migrated to Gemma 2B as the primary LLM
+- Comprehensive performance testing for Gemma vs. LLaMA 3
+- Optimized prompts for Gemma 2B
+
+### Changed
+
+- Updated configuration to use Gemma 2B by default
+- Adjusted temperature and other parameters for optimal Gemma performance
+- Improved response quality with the new model
+
+### Fixed
+
+- Reduced latency in LLM responses (2.26x faster than LLaMA 3)
+- Improved instruction following with Gemma 2B
+- Enhanced real-time conversation capabilities
+
 ## [0.1.2-websocket-improvements] - 2025-04-25
 
 ### Added

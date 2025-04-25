@@ -59,9 +59,9 @@ This document tracks the current status of the Coda Lite project, including comp
 
 ### LLM Improvements
 
-- 🔄 Planning migration to Gemma 2B as primary LLM
-- 🔄 Evaluating performance and quality improvements
-- 🔄 Preparing prompt optimization for new model
+- ✅ Completed migration to Gemma 2B as primary LLM
+- ✅ Evaluated performance improvements (2.26x faster than LLaMA 3)
+- ✅ Updated configuration for the new model
 
 ## Planned Work
 

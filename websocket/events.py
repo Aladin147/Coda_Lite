@@ -42,6 +42,14 @@ class EventType(str, Enum):
     MEMORY_RETRIEVE = "memory_retrieve"
     MEMORY_UPDATE = "memory_update"
 
+    # Memory debug events
+    MEMORY_DEBUG_OPERATION = "memory_debug_operation"
+    MEMORY_DEBUG_STATS = "memory_debug_stats"
+    MEMORY_DEBUG_SEARCH = "memory_debug_search"
+    MEMORY_DEBUG_REINFORCE = "memory_debug_reinforce"
+    MEMORY_DEBUG_FORGET = "memory_debug_forget"
+    MEMORY_DEBUG_SNAPSHOT = "memory_debug_snapshot"
+
     # Tool events
     TOOL_CALL = "tool_call"
     TOOL_RESULT = "tool_result"
@@ -220,6 +228,57 @@ class MemoryUpdateEvent(BaseEvent):
     old_value: Any
     new_value: Any
 
+class MemoryDebugOperationEvent(BaseEvent):
+    """Memory debug operation event."""
+
+    type: EventType = EventType.MEMORY_DEBUG_OPERATION
+    operation_type: str
+    timestamp: str
+    details: Dict[str, Any]
+
+class MemoryDebugStatsEvent(BaseEvent):
+    """Memory debug stats event."""
+
+    type: EventType = EventType.MEMORY_DEBUG_STATS
+    stats: Dict[str, Any]
+    timestamp: float
+
+class MemoryDebugSearchEvent(BaseEvent):
+    """Memory debug search event."""
+
+    type: EventType = EventType.MEMORY_DEBUG_SEARCH
+    query: str
+    memory_type: Optional[str] = None
+    min_importance: float = 0.0
+    results: List[Dict[str, Any]]
+    results_count: int
+
+class MemoryDebugReinforceEvent(BaseEvent):
+    """Memory debug reinforce event."""
+
+    type: EventType = EventType.MEMORY_DEBUG_REINFORCE
+    memory_id: str
+    strength: float
+    success: bool
+    memory_preview: Optional[str] = None
+
+class MemoryDebugForgetEvent(BaseEvent):
+    """Memory debug forget event."""
+
+    type: EventType = EventType.MEMORY_DEBUG_FORGET
+    memory_id: str
+    success: bool
+    memory_preview: Optional[str] = None
+
+class MemoryDebugSnapshotEvent(BaseEvent):
+    """Memory debug snapshot event."""
+
+    type: EventType = EventType.MEMORY_DEBUG_SNAPSHOT
+    action: str  # "create", "save", "load", "apply"
+    snapshot_id: str
+    success: bool = True
+    metadata: Optional[Dict[str, Any]] = None
+
 class ToolCallEvent(BaseEvent):
     """Tool call event."""
 
@@ -318,6 +377,12 @@ EVENT_CLASS_MAP = {
     EventType.MEMORY_STORE: MemoryStoreEvent,
     EventType.MEMORY_RETRIEVE: MemoryRetrieveEvent,
     EventType.MEMORY_UPDATE: MemoryUpdateEvent,
+    EventType.MEMORY_DEBUG_OPERATION: MemoryDebugOperationEvent,
+    EventType.MEMORY_DEBUG_STATS: MemoryDebugStatsEvent,
+    EventType.MEMORY_DEBUG_SEARCH: MemoryDebugSearchEvent,
+    EventType.MEMORY_DEBUG_REINFORCE: MemoryDebugReinforceEvent,
+    EventType.MEMORY_DEBUG_FORGET: MemoryDebugForgetEvent,
+    EventType.MEMORY_DEBUG_SNAPSHOT: MemoryDebugSnapshotEvent,
     EventType.TOOL_CALL: ToolCallEvent,
     EventType.TOOL_RESULT: ToolResultEvent,
     EventType.TOOL_ERROR: ToolErrorEvent,

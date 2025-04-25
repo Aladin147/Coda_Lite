@@ -13,6 +13,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
+## [0.1.2-memory-debug] - 2025-04-26
+
+### Added
+
+- Memory debug system with WebSocket integration
+- Memory debug events for operation logging and visualization
+- Memory search functionality with type and importance filtering
+- Memory operation logging with timestamps and details
+- Memory statistics tracking and reporting
+- Memory debug API for dashboard integration
+- Comprehensive tests for memory debug system
+- Detailed documentation for memory debug system
+
+### Changed
+
+- Enhanced WebSocketEnhancedMemoryManager with debug capabilities
+- Updated WebSocket events to include memory debug events
+- Improved memory search with keyword fallback
+- Enhanced memory snapshot system with debug events
+
+### Fixed
+
+- Fixed memory search to handle empty results
+- Improved memory operation tracking with thread safety
+- Enhanced memory statistics calculation
+
 ## [0.1.2-temporal-weighting] - 2025-04-26
 
 ### Added

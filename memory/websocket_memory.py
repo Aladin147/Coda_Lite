@@ -11,6 +11,7 @@ from memory.enhanced_memory_manager import EnhancedMemoryManager
 from memory.short_term import MemoryManager as ShortTermMemory
 from memory.long_term import LongTermMemory
 from memory.encoder import MemoryEncoder
+from memory.memory_debug import MemoryDebugSystem
 from websocket.integration import CodaWebSocketIntegration
 
 logger = logging.getLogger("coda.memory.websocket")
@@ -66,7 +67,11 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
         )
 
         self.ws = websocket_integration
-        logger.info("WebSocketEnhancedMemoryManager initialized with WebSocket integration")
+
+        # Initialize memory debug system
+        self.debug = MemoryDebugSystem(memory_manager=self, websocket_integration=self.ws)
+
+        logger.info("WebSocketEnhancedMemoryManager initialized with WebSocket integration and debug system")
 
     def add_turn(self, role: str, content: str) -> None:
         """
@@ -81,6 +86,15 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
 
         # Emit conversation turn event
         self.ws.add_conversation_turn(role, content)
+
+        # Log operation in debug system
+        self.debug.log_operation(
+            operation_type="add_turn",
+            details={
+                "role": role,
+                "content_preview": content[:50] + "..." if len(content) > 50 else content
+            }
+        )
 
         logger.debug(f"Added conversation turn: {role}")
 
@@ -117,6 +131,18 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
             memory_type=memory_type,
             importance=importance,
             memory_id=memory_id
+        )
+
+        # Log operation in debug system
+        self.debug.log_operation(
+            operation_type="add_memory",
+            details={
+                "memory_id": memory_id,
+                "memory_type": memory_type,
+                "importance": importance,
+                "content_preview": content[:50] + "..." if len(content) > 50 else content,
+                "metadata": metadata
+            }
         )
 
         logger.debug(f"Added memory: {memory_id} - {content[:30]}...")
@@ -283,6 +309,17 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
                 results=self.last_retrieved_memories
             )
 
+            # Log operation in debug system
+            self.debug.log_operation(
+                operation_type="retrieve_memories",
+                details={
+                    "query": query,
+                    "results_count": len(self.last_retrieved_memories),
+                    "max_tokens": max_tokens,
+                    "include_system": include_system
+                }
+            )
+
             logger.debug(f"Retrieved {len(self.last_retrieved_memories)} memories for context: {query}")
 
         return context
@@ -345,6 +382,22 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
                 "metadata": metadata
             }
         })
+
+        # Emit memory debug snapshot event
+        self.ws.memory_debug_snapshot(
+            action="create",
+            snapshot_id=snapshot_id,
+            metadata=metadata
+        )
+
+        # Log operation in debug system
+        self.debug.log_operation(
+            operation_type="create_snapshot",
+            details={
+                "snapshot_id": snapshot_id,
+                "metadata": metadata
+            }
+        )
 
         logger.debug(f"Created memory snapshot: {snapshot_id}")
 

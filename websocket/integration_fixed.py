@@ -622,6 +622,148 @@ class CodaWebSocketIntegration:
 
         logger.debug(f"Memory updated: {memory_id} {field}")
 
+    # Memory debug methods
+
+    def memory_debug_operation(self, operation_type: str, timestamp: str, details: Dict[str, Any]) -> None:
+        """
+        Signal a memory debug operation.
+
+        Args:
+            operation_type: Type of operation (add, retrieve, update, delete, etc.)
+            timestamp: ISO format timestamp
+            details: Operation details
+        """
+        # Send memory debug operation event
+        self.event_queue.put((
+            EventType.MEMORY_DEBUG_OPERATION,
+            {
+                "operation_type": operation_type,
+                "timestamp": timestamp,
+                "details": details
+            },
+            False
+        ))
+
+        logger.debug(f"Memory debug operation: {operation_type}")
+
+    def memory_debug_stats(self, stats: Dict[str, Any]) -> None:
+        """
+        Send memory debug statistics.
+
+        Args:
+            stats: Memory statistics
+        """
+        # Send memory debug stats event
+        self.event_queue.put((
+            EventType.MEMORY_DEBUG_STATS,
+            {
+                "stats": stats,
+                "timestamp": time.time()
+            },
+            False
+        ))
+
+        logger.debug("Memory debug stats sent")
+
+    def memory_debug_search(self, query: str, results: List[Dict[str, Any]],
+                           memory_type: Optional[str] = None, min_importance: float = 0.0) -> None:
+        """
+        Signal a memory debug search.
+
+        Args:
+            query: Search query
+            results: Search results
+            memory_type: Optional filter by memory type
+            min_importance: Minimum importance score
+        """
+        # Send memory debug search event
+        self.event_queue.put((
+            EventType.MEMORY_DEBUG_SEARCH,
+            {
+                "query": query,
+                "memory_type": memory_type,
+                "min_importance": min_importance,
+                "results": results,
+                "results_count": len(results)
+            },
+            False
+        ))
+
+        logger.debug(f"Memory debug search: {query} ({len(results)} results)")
+
+    def memory_debug_reinforce(self, memory_id: str, strength: float, success: bool,
+                              memory_preview: Optional[str] = None) -> None:
+        """
+        Signal a memory debug reinforce operation.
+
+        Args:
+            memory_id: Memory ID
+            strength: Reinforcement strength
+            success: Whether the operation was successful
+            memory_preview: Optional preview of the memory content
+        """
+        # Send memory debug reinforce event
+        self.event_queue.put((
+            EventType.MEMORY_DEBUG_REINFORCE,
+            {
+                "memory_id": memory_id,
+                "strength": strength,
+                "success": success,
+                "memory_preview": memory_preview
+            },
+            False
+        ))
+
+        logger.debug(f"Memory debug reinforce: {memory_id} (strength={strength}, success={success})")
+
+    def memory_debug_forget(self, memory_id: str, success: bool,
+                           memory_preview: Optional[str] = None) -> None:
+        """
+        Signal a memory debug forget operation.
+
+        Args:
+            memory_id: Memory ID
+            success: Whether the operation was successful
+            memory_preview: Optional preview of the memory content
+        """
+        # Send memory debug forget event
+        self.event_queue.put((
+            EventType.MEMORY_DEBUG_FORGET,
+            {
+                "memory_id": memory_id,
+                "success": success,
+                "memory_preview": memory_preview
+            },
+            False
+        ))
+
+        logger.debug(f"Memory debug forget: {memory_id} (success={success})")
+
+    def memory_debug_snapshot(self, action: str, snapshot_id: str, success: bool = True,
+                             metadata: Optional[Dict[str, Any]] = None) -> None:
+        """
+        Signal a memory debug snapshot operation.
+
+        Args:
+            action: Snapshot action ("create", "save", "load", "apply")
+            snapshot_id: Snapshot ID
+            success: Whether the operation was successful
+            metadata: Optional snapshot metadata
+        """
+        # Send memory debug snapshot event
+        self.event_queue.put((
+            EventType.MEMORY_DEBUG_SNAPSHOT,
+            {
+                "action": action,
+                "snapshot_id": snapshot_id,
+                "success": success,
+                "metadata": metadata
+            },
+            False
+        ))
+
+        logger.debug(f"Memory debug snapshot: {action} {snapshot_id} (success={success})")
+
     # Tool integration methods
 
     def tool_call(self, tool_name: str, parameters: Dict[str, Any]) -> None:

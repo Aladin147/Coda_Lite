@@ -1017,6 +1017,80 @@ class EnhancedMemoryManager:
             logger.error(f"Error reinforcing memory: {e}", exc_info=True)
             return False
 
+    def search_memories(self,
+                       query: str,
+                       memory_type: Optional[str] = None,
+                       min_importance: float = 0.0,
+                       limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Search for memories based on a query.
+
+        Args:
+            query: Search query
+            memory_type: Optional filter by memory type
+            min_importance: Minimum importance score
+            limit: Maximum number of results
+
+        Returns:
+            List of matching memories
+        """
+        try:
+            # First try semantic search
+            memories = self.retrieve_relevant_memories(
+                query=query,
+                limit=limit,
+                min_similarity=0.2,  # Lower threshold for search
+                apply_temporal_weighting=True
+            )
+
+            # If no results, try keyword search
+            if not memories:
+                # Extract keywords from the query
+                keywords = self._extract_keywords(query)
+
+                if keywords:
+                    # Get all memories and filter manually
+                    all_memories = []
+                    for memory_id in self.long_term.metadata["memories"]:
+                        memory = self.long_term.get_memory_by_id(memory_id)
+                        if memory:
+                            all_memories.append(memory)
+
+                    # Score memories based on keyword matches
+                    scored_memories = []
+                    for memory in all_memories:
+                        content = memory.get('content', '').lower()
+                        score = sum(1 for keyword in keywords if keyword in content)
+                        if score > 0:
+                            memory['similarity'] = score / len(keywords)  # Normalize score
+                            scored_memories.append(memory)
+
+                    # Sort by score and take top results
+                    scored_memories.sort(key=lambda x: x.get('similarity', 0), reverse=True)
+                    memories = scored_memories[:limit]
+
+            # Filter by memory type and importance
+            if memory_type or min_importance > 0:
+                filtered_memories = []
+                for memory in memories:
+                    # Check memory type
+                    if memory_type and memory.get("source_type") != memory_type:
+                        continue
+
+                    # Check importance
+                    if memory.get("importance", 0) < min_importance:
+                        continue
+
+                    filtered_memories.append(memory)
+
+                memories = filtered_memories
+
+            return memories
+
+        except Exception as e:
+            logger.error(f"Error searching memories: {e}", exc_info=True)
+            return []
+
     def forget_memories(self, max_memories: Optional[int] = None) -> int:
         """
         Apply forgetting mechanism to remove less important memories.

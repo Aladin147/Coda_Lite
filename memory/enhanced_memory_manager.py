@@ -17,6 +17,7 @@ from .memory_snapshot import MemorySnapshotManager
 from .temporal_weighting import TemporalWeightingSystem
 from .active_recall import ActiveRecallSystem
 from .self_testing import MemorySelfTestingFramework
+from .summarization import MemorySummarizationSystem
 
 logger = logging.getLogger("coda.memory.enhanced")
 
@@ -102,6 +103,9 @@ class EnhancedMemoryManager:
         # Initialize self-testing framework
         self.self_testing = MemorySelfTestingFramework(memory_manager=self, config=config)
 
+        # Initialize summarization system
+        self.summarization = MemorySummarizationSystem(memory_manager=self, config=config)
+
         # Track recent topics and tools
         self.recent_topics = []
         self.last_tool_used = None
@@ -111,7 +115,7 @@ class EnhancedMemoryManager:
         self.persist_interval = config.get("memory", {}).get("persist_interval", 5)
         self.turn_count_at_last_persist = 0
 
-        logger.info("EnhancedMemoryManager initialized with active recall and self-testing")
+        logger.info("EnhancedMemoryManager initialized with active recall, self-testing, and summarization")
 
     def add_turn(self, role: str, content: str) -> Dict[str, Any]:
         """
@@ -1271,6 +1275,77 @@ class EnhancedMemoryManager:
             Dictionary with test results
         """
         return self.self_testing.run_retrieval_test_suite()
+
+    def cluster_memories_by_topic(self, force_update: bool = False) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Cluster memories by topic.
+
+        Args:
+            force_update: Whether to force a cache update
+
+        Returns:
+            Dictionary mapping topic clusters to lists of memories
+        """
+        return self.summarization.cluster_memories_by_topic(force_update)
+
+    def generate_topic_summaries(self, force_update: bool = False) -> Dict[str, str]:
+        """
+        Generate summaries for all topic clusters.
+
+        Args:
+            force_update: Whether to force a cache update
+
+        Returns:
+            Dictionary mapping topics to summaries
+        """
+        return self.summarization.generate_topic_summaries(force_update)
+
+    def generate_user_profile(self, force_update: bool = False) -> Dict[str, Any]:
+        """
+        Generate a user profile summary.
+
+        Args:
+            force_update: Whether to force a cache update
+
+        Returns:
+            User profile dictionary
+        """
+        return self.summarization.generate_user_profile(force_update)
+
+    def summarize_recent_memories(self, days: int = 1, limit: int = 10) -> str:
+        """
+        Summarize recent memories from the past N days.
+
+        Args:
+            days: Number of days to look back
+            limit: Maximum number of memories to include
+
+        Returns:
+            Summary text
+        """
+        return self.summarization.summarize_recent_memories(days, limit)
+
+    def summarize_memory_by_type(self, memory_type: str, limit: int = 10) -> str:
+        """
+        Summarize memories of a specific type.
+
+        Args:
+            memory_type: Type of memory to summarize (fact, preference, conversation)
+            limit: Maximum number of memories to include
+
+        Returns:
+            Summary text
+        """
+        return self.summarization.summarize_memory_by_type(memory_type, limit)
+
+    def get_memory_overview(self) -> Dict[str, Any]:
+        """
+        Get a comprehensive overview of the memory system.
+
+        Returns:
+            Dictionary with memory overview
+        """
+        return self.summarization.get_memory_overview()
 
     def close(self) -> None:
         """Close memory manager and save state."""

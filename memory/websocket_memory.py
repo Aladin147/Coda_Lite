@@ -15,6 +15,7 @@ from memory.encoder import MemoryEncoder
 from memory.memory_debug import MemoryDebugSystem
 from memory.websocket_active_recall import WebSocketEnhancedActiveRecall
 from memory.websocket_self_testing import WebSocketEnhancedSelfTesting
+from memory.websocket_summarization import WebSocketEnhancedSummarization
 from websocket.integration import CodaWebSocketIntegration
 
 logger = logging.getLogger("coda.memory.websocket")
@@ -89,7 +90,14 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
             websocket_server=self.ws
         )
 
-        logger.info("WebSocketEnhancedMemoryManager initialized with WebSocket integration, debug system, active recall, and self-testing")
+        # Replace summarization system with WebSocket-enhanced version
+        self.summarization = WebSocketEnhancedSummarization(
+            memory_manager=self,
+            config=config,
+            websocket_server=self.ws
+        )
+
+        logger.info("WebSocketEnhancedMemoryManager initialized with WebSocket integration, debug system, active recall, self-testing, and summarization")
 
     def add_turn(self, role: str, content: str) -> None:
         """
@@ -656,6 +664,149 @@ class WebSocketEnhancedMemoryManager(EnhancedMemoryManager):
         logger.debug(f"Ran retrieval test suite: {results.get('tests_run', 0)} tests")
 
         return results
+
+    def cluster_memories_by_topic(self, force_update: bool = False) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Cluster memories by topic with WebSocket events.
+
+        Args:
+            force_update: Whether to force a cache update
+
+        Returns:
+            Dictionary mapping topic clusters to lists of memories
+        """
+        # The WebSocketEnhancedSummarization will emit events
+        return super().cluster_memories_by_topic(force_update)
+
+    def generate_topic_summaries(self, force_update: bool = False) -> Dict[str, str]:
+        """
+        Generate summaries for all topic clusters with WebSocket events.
+
+        Args:
+            force_update: Whether to force a cache update
+
+        Returns:
+            Dictionary mapping topics to summaries
+        """
+        # The WebSocketEnhancedSummarization will emit events
+        summaries = super().generate_topic_summaries(force_update)
+
+        # Log operation in debug system
+        self.debug.log_operation(
+            operation_type="generate_topic_summaries",
+            details={
+                "summary_count": len(summaries),
+                "topics": list(summaries.keys())
+            }
+        )
+
+        logger.debug(f"Generated {len(summaries)} topic summaries")
+
+        return summaries
+
+    def generate_user_profile(self, force_update: bool = False) -> Dict[str, Any]:
+        """
+        Generate a user profile summary with WebSocket events.
+
+        Args:
+            force_update: Whether to force a cache update
+
+        Returns:
+            User profile dictionary
+        """
+        # The WebSocketEnhancedSummarization will emit events
+        profile = super().generate_user_profile(force_update)
+
+        # Log operation in debug system
+        self.debug.log_operation(
+            operation_type="generate_user_profile",
+            details={
+                "preferences_count": len(profile.get("preferences", [])),
+                "personal_facts_count": len(profile.get("personal_facts", [])),
+                "topics_of_interest_count": len(profile.get("topics_of_interest", []))
+            }
+        )
+
+        logger.debug(f"Generated user profile with {len(profile.get('preferences', []))} preferences")
+
+        return profile
+
+    def summarize_recent_memories(self, days: int = 1, limit: int = 10) -> str:
+        """
+        Summarize recent memories from the past N days with WebSocket events.
+
+        Args:
+            days: Number of days to look back
+            limit: Maximum number of memories to include
+
+        Returns:
+            Summary text
+        """
+        # The WebSocketEnhancedSummarization will emit events
+        summary = super().summarize_recent_memories(days, limit)
+
+        # Log operation in debug system
+        self.debug.log_operation(
+            operation_type="summarize_recent_memories",
+            details={
+                "days": days,
+                "limit": limit,
+                "summary_length": len(summary)
+            }
+        )
+
+        logger.debug(f"Summarized recent memories from the past {days} day(s)")
+
+        return summary
+
+    def summarize_memory_by_type(self, memory_type: str, limit: int = 10) -> str:
+        """
+        Summarize memories of a specific type with WebSocket events.
+
+        Args:
+            memory_type: Type of memory to summarize (fact, preference, conversation)
+            limit: Maximum number of memories to include
+
+        Returns:
+            Summary text
+        """
+        # The WebSocketEnhancedSummarization will emit events
+        summary = super().summarize_memory_by_type(memory_type, limit)
+
+        # Log operation in debug system
+        self.debug.log_operation(
+            operation_type="summarize_memory_by_type",
+            details={
+                "memory_type": memory_type,
+                "limit": limit,
+                "summary_length": len(summary)
+            }
+        )
+
+        logger.debug(f"Summarized {memory_type} memories")
+
+        return summary
+
+    def get_memory_overview(self) -> Dict[str, Any]:
+        """
+        Get a comprehensive overview of the memory system with WebSocket events.
+
+        Returns:
+            Dictionary with memory overview
+        """
+        # The WebSocketEnhancedSummarization will emit events
+        overview = super().get_memory_overview()
+
+        # Log operation in debug system
+        self.debug.log_operation(
+            operation_type="get_memory_overview",
+            details={
+                "topic_cluster_count": len(overview.get("topic_clusters", {})),
+                "memory_count": overview.get("memory_stats", {}).get("long_term", {}).get("memory_count", 0)
+            }
+        )
+
+        logger.debug(f"Generated memory overview")
 
     def list_snapshots(self) -> List[Dict[str, Any]]:
         """

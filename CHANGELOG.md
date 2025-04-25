@@ -13,6 +13,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional language support (planned)
 - Voice quality improvements (planned)
 
+## [0.1.2-memory-summarization] - 2025-04-29
+
+### Added
+
+- Memory summarization system with topic clustering
+- Memory topic clustering and summarization
+- User profile generation from preferences and facts
+- Recent memory summarization with temporal filtering
+- Memory type summarization for different memory types
+- Memory overview generation with comprehensive statistics
+- WebSocket integration for memory summarization
+- Comprehensive tests for memory summarization
+- Detailed documentation for memory summarization
+
+### Changed
+
+- Enhanced EnhancedMemoryManager with memory summarization
+- Updated WebSocketEnhancedMemoryManager with WebSocket event emission
+- Improved memory organization with topic clustering
+- Enhanced memory retrieval with topic-based filtering
+
+### Fixed
+
+- Improved memory organization with better topic clustering
+- Enhanced memory retrieval with more relevant summaries
+- Fixed memory topic extraction with better algorithms
+
 ## [0.1.2-active-recall] - 2025-04-28
 
 ### Added

@@ -91,7 +91,7 @@ This document tracks the current status of the Coda Lite project, including comp
 - ✅ Created memory debug system with WebSocket integration
 - ✅ Implemented memory debug UI components for dashboard
 - ✅ Added active recall/self-testing features
-- ⏳ Add memory summarization capabilities
+- ✅ Added memory summarization capabilities
 
 ### Architecture Improvements
 
